@@ -1,0 +1,113 @@
+{
+  "title": "Basement Bike Mechanic",
+  "phone": "404.809.7225",
+  "email": "brannonglover@gmail.com",
+  "service_header": "Tune Ups",
+  "services": [
+    {
+      "id": 0,
+      "service": "Standard Tune-Up",
+      "list": [
+        {
+          "id": 0,
+          "task": "Complete bike wash"
+        },
+        {
+          "id": 1,
+          "task": "Cassette/Freewheel cleaning"
+        },
+        {
+          "id": 2,
+          "task": "Cables lubed"
+        },
+        {
+          "id": 3,
+          "task": "Chain clean/lubed"
+        },
+        {
+          "id": 4,
+          "task": "Gear indexing"
+        },
+        {
+          "id": 5,
+          "task": "Brakes clean/bed-in"
+        },
+        {
+          "id": 6,
+          "task": "Wheel truing"
+        }
+      ],
+      "price": 75
+    },
+    {
+      "id": 1,
+      "service": "A Bit More Tune-Up",
+      "list": [
+        {
+          "id": 0,
+          "task": "Complete bike wash"
+        },
+        {
+          "id": 1,
+          "task": "Cassette/Freewheel cleaning"
+        },
+        {
+          "id": 2,
+          "task": "Cables lubed"
+        },
+        {
+          "id": 3,
+          "task": "Chain clean/lubed"
+        },
+        {
+          "id": 4,
+          "task": "Gear indexing"
+        },
+        {
+          "id": 5,
+          "task": "Brakes clean/bed-in"
+        },
+        {
+          "id": 6,
+          "task": "Wheel truing"
+        },
+        {
+          "id": 7,
+          "task": "Hub bearings cleaning and re-grease"
+        },
+        {
+          "id": 8,
+          "task": "Bottom bracket bearings cleaning and re-grease"
+        },
+        {
+          "id": 9,
+          "task": "Brake bleed (if needed)"
+        }
+      ],
+      "price": 150
+    }
+  ],
+  "additional_services": "Services",
+  "individual_services": [
+    {
+      "id": 0,
+      "service": "Wheel Truing (both)",
+      "price": 50
+    },
+    {
+      "id": 1,
+      "service": "Single Tire Replacement w/tube",
+      "price": 10
+    },
+    {
+      "id": 2,
+      "service": "Single Tire Replacement tubeless",
+      "price": 20
+    },
+    {
+      "id": 3,
+      "service": "Component installation",
+      "price": 55
+    }
+  ]
+}
