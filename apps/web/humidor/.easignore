@@ -1,0 +1,7 @@
+node_modules
+.vscode
+.expo
+
+server/node_modules
+
+.env

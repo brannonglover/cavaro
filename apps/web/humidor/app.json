@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "humidor",
+    "slug": "humidor",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.brannonglover.humidor"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Humidor to access your photos to add cigar images.",
+          "cameraPermission": "Allow Humidor to use your camera to take photos of cigars."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "c989e281-35f0-4f24-93f0-7008e2c041b6"
+      }
+    }
+  }
+}

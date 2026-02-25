@@ -1,0 +1,432 @@
+[
+  {
+    "brand": "Alec Bradley",
+    "name": "Chunk",
+    "description": "How can you not love a Chunk? Over the years, we've released some of our most acclaimed cigars in the “Chunk size” (approximately 4 X 60), and now, we've crafted a new blend just for lovers of these brawny smokes. Wrapped in a decadent Mexican wrapper, Chunk Maduro boasts a full, smooth and spicy flavor profile that will satisfy cigar lovers of all kinds.",
+    "wrapper": "Mexican",
+    "binder": "Honduran Jamastran",
+    "filler": "Dominican Piloto, Nicaraguan Estelí",
+    "size": [
+      {
+        "length": "4x60",
+        "image": ""
+      },
+      {
+        "length": "4x66",
+        "image": ""
+      },
+      {
+        "length": "4x80",
+        "image": ""
+      }
+    ]
+  },
+  {
+    "brand": "Alec Bradley",
+    "name": "Safe Keepings",
+    "description": "Alec Bradley Safe Keepings is the first rediscovered recipe “kept safe” in the Alec Bradley founder’s blend book. Nicaraguan leaves from the most prestigious fields of Esteli, Condega and Jalapa have finally been brought together to present to the masses a medium-to-full bodied gem of a ‘puro’ with savory and piquant notes.",
+    "wrapper": "Nicaragua",
+    "binder": "Nicaragua",
+    "filler": "Nicaragua",
+    "size": [
+      {
+        "length": "5 3/8x46",
+        "image": ""
+      },
+      {
+        "length": "5x52",
+        "image": ""
+      },
+      {
+        "length": "6x52",
+        "image": ""
+      },
+      {
+        "length": "6x60",
+        "image": ""
+      }
+    ]
+  },
+  {
+    "brand": "Alec Bradley",
+    "name": "Prensado",
+    "description": "Prensado means a lot to us and the Alec Bradley story. Rolled at Raices Cubanas (‘Cuban Roots’) factory, the Prensado was first created to pay homage to the Cuban traditions of cigar making rolling the filler ‘entuba-do,’ triple capping the head and box pressing the finished cigar. Blended with proprietary estate grown corojo from the Trojes region of Honduras, Prensado would eventually be named Cigar Aficionado “Cigar of the Year,” propelling our trajectory into cigar culture much quicker than anticipated.",
+    "wrapper": "Honduras",
+    "binder": "Nicaragua",
+    "filler": "Honduras, Nicaragua",
+    "size": [
+      {
+        "length": "5 5/8x46",
+        "image": ""
+      },
+      {
+        "length": "5x50",
+        "image": ""
+      },
+      {
+        "length": "6x54",
+        "image": ""
+      },
+      {
+        "length": "7x24",
+        "image": ""
+      },
+      {
+        "length": "6 1/8x52",
+        "image": ""
+      },
+      {
+        "length": "6x62",
+        "image": ""
+      }
+    ]
+  },
+  {
+    "brand": "Alec Bradley",
+    "name": "Post Embargo: Blend Code B15",
+    "description": "As the Alec Bradley brand continues to grow globally, we felt it was the right time to revisit the post-embargo concept from a fresh, new perspective. The medium bodied, polished, and complex Post Embargo Blend Code B15 celebrates how Alec Bradley has taken our rightful place on the global stage. “New World” cigars are where it’s at!",
+    "wrapper": "Honduras (5th Priming, Trojes)",
+    "binder": "Honduras",
+    "filler": "Nicaragua, Honduras",
+    "size": [
+      {
+        "length": "5x52",
+        "image": ""
+      },
+      {
+        "length": "6x52",
+        "image": ""
+      },
+      {
+        "length": "6x60",
+        "image": ""
+      }
+    ]
+  },
+  {
+    "brand": "Alec Bradley",
+    "name": "Black Market",
+    "description": "Every month, for over a year, we had been working on blends with a special tobacco from Panama. The unique notes of Panamanian tobacco, somehow had to be shared with the world. Creating 18 different Panamanian blends, we smoked the third one in line and knew this was Black Market! The mystery of Panamanian tobacco and the crate like box in which Black Market is displayed illustrates this cigar’s journey.",
+    "wrapper": "Nicaragua",
+    "binder": "Sumatra",
+    "filler": "Panama, Honduras",
+    "size": [
+      {
+        "length": "4 1/4x42",
+        "image": ""
+      },
+      {
+        "length": "5 1/4x52",
+        "image": ""
+      },
+      {
+        "length": "6x50",
+        "image": ""
+      },
+      {
+        "length": "7x50",
+        "image": ""
+      },
+      {
+        "length": "6 1/8x54",
+        "image": ""
+      },
+      {
+        "length": "6x60",
+        "image": ""
+      },
+      {
+        "length": "4x60",
+        "image": ""
+      }
+    ]
+  },
+  {
+    "brand": "Alec Bradley",
+    "name": "Double Broadleaf",
+    "description": "The third release in the Alec Bradley Experimental Series, Double Broadleaf features proprietary wrapper and binder tobacco from heritage Connecticut Broadleaf seeds grown in the rich soils of Honduras. These exclusive tobaccos are then blended with an additional binder from Nicaragua and filler tobaccos from Honduras and Nicaragua to create a bold, rich, and exciting smoking experience. The creation of Double Broadleaf exemplifies what it means to be experimental.",
+    "wrapper": "Honduras",
+    "binder": "Honduras, Nicaragua",
+    "filler": "Honduras, Nicaragua",
+    "size": [
+      {
+        "length": "4x60",
+        "image": ""
+      },
+      {
+        "length": "5x50",
+        "image": ""
+      },
+      {
+        "length": "6x52",
+        "image": ""
+      },
+      {
+        "length": "6x60",
+        "image": ""
+      },
+      {
+        "length": "7x46",
+        "image": ""
+      }
+    ]
+  },
+  {
+    "brand": "Alec Bradley",
+    "name": "Kintsugi",
+    "description": "Kintsugi is an elegant, multifaceted medium bodied cigar. It pays homage to the ancient Japanese artform of joining together ceramics with gold lacquer-making them even more beautiful. Cigars, like the gold lacquer, are a bonding agent – bringing people from all walks of life together.",
+    "wrapper": "Honduras (Trojes)",
+    "binder": "Honduras, Nicaragua",
+    "filler": "Honduras, Nicaragua",
+    "size": [
+      {
+        "length": "5x50",
+        "image": ""
+      },
+      {
+        "length": "5 5/8x46",
+        "image": ""
+      },
+      {
+        "length": "6x52",
+        "image": ""
+      },
+      {
+        "length": "6x60",
+        "image": ""
+      }
+    ]
+  },
+  {
+    "brand": "Alec Bradley",
+    "name": "Gatekeeper",
+    "description": "Working with Ernesto Perez-Carrillo opened the gates to new tobaccos and experiences. This partnership has granted the opportunity to branch out and try something a little different. A fantastic blend of perfectly aged tobaccos from Nicaragua, Ecuador, and Dominican Republic.",
+    "wrapper": "Ecuador (Habano)",
+    "binder": "Nicaragua",
+    "filler": "Nicaragua, DR",
+    "size": [
+      {
+        "length": "5x50",
+        "image": ""
+      },
+      {
+        "length": "5 1/8x42",
+        "image": ""
+      },
+      {
+        "length": "6x52",
+        "image": ""
+      },
+      {
+        "length": "6x60",
+        "image": ""
+      }
+    ]
+  },
+  {
+    "brand": "Alec Bradley",
+    "name": "Black Market Esteli",
+    "description": "We've noticed that many cigar enthusiasts know their favorite cigars come from Nicaragua, but the exact location remains a mystery. Since the term 'black market' alludes to things unidentified or shadowy, we felt compelled to bring Esteli, the cigar capital of Nicaragua, out of the shadows. Black Market Esteli pays homage to the importance of the city and every-thing it offers to cigar making.",
+    "wrapper": "Nicaragua",
+    "binder": "Nicaragua, Honduras",
+    "filler": "Nicaragua",
+    "size": [
+      {
+        "length": "4 1/4x42",
+        "image": ""
+      },
+      {
+        "length": "5x52",
+        "image": ""
+      },
+      {
+        "length": "6x52",
+        "image": ""
+      },
+      {
+        "length": "6x60",
+        "image": ""
+      },
+      {
+        "length": "6 1/2x52",
+        "image": ""
+      },
+      {
+        "length": "7x50",
+        "image": ""
+      }
+    ]
+  },
+  {
+    "brand": "Alec Bradley",
+    "name": "Magic Toast",
+    "description": "Alec Bradley Magic Toast got its name on a night forever etched in memory. That's the night, seen by flashlight, a crop with tobaccos that needed a special project. Under the stars, a group of us cracked open a bottle of very special whisky and proposed a toast to our future. Magic Toast was born that evening - along with a ritual,  to toast the end of this cigar, celebrate its beginning, and enjoy the magic!",
+    "wrapper": "Honduras",
+    "binder": "Nicaragua, Honduras",
+    "filler": "Nicaragua, Honduras",
+    "size": [
+      {
+        "length": "5x52",
+        "image": ""
+      },
+      {
+        "length": "6x52",
+        "image": ""
+      },
+      {
+        "length": "6x60",
+        "image": ""
+      },
+      {
+        "length": "4 1/2x60",
+        "image": ""
+      }
+    ]
+  },
+  {
+    "brand": "Alec Bradley",
+    "name": "Project 40",
+    "description": "Project 40 is the search to find a deeper understanding as to why cigars have a positive cognitive impact on the mind and body. Similar to music, cigars have a calming effect that allows us to feel in control as well as feel rewarded. A proper blend, price, and experience has been developed for your enjoyment. Take control of your happiness.",
+    "wrapper": "Nicaragua",
+    "binder": "Habano Brazil",
+    "filler": "All Nicaraguan",
+    "size": [
+      {
+        "length": "5x50",
+        "image": ""
+      },
+      {
+        "length": "6x52",
+        "image": ""
+      },
+      {
+        "length": "7x52",
+        "image": ""
+      },
+      {
+        "length": "6x60",
+        "image": ""
+      },
+      {
+        "length": "7x70",
+        "image": ""
+      }
+    ]
+  },
+  {
+    "brand": "Alec Bradley",
+    "name": "Project 40 Maduro",
+    "description": "We contend that a cigar with a proper blend and value proposition, is the key to taking control of your happiness. The calming effects of the dark and rich Project 40 Maduro are rewarding to enthusiasts, leading to relaxation and the feeling of being in control.  The Project 40 Maduro is the next chapter of the Experimental Series story. Take control of your happiness, again!",
+    "wrapper": "San Andreas",
+    "binder": "Habano Brazil",
+    "filler": "All Nicaraguan",
+    "size": [
+      {
+        "length": "5x50",
+        "image": ""
+      },
+      {
+        "length": "6x52",
+        "image": ""
+      },
+      {
+        "length": "6x60",
+        "image": ""
+      },
+      {
+        "length": "7x70",
+        "image": ""
+      }
+    ]
+  },
+  {
+    "brand": "Alec Bradley",
+    "name": "Prensado Lost Art",
+    "description": "Nowadays, it seems production trumps artistry. In premium cigars, though, artisans still produce everything by hand - a process that hasn't changed in hundreds of years. We get nostalgic about the days when a large majority of products were made with care, by hand. Prensado Lost Art pays homage to those times. Every Prensado Lost Art is traditionally rolled “entubado”- with each filler leaf rolled for perfect air flow. The cigars are semi-pressed and finished with a traditional triple cap.",
+    "wrapper": "Honduras",
+    "binder": "Honduras, Nicaragua",
+    "filler": "Honduras, Nicaragua",
+    "size": [
+      {
+        "length": "5x52",
+        "image": ""
+      },
+      {
+        "length": "6 1/4x52",
+        "image": ""
+      },
+      {
+        "length": "7x50",
+        "image": ""
+      },
+      {
+        "length": "6 1/2x52",
+        "image": ""
+      },
+      {
+        "length": "6x60",
+        "image": ""
+      }
+    ]
+  },
+  {
+    "brand": "Alec Bradley",
+    "name": "MAXX",
+    "description": "The MAXX line was a huge risk to create. At the time, traditional, smaller ring gauge cigars were en vogue. As innovators, we wanted to buck the trend. The challenge was to create a line of large cigars with maximized palate experience and satisfaction at a great value. By using tobaccos from five different countries in a large format cigar, we were able to create balance and complexity. Sometimes, bigger is better.",
+    "wrapper": "Nicaragua",
+    "binder": "Costa Rica",
+    "filler": "Colombia, Nicaragua, Mexico, Honduras",
+    "size": [
+      {
+        "length": "6x54",
+        "image": ""
+      },
+      {
+        "length": "4x46",
+        "image": ""
+      },
+      {
+        "length": "5x58",
+        "image": ""
+      },
+      {
+        "length": "6 3/8x60",
+        "image": ""
+      },
+      {
+        "length": "8 1/8x60",
+        "image": ""
+      }
+    ]
+  },
+  {
+    "brand": "Alec Bradley",
+    "name": "Coyol",
+    "description": "La Vega Coyol is one a farm  in Honduras, named after the majestic Coyol palm tree that stands at its entrance. Sharing the same fertile soil of the palm, the tobaccos cultivated from La Vega Coyol exhibit wonderful aromatics and an exceptional palate experience. Like a fine wine, Coyol is a cigar whose name honors its roots and the land that gave it character.",
+    "wrapper": "Honduras",
+    "binder": "Honduras, Nicaragua",
+    "filler": "Honduras, Nicaragua",
+    "size": [
+      {
+        "length": "6 1/2x41",
+        "image": ""
+      },
+      {
+        "length": "5x52",
+        "image": ""
+      },
+      {
+        "length": "6x52",
+        "image": ""
+      },
+      {
+        "length": "6x60",
+        "image": ""
+      },
+      {
+        "length": "7x58",
+        "image": ""
+      }
+    ]
+  }
+]

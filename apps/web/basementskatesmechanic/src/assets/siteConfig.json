@@ -1,0 +1,72 @@
+{
+  "title": "Basement Skates Mechanic",
+  "tagline": "Skate with Confidence, Repair with Care",
+  "phone": "404.809.7225",
+  "email": "brannonglover@gmail.com",
+  "site_description": "Welcome to the Basement Skate Mechanic, a boutique skate repair shop based in Atlanta!  Feel free to contact me through text or phone call and I'll be happy to help you with your bike repair needs.  My skate repair \"shop\" is in the Atlanta area, but I'm happy to service and maintain your bike if you are outside the Atlanta area.  Contact me if you want the personal neighborly service.  I also provide bike pickup/drop-off, within a 5 mile radius, for $10.",
+  "service_header": "Tune Ups",
+  "services": [
+    {
+      "id": 0,
+      "service": "Rollerskate Tune-Up",
+      "list": [
+        {
+          "id": 0,
+          "task": "Check/tighten truck bolts"
+        },
+        {
+          "id": 1,
+          "task": "Clean and lubricate wheel bearings"
+        },
+        {
+          "id": 2,
+          "task": "Check/adjust eyelets"
+        },
+        {
+          "id": 3,
+          "task": "Cleaning of wheel surface"
+        },
+        {
+          "id": 4,
+          "task": "Check/adjust toe stops"
+        },
+        {
+          "id": 5,
+          "task": "Overall cleaning of boot"
+        }
+      ],
+      "price": 45
+    }
+  ],
+  "additional_services": "Services",
+  "individual_services": [
+    {
+      "id": 0,
+      "service": "Skates Pick Up/Drop Off",
+      "price": 10
+    },
+    {
+      "id": 1,
+      "service": "Wheel installation",
+      "price": 15
+    },
+    {
+      "id": 2,
+      "service": "Cleaning of wheel bearings",
+      "price": 20
+    },
+    {
+      "id": 3,
+      "service": "Toe stop installation",
+      "price": 5
+    }
+  ],
+  "bikes": [
+    {
+      "id": 0,
+      "name": "",
+      "images": [],
+      "price": 300
+    }
+  ]
+}

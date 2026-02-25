@@ -1,0 +1,17 @@
+diff --git a/ios/DevMenuViewController.swift b/ios/DevMenuViewController.swift
+index 0000000..1111111 100644
+--- a/ios/DevMenuViewController.swift
++++ b/ios/DevMenuViewController.swift
+@@ -63,7 +63,11 @@
+   }
+ 
+   private func initialProps() -> [String: Any] {
+-    let isSimulator = TARGET_IPHONE_SIMULATOR > 0
++    #if targetEnvironment(simulator)
++    let isSimulator = true
++    #else
++    let isSimulator = false
++    #endif
+ 
+     return [
+       "showOnboardingView": manager.shouldShowOnboarding(),
