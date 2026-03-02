@@ -2,10 +2,10 @@
  * Centralized database module for Humidor app.
  * Uses a single `cigars` table with a `collection` column instead of
  * three separate tables (humidor, likes, dislikes).
- * Uses `cigar_catalog` as the central catalog users select from.
+ * cigar_catalog: local cache/fallback when API is unavailable (see api/catalog.js).
+ * Primary catalog source is PostgreSQL via API.
  */
 import * as SQLite from 'expo-sqlite';
-import catalogData from '../assets/cigars.json';
 
 const DB_NAME = 'cigars.db';
 export const db = SQLite.openDatabaseSync(DB_NAME);
@@ -19,7 +19,7 @@ const COLLECTIONS = {
 export { COLLECTIONS };
 
 /**
- * Creates tables and migrates data. Seeds cigar_catalog from cigars.json if empty.
+ * Creates tables and migrates data. Catalog is fetched from API; local cigar_catalog is offline cache.
  */
 export async function initDatabase() {
   await db.withTransactionAsync(async () => {
@@ -57,6 +57,7 @@ export async function initDatabase() {
         filler TEXT,
         length TEXT,
         image TEXT,
+        quantity INTEGER NOT NULL DEFAULT 1,
         collection TEXT NOT NULL DEFAULT 'humidor' CHECK(collection IN ('humidor', 'likes', 'dislikes'))
       )
     `);
@@ -64,31 +65,31 @@ export async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_cigars_collection ON cigars(collection)
     `);
 
-    // Seed catalog from cigars.json if empty
-    const catalogCount = await db.getFirstAsync('SELECT COUNT(*) as count FROM cigar_catalog');
-    if (catalogCount && catalogCount.count === 0) {
-      for (const cigar of catalogData) {
-        const sizes = cigar.size || [{ length: '', image: '' }];
-        for (const size of sizes) {
-          const length = size.length || '';
-          const image = size.image || cigar.image || '';
-          try {
-            await db.runAsync(
-              `INSERT OR IGNORE INTO cigar_catalog (brand, name, description, wrapper, binder, filler, length, image)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-              cigar.brand || '',
-              cigar.name || '',
-              cigar.description || '',
-              cigar.wrapper || '',
-              cigar.binder || '',
-              cigar.filler || '',
-              length,
-              image
-            );
-          } catch (e) {
-            // Skip duplicates
-          }
-        }
+    // Catalog comes from API (PostgreSQL). Local table is cache/offline fallback.
+    // Seed server: cd server && npm run init-catalog
+
+    // Add quantity column if missing (migration for existing DBs)
+    const tableInfo = await db.getAllAsync('PRAGMA table_info(cigars)');
+    const hasQuantity = tableInfo.some((col) => col.name === 'quantity');
+    if (!hasQuantity) {
+      await db.execAsync('ALTER TABLE cigars ADD COLUMN quantity INTEGER NOT NULL DEFAULT 1');
+    }
+
+    // Add is_favorite column if missing (migration for existing DBs)
+    const tableInfo2 = await db.getAllAsync('PRAGMA table_info(cigars)');
+    const hasIsFavorite = tableInfo2.some((col) => col.name === 'is_favorite');
+    if (!hasIsFavorite) {
+      await db.execAsync('ALTER TABLE cigars ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0');
+      await db.execAsync("UPDATE cigars SET is_favorite = 1 WHERE collection = 'likes'");
+    }
+
+    // Add favorite notes columns if missing
+    const tableInfo3 = await db.getAllAsync('PRAGMA table_info(cigars)');
+    const colNames = new Set(tableInfo3.map((c) => c.name));
+    const noteCols = ['favorite_notes', 'flavor_profile', 'construction_quality', 'smoked_date', 'flavor_changes'];
+    for (const col of noteCols) {
+      if (!colNames.has(col)) {
+        await db.execAsync(`ALTER TABLE cigars ADD COLUMN ${col} TEXT`);
       }
     }
 

@@ -2,14 +2,20 @@ const express = require('express');
 const colors = require('colors');
 const cors = require('cors');
 require('dotenv').config();
-const connectDB = require('./config/db');
-const port = process.env.PORT || 5000;
+const catalogRoutes = require('./routes/catalog');
+const uploadRoutes = require('./routes/upload');
+const port = process.env.PORT || 5001;
 
 const app = express();
 
-connectDB();
-
-app.use(express.json())
+app.use(express.json());
 app.use(cors());
 
-app.listen(port, console.log(`Server running on port ${port}`));
+// Shared cigar catalog (PostgreSQL)
+app.use('/api/catalog', catalogRoutes);
+// Image upload (Supabase Storage)
+app.use('/api/upload', uploadRoutes);
+
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`.green);
+});

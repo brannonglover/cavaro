@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,10 +13,12 @@ import {
   Alert,
   ActionSheetIOS,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { db, COLLECTIONS } from '../db';
+import { fetchCatalog, addCigarToCatalog } from '../api/catalog';
+import { uploadCigarImage } from '../api/upload';
 import colors from '../theme/colors';
 import { pickCigarImage, takeCigarPhoto } from '../utils/imagePicker';
 
@@ -31,6 +33,12 @@ const DropdownArrowUp = ({ style }) => (
   </View>
 );
 
+// Size format: #x## or #.#x## (e.g. 6x52, 7.5x50) - no slashes
+const SIZE_FORMAT = /^\d+(\.\d+)?x\d+(\.\d+)?$/;
+function isValidSizeFormat(size) {
+  return size?.trim() && SIZE_FORMAT.test(size.trim());
+}
+
 export default function AddCigar() {
   const navigation = useNavigation();
   const [showCustom, setShowCustom] = useState(false);
@@ -44,6 +52,7 @@ export default function AddCigar() {
   const [cigarBinder, setCigarBinder] = useState('');
   const [cigarFiller, setCigarFiller] = useState('');
   const [cigarImage, setCigarImage] = useState('');
+  const [cigarQuantity, setCigarQuantity] = useState('1');
 
   // Custom form state
   const [customBrand, setCustomBrand] = useState('');
@@ -54,6 +63,7 @@ export default function AddCigar() {
   const [customBinder, setCustomBinder] = useState('');
   const [customFiller, setCustomFiller] = useState('');
   const [customImage, setCustomImage] = useState('');
+  const [customQuantity, setCustomQuantity] = useState('1');
 
   // Catalog data
   const [data, setData] = useState([]);
@@ -66,13 +76,48 @@ export default function AddCigar() {
   const [nameOpen, setNameOpen] = useState(false);
   const [sizeOpen, setSizeOpen] = useState(false);
 
+  const isCatalogValid = !!(cigarBrand?.trim() && cigarName?.trim() && cigarSize?.trim());
+  const isCustomValid = !!(customBrand?.trim() && customName?.trim() && customSize?.trim() && isValidSizeFormat(customSize));
+  const scrollViewRef = useRef(null);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+    }, [])
+  );
+
   useEffect(() => {
     loadCatalog();
   }, []);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [showCustom]);
+
   async function loadCatalog() {
     try {
-      const rows = await db.getAllAsync('SELECT * FROM cigar_catalog ORDER BY brand, name, length');
+      // Fetch shared catalog from API; fallback to local cache if offline
+      let rows;
+      try {
+        rows = await fetchCatalog();
+        // Cache in local SQLite for offline use
+        await db.withTransactionAsync(async () => {
+          await db.execAsync('DELETE FROM cigar_catalog');
+          for (const c of rows) {
+            await db.runAsync(
+              `INSERT OR IGNORE INTO cigar_catalog (brand, name, description, wrapper, binder, filler, length, image)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              c.brand, c.name, c.description || '', c.wrapper || '', c.binder || '', c.filler || '', c.length, c.image || ''
+            );
+          }
+        });
+      } catch (apiErr) {
+        console.warn('API catalog unavailable, using local cache:', apiErr.message);
+        rows = await db.getAllAsync('SELECT * FROM cigar_catalog ORDER BY brand, name, length');
+      }
       setData(rows);
       const brands = [...new Set(rows.map((r) => r.brand))].filter(Boolean).sort();
       setBrandArr(brands.map((b) => ({ label: b, value: b })));
@@ -152,9 +197,18 @@ export default function AddCigar() {
 
   async function addFromCatalog() {
     if (!cigarBrand?.trim() || !cigarName?.trim() || !cigarSize?.trim()) return;
+    const qty = Math.max(1, parseInt(cigarQuantity, 10) || 1);
     try {
+      let imageUrl = '';
+      if (cigarImage) {
+        try {
+          imageUrl = await uploadCigarImage(cigarImage) || '';
+        } catch (e) {
+          console.warn('Image upload failed, saving without image:', e.message);
+        }
+      }
       await db.runAsync(
-        'INSERT INTO cigars (brand, name, description, wrapper, binder, filler, length, image, collection) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO cigars (brand, name, description, wrapper, binder, filler, length, image, quantity, collection) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         cigarBrand.trim(),
         cigarName.trim(),
         cigarDescription,
@@ -162,31 +216,51 @@ export default function AddCigar() {
         cigarBinder,
         cigarFiller,
         cigarSize.trim(),
-        cigarImage || '',
+        imageUrl,
+        qty,
         COLLECTIONS.HUMIDOR
       );
       navigation.goBack();
     } catch (error) {
       console.log('Add failed:', error);
+      Alert.alert('Failed to add cigar', error.message || 'Please try again.');
     }
   }
 
   async function addCustom() {
     if (!customBrand?.trim() || !customName?.trim() || !customSize?.trim()) return;
-    try {
-      await db.runAsync(
-        `INSERT OR IGNORE INTO cigar_catalog (brand, name, description, wrapper, binder, filler, length, image)
-         VALUES (?, ?, ?, ?, ?, ?, ?, '')`,
-        customBrand.trim(),
-        customName.trim(),
-        customDesc || '',
-        customWrapper || '',
-        customBinder || '',
-        customFiller || '',
-        customSize.trim()
+    if (!isValidSizeFormat(customSize)) {
+      Alert.alert(
+        'Invalid size format',
+        'Size must be in the format #x## or #.#x## (e.g., 6x52, 7.5x50). Please correct the size field.',
+        [{ text: 'OK' }]
       );
+      return;
+    }
+    try {
+      let imageUrl = '';
+      if (customImage) {
+        try {
+          imageUrl = await uploadCigarImage(customImage) || '';
+        } catch (e) {
+          console.warn('Image upload failed, saving without image:', e.message);
+        }
+      }
+      // Add to shared catalog (Postgres) so other users can see it
+      await addCigarToCatalog({
+        brand: customBrand.trim(),
+        name: customName.trim(),
+        description: customDesc || '',
+        wrapper: customWrapper || '',
+        binder: customBinder || '',
+        filler: customFiller || '',
+        length: customSize.trim(),
+        image: imageUrl,
+      });
+      // Add to user's local humidor
+      const qty = Math.max(1, parseInt(customQuantity, 10) || 1);
       await db.runAsync(
-        'INSERT INTO cigars (brand, name, description, wrapper, binder, filler, length, image, collection) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO cigars (brand, name, description, wrapper, binder, filler, length, image, quantity, collection) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         customBrand.trim(),
         customName.trim(),
         customDesc || '',
@@ -194,12 +268,14 @@ export default function AddCigar() {
         customBinder || '',
         customFiller || '',
         customSize.trim(),
-        customImage || '',
+        imageUrl,
+        qty,
         COLLECTIONS.HUMIDOR
       );
       navigation.goBack();
     } catch (error) {
       console.log('Add custom failed:', error);
+      Alert.alert('Failed to add cigar', error.message || 'Please check your connection and try again.');
     }
   }
 
@@ -219,6 +295,7 @@ export default function AddCigar() {
         </View>
 
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -305,6 +382,18 @@ export default function AddCigar() {
                 />
               </View>
 
+              <View style={styles.field}>
+                <Text style={styles.label}>Quantity</Text>
+                <TextInput
+                  style={styles.input}
+                  value={cigarQuantity}
+                  onChangeText={setCigarQuantity}
+                  placeholder="1"
+                  placeholderTextColor={colors.placeholderText}
+                  keyboardType="number-pad"
+                />
+              </View>
+
               {(cigarDescription || cigarWrapper || cigarBinder || cigarFiller) && (
                 <View style={styles.detailsCard}>
                   <Text style={styles.detailsTitle}>Blend details</Text>
@@ -341,8 +430,12 @@ export default function AddCigar() {
                 ) : null}
               </View>
 
-              <Pressable style={styles.primaryBtn} onPress={addFromCatalog}>
-                <Text style={styles.primaryBtnText}>Add to Humidor</Text>
+              <Pressable
+                style={[styles.primaryBtn, !isCatalogValid && styles.primaryBtnDisabled]}
+                onPress={addFromCatalog}
+                disabled={!isCatalogValid}
+              >
+                <Text style={[styles.primaryBtnText, !isCatalogValid && styles.primaryBtnTextDisabled]}>Add to Humidor</Text>
               </Pressable>
 
               <Pressable style={styles.switchLink} onPress={() => setShowCustom(true)}>
@@ -383,11 +476,26 @@ export default function AddCigar() {
               <View style={styles.field}>
                 <Text style={styles.label}>Size *</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, customSize && !isValidSizeFormat(customSize) && styles.inputError]}
                   value={customSize}
                   onChangeText={setCustomSize}
-                  placeholder="e.g. 6x52"
+                  placeholder="e.g. 6x52 or 7.5x50"
                   placeholderTextColor={colors.placeholderText}
+                />
+                {customSize && !isValidSizeFormat(customSize) && (
+                  <Text style={styles.errorText}>Size must be #x## or #.#x## (e.g. 6x52, 7.5x50)</Text>
+                )}
+              </View>
+
+              <View style={styles.field}>
+                <Text style={styles.label}>Quantity</Text>
+                <TextInput
+                  style={styles.input}
+                  value={customQuantity}
+                  onChangeText={setCustomQuantity}
+                  placeholder="1"
+                  placeholderTextColor={colors.placeholderText}
+                  keyboardType="number-pad"
                 />
               </View>
 
@@ -453,8 +561,12 @@ export default function AddCigar() {
                 ) : null}
               </View>
 
-              <Pressable style={styles.primaryBtn} onPress={addCustom}>
-                <Text style={styles.primaryBtnText}>Add to Catalog & Humidor</Text>
+              <Pressable
+                style={[styles.primaryBtn, !isCustomValid && styles.primaryBtnDisabled]}
+                onPress={addCustom}
+                disabled={!isCustomValid}
+              >
+                <Text style={[styles.primaryBtnText, !isCustomValid && styles.primaryBtnTextDisabled]}>Add to Catalog & Humidor</Text>
               </Pressable>
 
               <Pressable style={styles.switchLink} onPress={() => setShowCustom(false)}>
@@ -544,7 +656,7 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 100,
     textAlignVertical: 'top',
-    paddingTop: 14,
+    paddingVertical: 16,
   },
   dropdown: {
     backgroundColor: colors.cardBg,
@@ -604,10 +716,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
+  primaryBtnDisabled: {
+    backgroundColor: colors.border,
+    opacity: 0.7,
+  },
   primaryBtnText: {
     fontSize: 17,
     fontWeight: '600',
     color: '#fff',
+  },
+  primaryBtnTextDisabled: {
+    color: colors.textMuted,
   },
   switchLink: {
     marginTop: 20,
@@ -650,5 +769,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.dislike,
     fontWeight: '500',
+  },
+  inputError: {
+    borderColor: colors.dislike,
+  },
+  errorText: {
+    fontSize: 13,
+    color: colors.dislike,
+    marginTop: 6,
   },
 });
