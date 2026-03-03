@@ -1,6 +1,7 @@
 import { View, StyleSheet, Text, SafeAreaView } from 'react-native';
 import AddCigarBtn from '../components/AddCigarBtn';
 import CigarList from '../components/CigarList';
+import FeedbackBtn from '../components/FeedbackBtn';
 import colors from '../theme/colors';
 
 function Humidor({ navigation }) {
@@ -11,8 +12,11 @@ function Humidor({ navigation }) {
       <View style={styles.screen}>
         <SafeAreaView style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.title}>Humidor</Text>
-            <Text style={styles.subtitle}>Your collection</Text>
+            <View>
+              <Text style={styles.title}>Humidor</Text>
+              <Text style={styles.subtitle}>Your collection</Text>
+            </View>
+            <FeedbackBtn />
           </View>
           <CigarList view={view} />
         </SafeAreaView>
@@ -33,6 +37,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 20,
     paddingHorizontal: 24,
     borderBottomWidth: 1,

@@ -11,6 +11,7 @@ function ExpandableFavoriteNotes({ isExpanded, cigar, onEdit }) {
   const opacity = useRef(new Animated.Value(0)).current;
   const maxHeight = useRef(new Animated.Value(0)).current;
   const marginTop = useRef(new Animated.Value(0)).current;
+  const marginBottom = useRef(new Animated.Value(-16)).current;
 
   const hasNotes =
     (cigar.favorite_notes ?? '').trim() ||
@@ -36,8 +37,13 @@ function ExpandableFavoriteNotes({ isExpanded, cigar, onEdit }) {
         duration: 200,
         useNativeDriver: false,
       }),
+      Animated.timing(marginBottom, {
+        toValue: isExpanded ? 0 : -16,
+        duration: 200,
+        useNativeDriver: false,
+      }),
     ]).start();
-  }, [isExpanded, opacity, maxHeight, marginTop]);
+  }, [isExpanded, opacity, maxHeight, marginTop, marginBottom]);
 
   const allBlocks = [
     cigar.favorite_notes && { label: 'Why you liked it', text: cigar.favorite_notes },
@@ -66,7 +72,7 @@ function ExpandableFavoriteNotes({ isExpanded, cigar, onEdit }) {
   return (
     <Animated.View style={[
       styles.notesSection,
-      { opacity, maxHeight, marginTop, overflow: 'hidden' },
+      { opacity, maxHeight, marginTop, marginBottom, overflow: 'hidden', minHeight: 0 },
     ]}>
       {onEdit ? (
         <View style={styles.notesFirstRow}>
@@ -91,6 +97,7 @@ function ExpandableDetails({ isExpanded, cigar }) {
   const opacity = useRef(new Animated.Value(0)).current;
   const maxHeight = useRef(new Animated.Value(0)).current;
   const marginTop = useRef(new Animated.Value(0)).current;
+  const marginBottom = useRef(new Animated.Value(-16)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -109,8 +116,13 @@ function ExpandableDetails({ isExpanded, cigar }) {
         duration: 180,
         useNativeDriver: false,
       }),
+      Animated.timing(marginBottom, {
+        toValue: isExpanded ? 0 : -16,
+        duration: 180,
+        useNativeDriver: false,
+      }),
     ]).start();
-  }, [isExpanded, opacity, maxHeight, marginTop]);
+  }, [isExpanded, opacity, maxHeight, marginTop, marginBottom]);
 
   return (
     <Animated.View style={[
@@ -119,7 +131,9 @@ function ExpandableDetails({ isExpanded, cigar }) {
         opacity,
         maxHeight,
         marginTop,
+        marginBottom,
         overflow: 'hidden',
+        minHeight: 0,
       }
     ]}>
       <View>
@@ -553,7 +567,7 @@ const styles = StyleSheet.create({
   },
   cigar: {
     padding: 18,
-    paddingBottom: 48,
+    paddingBottom: 36,
     position: 'relative',
     backgroundColor: colors.cardBg,
     marginHorizontal: 16,
@@ -584,7 +598,7 @@ const styles = StyleSheet.create({
   },
   actionIcons: {
     position: 'absolute',
-    bottom: 24,
+    bottom: 10,
     left: 12,
     right: 12,
     flexDirection: 'row',

@@ -1,5 +1,6 @@
 import { SafeAreaView, StyleSheet, View, Text } from 'react-native';
 import CigarList from '../components/CigarList';
+import FeedbackBtn from '../components/FeedbackBtn';
 import colors from '../theme/colors';
 
 function Dislikes() {
@@ -9,8 +10,11 @@ function Dislikes() {
     <View style={styles.screen}>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Dislikes</Text>
-          <Text style={styles.subtitle}>Cigars to avoid</Text>
+          <View>
+            <Text style={styles.title}>Dislikes</Text>
+            <Text style={styles.subtitle}>Cigars to avoid</Text>
+          </View>
+          <FeedbackBtn />
         </View>
         <CigarList view={view} />
       </SafeAreaView>
@@ -29,6 +33,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 20,
     paddingHorizontal: 24,
     borderBottomWidth: 1,
