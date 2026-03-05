@@ -3,7 +3,7 @@ import CigarList from '../components/CigarList';
 import FeedbackBtn from '../components/FeedbackBtn';
 import colors from '../theme/colors';
 
-function Dislikes() {
+function Dislikes({ navigation }) {
   const view = 'dislikes';
 
   return (
@@ -16,7 +16,10 @@ function Dislikes() {
           </View>
           <FeedbackBtn />
         </View>
-        <CigarList view={view} />
+        <CigarList
+          view={view}
+          onEditCigar={(cigar) => navigation.navigate('Humidor', { screen: 'EditCigar', params: { cigar } })}
+        />
       </SafeAreaView>
     </View>
   );

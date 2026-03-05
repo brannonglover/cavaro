@@ -3,7 +3,7 @@ import CigarList from '../components/CigarList';
 import FeedbackBtn from '../components/FeedbackBtn';
 import colors from '../theme/colors';
 
-function Favorites() {
+function Favorites({ navigation }) {
   const view = 'likes';
 
   return (
@@ -16,7 +16,10 @@ function Favorites() {
           </View>
           <FeedbackBtn />
         </View>
-        <CigarList view={view} />
+        <CigarList
+          view={view}
+          onEditCigar={(cigar) => navigation.navigate('Humidor', { screen: 'EditCigar', params: { cigar } })}
+        />
       </SafeAreaView>
     </View>
   );

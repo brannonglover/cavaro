@@ -7,13 +7,48 @@ import ListIconFocused from './icons/ListIconFocused';
 import colors from '../theme/colors'
 import Favorites from '../pages/Favorites'
 import Dislikes from '../pages/Dislikes'
+import Pairing from '../pages/Pairing'
+import { SwipeableTabWrapper } from './SwipeableTabWrapper'
 
 const Tab = createBottomTabNavigator()
+
+function SwipeableHumidor(props) {
+  return (
+    <SwipeableTabWrapper>
+      <HumidorStack {...props} />
+    </SwipeableTabWrapper>
+  )
+}
+
+function SwipeableFavorites(props) {
+  return (
+    <SwipeableTabWrapper>
+      <Favorites {...props} />
+    </SwipeableTabWrapper>
+  )
+}
+
+function SwipeableDislikes(props) {
+  return (
+    <SwipeableTabWrapper>
+      <Dislikes {...props} />
+    </SwipeableTabWrapper>
+  )
+}
+
+function SwipeablePairing(props) {
+  return (
+    <SwipeableTabWrapper>
+      <Pairing {...props} />
+    </SwipeableTabWrapper>
+  )
+}
 
 export function ActionButtons() {
   return (
     <Tab.Navigator
       screenOptions={{
+        sceneContainerStyle: { backgroundColor: colors.screenBg },
         tabBarShowLabel: false,
         tabBarStyle: {
           backgroundColor: colors.cardBg,
@@ -36,7 +71,7 @@ export function ActionButtons() {
     >
       <Tab.Screen
         name="Humidor"
-        component={HumidorStack}
+        component={SwipeableHumidor}
         options={{
           tabBarIcon: ({ focused }) => (
             <View style={{ alignItems: 'center', justifyContent: 'center', width: 32, height: 32 }}>
@@ -49,7 +84,7 @@ export function ActionButtons() {
           )
         }}
       />
-      <Tab.Screen name="Favorites" component={Favorites} options={{
+      <Tab.Screen name="Favorites" component={SwipeableFavorites} options={{
         tabBarIcon: ({ focused }) => (
           <View style={{ alignItems: 'center', justifyContent: 'center', width: 32, height: 32 }}>
             <MaterialCommunityIcons
@@ -60,13 +95,24 @@ export function ActionButtons() {
           </View>
         )
       }} />
-      <Tab.Screen name="Dislikes" component={Dislikes} options={{
+      <Tab.Screen name="Dislikes" component={SwipeableDislikes} options={{
         tabBarIcon: ({ focused }) => (
           <View style={{ alignItems: 'center', justifyContent: 'center', width: 32, height: 32 }}>
             <MaterialCommunityIcons
               name="cigar-off"
               size={32}
               color={focused ? colors.dislike : colors.textSecondary}
+            />
+          </View>
+        )
+      }} />
+      <Tab.Screen name="Pairing" component={SwipeablePairing} options={{
+        tabBarIcon: ({ focused }) => (
+          <View style={{ alignItems: 'center', justifyContent: 'center', width: 32, height: 32 }}>
+            <MaterialCommunityIcons
+              name="glass-cocktail"
+              size={32}
+              color={focused ? colors.primary : colors.textSecondary}
             />
           </View>
         )

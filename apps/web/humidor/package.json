@@ -16,6 +16,7 @@
     "@realm/react": "^0.11.0",
     "expo": "~52.0.23",
     "expo-file-system": "~18.0.6",
+    "expo-haptics": "~14.0.1",
     "expo-image-picker": "~16.0.6",
     "expo-sqlite": "~15.0.5",
     "expo-status-bar": "~2.0.0",
@@ -30,7 +31,9 @@
     "react-native-web": "~0.19.13",
     "realm": "^12.14.0",
     "expo-dev-client": "~5.0.8",
-    "react-native-svg": "15.8.0"
+    "react-native-svg": "15.8.0",
+    "@react-native-community/datetimepicker": "8.2.0",
+    "react-native-pager-view": "6.5.1"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

@@ -18,7 +18,7 @@ function Humidor({ navigation }) {
             </View>
             <FeedbackBtn />
           </View>
-          <CigarList view={view} />
+          <CigarList view={view} onEditCigar={(cigar) => navigation.navigate('EditCigar', { cigar })} />
         </SafeAreaView>
       </View>
       <AddCigarBtn onPress={() => navigation.navigate('AddCigar')} />

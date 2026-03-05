@@ -21,6 +21,7 @@ import { fetchCatalog, addCigarToCatalog } from '../api/catalog';
 import { uploadCigarImage } from '../api/upload';
 import colors from '../theme/colors';
 import { pickCigarImage, takeCigarPhoto } from '../utils/imagePicker';
+import DatePickerField, { getTodayDateString } from '../components/DatePickerField';
 
 const DropdownArrowDown = ({ style }) => (
   <View style={style}>
@@ -53,6 +54,7 @@ export default function AddCigar() {
   const [cigarFiller, setCigarFiller] = useState('');
   const [cigarImage, setCigarImage] = useState('');
   const [cigarQuantity, setCigarQuantity] = useState('1');
+  const [dateAdded, setDateAdded] = useState(() => getTodayDateString());
 
   // Custom form state
   const [customBrand, setCustomBrand] = useState('');
@@ -198,6 +200,7 @@ export default function AddCigar() {
   async function addFromCatalog() {
     if (!cigarBrand?.trim() || !cigarName?.trim() || !cigarSize?.trim()) return;
     const qty = Math.max(1, parseInt(cigarQuantity, 10) || 1);
+    const dateToUse = dateAdded?.trim() || new Date().toISOString().slice(0, 10);
     try {
       let imageUrl = '';
       if (cigarImage) {
@@ -208,7 +211,7 @@ export default function AddCigar() {
         }
       }
       await db.runAsync(
-        'INSERT INTO cigars (brand, name, description, wrapper, binder, filler, length, image, quantity, collection) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO cigars (brand, name, description, wrapper, binder, filler, length, image, quantity, collection, date_added) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         cigarBrand.trim(),
         cigarName.trim(),
         cigarDescription,
@@ -218,7 +221,8 @@ export default function AddCigar() {
         cigarSize.trim(),
         imageUrl,
         qty,
-        COLLECTIONS.HUMIDOR
+        COLLECTIONS.HUMIDOR,
+        dateToUse
       );
       navigation.goBack();
     } catch (error) {
@@ -259,8 +263,9 @@ export default function AddCigar() {
       });
       // Add to user's local humidor
       const qty = Math.max(1, parseInt(customQuantity, 10) || 1);
+      const dateToUse = dateAdded?.trim() || new Date().toISOString().slice(0, 10);
       await db.runAsync(
-        'INSERT INTO cigars (brand, name, description, wrapper, binder, filler, length, image, quantity, collection) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO cigars (brand, name, description, wrapper, binder, filler, length, image, quantity, collection, date_added) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         customBrand.trim(),
         customName.trim(),
         customDesc || '',
@@ -270,7 +275,8 @@ export default function AddCigar() {
         customSize.trim(),
         imageUrl,
         qty,
-        COLLECTIONS.HUMIDOR
+        COLLECTIONS.HUMIDOR,
+        dateToUse
       );
       navigation.goBack();
     } catch (error) {
@@ -394,6 +400,14 @@ export default function AddCigar() {
                 />
               </View>
 
+              <DatePickerField
+                label="Date added to humidor"
+                value={dateAdded}
+                onChange={setDateAdded}
+                placeholder="Today"
+                optional={false}
+              />
+
               {(cigarDescription || cigarWrapper || cigarBinder || cigarFiller) && (
                 <View style={styles.detailsCard}>
                   <Text style={styles.detailsTitle}>Blend details</Text>
@@ -498,6 +512,14 @@ export default function AddCigar() {
                   keyboardType="number-pad"
                 />
               </View>
+
+              <DatePickerField
+                label="Date added to humidor"
+                value={dateAdded}
+                onChange={setDateAdded}
+                placeholder="Today"
+                optional={false}
+              />
 
               <View style={styles.field}>
                 <Text style={styles.label}>Description (optional)</Text>

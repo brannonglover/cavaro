@@ -11,14 +11,14 @@ export default function ImageViewerModal({ visible, imageUri, onClose }) {
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
+      <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable onPress={onClose} style={styles.closeBtn}>
           <Text style={styles.closeText}>✕ Close</Text>
         </Pressable>
         <Pressable style={styles.imageWrap} onPress={onClose}>
           <Image source={{ uri: imageUri }} style={styles.image} resizeMode="contain" />
         </Pressable>
-      </View>
+      </Pressable>
     </Modal>
   );
 }

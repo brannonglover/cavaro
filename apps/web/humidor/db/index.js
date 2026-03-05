@@ -93,6 +93,33 @@ export async function initDatabase() {
       }
     }
 
+    // Add strength_profile column if missing (JSON: { thirds: [{ strength, flavors }] })
+    const tableInfo4 = await db.getAllAsync('PRAGMA table_info(cigars)');
+    const hasStrengthProfile = tableInfo4.some((c) => c.name === 'strength_profile');
+    if (!hasStrengthProfile) {
+      await db.execAsync('ALTER TABLE cigars ADD COLUMN strength_profile TEXT');
+    }
+
+    // Add date_added column if missing (ISO date YYYY-MM-DD when cigar entered humidor)
+    const tableInfo5 = await db.getAllAsync('PRAGMA table_info(cigars)');
+    const hasDateAdded = tableInfo5.some((c) => c.name === 'date_added');
+    if (!hasDateAdded) {
+      await db.execAsync('ALTER TABLE cigars ADD COLUMN date_added TEXT');
+    }
+
+    // Create smoke_history table (tracks when each cigar was smoked, for quantity > 1)
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS smoke_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cigar_id INTEGER NOT NULL,
+        smoked_at TEXT NOT NULL,
+        FOREIGN KEY (cigar_id) REFERENCES cigars(id)
+      )
+    `);
+    await db.execAsync(`
+      CREATE INDEX IF NOT EXISTS idx_smoke_history_cigar ON smoke_history(cigar_id)
+    `);
+
     // Check if old tables exist (migration from previous schema)
     const humidorTable = await db.getFirstAsync(
       "SELECT name FROM sqlite_master WHERE type='table' AND name='humidor'"

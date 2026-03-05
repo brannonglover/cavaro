@@ -56,11 +56,12 @@ export default function FeedbackModal({ visible, onClose }) {
       animationType="slide"
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <View style={styles.sheet}>
+      <Pressable style={styles.overlay} onPress={onClose}>
+        <KeyboardAvoidingView
+          style={styles.overlayInner}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <Pressable style={styles.sheet} onPress={() => {}}>
           <View style={styles.header}>
             <Text style={styles.title}>Send feedback</Text>
             <Pressable onPress={onClose} hitSlop={12} style={styles.closeBtn}>
@@ -120,8 +121,9 @@ export default function FeedbackModal({ visible, onClose }) {
               )}
             </Pressable>
           </View>
-        </View>
-      </KeyboardAvoidingView>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Pressable>
     </Modal>
   );
 }
@@ -130,6 +132,10 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  overlayInner: {
+    flex: 1,
     justifyContent: 'flex-end',
   },
   sheet: {

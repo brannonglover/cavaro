@@ -1,16 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Modal,
   View,
   Text,
   TextInput,
-  ScrollView,
   Pressable,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Animated,
+  Dimensions,
 } from 'react-native';
+import { GestureHandlerRootView, ScrollView } from 'react-native-gesture-handler';
+import DatePickerField from './DatePickerField';
 import colors from '../theme/colors';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function FavoriteNotesModal({
   visible,
@@ -20,29 +25,72 @@ export default function FavoriteNotesModal({
   onCancel,
 }) {
   const [whyLiked, setWhyLiked] = useState('');
-  const [flavorProfile, setFlavorProfile] = useState('');
   const [constructionQuality, setConstructionQuality] = useState('');
   const [smokedDate, setSmokedDate] = useState('');
-  const [flavorChanges, setFlavorChanges] = useState('');
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const sheetTranslateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
   useEffect(() => {
     if (visible) {
       setWhyLiked(initialNotes.favorite_notes ?? '');
-      setFlavorProfile(initialNotes.flavor_profile ?? '');
       setConstructionQuality(initialNotes.construction_quality ?? '');
       setSmokedDate(initialNotes.smoked_date ?? '');
-      setFlavorChanges(initialNotes.flavor_changes ?? '');
     }
   }, [visible, initialNotes]);
 
+  useEffect(() => {
+    if (visible) {
+      overlayOpacity.setValue(0);
+      sheetTranslateY.setValue(SCREEN_HEIGHT);
+      Animated.parallel([
+        Animated.timing(overlayOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(sheetTranslateY, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11,
+        }),
+      ]).start();
+    }
+  }, [visible]);
+
+  const handleClose = () => {
+    Animated.parallel([
+      Animated.timing(overlayOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(sheetTranslateY, {
+        toValue: SCREEN_HEIGHT,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start(() => onCancel());
+  };
+
   const handleSave = () => {
-    onSave({
+    const notes = {
       favorite_notes: whyLiked.trim(),
-      flavor_profile: flavorProfile.trim(),
       construction_quality: constructionQuality.trim(),
       smoked_date: smokedDate.trim(),
-      flavor_changes: flavorChanges.trim(),
-    });
+    };
+    Animated.parallel([
+      Animated.timing(overlayOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(sheetTranslateY, {
+        toValue: SCREEN_HEIGHT,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start(() => onSave(notes));
   };
 
   if (!cigar) return null;
@@ -51,97 +99,92 @@ export default function FavoriteNotesModal({
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
-      onRequestClose={onCancel}
+      animationType="none"
+      onRequestClose={handleClose}
     >
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <View style={styles.sheet}>
-          <Text style={styles.title}>Why did you like this cigar?</Text>
-          <Text style={styles.subtitle}>
-            {cigar.brand ?? ''} · {cigar.name ?? ''}
-          </Text>
+      <GestureHandlerRootView style={styles.container}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={handleClose}>
+          <Animated.View
+            style={[StyleSheet.absoluteFill, styles.overlay, { opacity: overlayOpacity }]}
+            pointerEvents="none"
+          />
+        </Pressable>
+        <KeyboardAvoidingView
+          style={styles.sheetWrapper}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetTranslateY }] }]}>
+            <Text style={styles.title}>Why did you like this cigar?</Text>
+            <Text style={styles.subtitle}>
+              {cigar.brand ?? ''} · {cigar.name ?? ''}
+            </Text>
 
-          <ScrollView
-            style={styles.scroll}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <Text style={styles.label}>Why you liked it</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Describe what stood out..."
-              placeholderTextColor={colors.placeholderText}
-              value={whyLiked}
-              onChangeText={setWhyLiked}
-              multiline
-              numberOfLines={3}
-            />
+            <ScrollView
+              style={styles.scroll}
+              contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled={Platform.OS === 'android'}
+            >
+              <Text style={styles.label}>Why you liked it</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Describe what stood out..."
+                placeholderTextColor={colors.placeholderText}
+                value={whyLiked}
+                onChangeText={setWhyLiked}
+                multiline
+                numberOfLines={3}
+              />
 
-            <Text style={styles.label}>Flavor profile</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. earthy, woody, hints of pepper..."
-              placeholderTextColor={colors.placeholderText}
-              value={flavorProfile}
-              onChangeText={setFlavorProfile}
-              multiline
-              numberOfLines={2}
-            />
+              <Text style={styles.label}>Construction quality</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. excellent draw, even burn..."
+                placeholderTextColor={colors.placeholderText}
+                value={constructionQuality}
+                onChangeText={setConstructionQuality}
+                multiline
+                numberOfLines={2}
+              />
 
-            <Text style={styles.label}>Construction quality</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. excellent draw, even burn..."
-              placeholderTextColor={colors.placeholderText}
-              value={constructionQuality}
-              onChangeText={setConstructionQuality}
-              multiline
-              numberOfLines={2}
-            />
+              <DatePickerField
+                label="When you smoked it"
+                value={smokedDate}
+                onChange={setSmokedDate}
+                placeholder="Tap to pick date"
+                optional={true}
+              />
+            </ScrollView>
 
-            <Text style={styles.label}>When you smoked it</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. March 2024, after dinner..."
-              placeholderTextColor={colors.placeholderText}
-              value={smokedDate}
-              onChangeText={setSmokedDate}
-            />
-
-            <Text style={styles.label}>Flavor changes</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="How did flavors evolve over the smoke?"
-              placeholderTextColor={colors.placeholderText}
-              value={flavorChanges}
-              onChangeText={setFlavorChanges}
-              multiline
-              numberOfLines={3}
-            />
-          </ScrollView>
-
-          <View style={styles.actions}>
-            <Pressable style={styles.cancelBtn} onPress={onCancel}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </Pressable>
-            <Pressable style={styles.saveBtn} onPress={handleSave}>
-              <Text style={styles.saveText}>Save</Text>
-            </Pressable>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
+            <View style={styles.actions}>
+              <Pressable style={styles.cancelBtn} onPress={handleClose}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable style={styles.saveBtn} onPress={handleSave}>
+                <Text style={styles.saveText}>Save</Text>
+              </Pressable>
+            </View>
+          </Animated.View>
+        </KeyboardAvoidingView>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  container: {
     flex: 1,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
+  },
+  sheetWrapper: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   sheet: {
     backgroundColor: colors.cardBg,
@@ -165,8 +208,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   scroll: {
-    maxHeight: 360,
+    maxHeight: 320,
     paddingHorizontal: 20,
+  },
+  scrollContent: {
+    paddingBottom: 24,
   },
   label: {
     fontSize: 14,
