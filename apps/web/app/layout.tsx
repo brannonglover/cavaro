@@ -15,7 +15,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: 'Humidor — Your Personal Cigar Companion',
+  title: 'Cavaro — Your Personal Cigar Companion',
   description:
     'Track your cigar collection, log tasting notes, and discover AI-powered drink pairings. Free and Premium tiers available.',
 };

@@ -67,9 +67,11 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-humidor-primary/5 to-transparent" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(196,165,116,0.15),transparent)]" />
         <div className="relative mx-auto max-w-4xl text-center">
-          <h1 className="font-serif text-5xl font-light tracking-[0.25em] text-humidor-primary sm:text-6xl">
-            Humidor
-          </h1>
+          <img
+            src="/cavaro-logo.png"
+            alt="Cavaro"
+            className="mx-auto h-auto w-[18.75rem] max-w-full"
+          />
           <p className="mt-4 text-xl text-humidor-muted sm:text-2xl">
             Your personal cigar companion
           </p>
@@ -80,7 +82,7 @@ export default function Home() {
       <section className="px-6 pb-16">
         <div className="mx-auto max-w-3xl">
           <h2 className="font-serif text-2xl font-semibold text-humidor-cream sm:text-3xl">
-            Why Humidor?
+            Why Cavaro?
           </h2>
           <div className="mt-6 space-y-4 text-lg leading-relaxed text-humidor-muted">
             <p>
@@ -88,7 +90,7 @@ export default function Home() {
               loved, and discover the perfect drink to pair with their next smoke.
             </p>
             <p>
-              Humidor helps you catalog your cigars, log tasting notes, track strength profiles
+              Cavaro helps you catalog your cigars, log tasting notes, track strength profiles
               across first, second, and final thirds—and with Premium, get AI-powered drink pairing
               suggestions that elevate every session.
             </p>
@@ -225,7 +227,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-humidor-border px-6 py-8">
         <div className="mx-auto max-w-4xl text-center text-sm text-humidor-subtle">
-          <p>Humidor — Your personal cigar companion</p>
+          <p>Cavaro — Your personal cigar companion</p>
           <p className="mt-1">© {new Date().getFullYear()}</p>
         </div>
       </footer>
