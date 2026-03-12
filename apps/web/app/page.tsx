@@ -1,4 +1,7 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
+import { SubscribeButton } from './components/SubscribeButton';
+import { SuccessBanner } from './components/SuccessBanner';
 
 const FREE_CIGAR_LIMIT = 5;
 
@@ -9,6 +12,7 @@ function TierCard({
   cta,
   href,
   highlighted,
+  subscribe,
 }: {
   title: string;
   price: string;
@@ -16,7 +20,14 @@ function TierCard({
   cta: string;
   href: string;
   highlighted?: boolean;
+  subscribe?: boolean;
 }) {
+  const buttonClass = `mt-8 block w-full rounded-xl py-4 text-center font-semibold transition-colors ${
+    highlighted
+      ? 'bg-humidor-primary text-humidor-bg hover:bg-humidor-primary-light'
+      : 'bg-humidor-border text-humidor-cream hover:bg-humidor-border/80'
+  }`;
+
   return (
     <div
       className={`rounded-xl border-2 p-8 transition-all ${
@@ -45,16 +56,13 @@ function TierCard({
           </li>
         ))}
       </ul>
-      <Link
-        href={href}
-        className={`mt-8 block rounded-xl py-4 text-center font-semibold transition-colors ${
-          highlighted
-            ? 'bg-humidor-primary text-humidor-bg hover:bg-humidor-primary-light'
-            : 'bg-humidor-border text-humidor-cream hover:bg-humidor-border/80'
-        }`}
-      >
-        {cta}
-      </Link>
+      {subscribe ? (
+        <SubscribeButton className={buttonClass}>{cta}</SubscribeButton>
+      ) : (
+        <Link href={href} className={buttonClass}>
+          {cta}
+        </Link>
+      )}
     </div>
   );
 }
@@ -62,6 +70,9 @@ function TierCard({
 export default function Home() {
   return (
     <main className="min-h-screen">
+      <Suspense fallback={null}>
+        <SuccessBanner />
+      </Suspense>
       {/* Hero */}
       <section className="relative overflow-hidden px-6 pt-10 pb-10 sm:pt-14 sm:pb-14">
         <div className="absolute inset-0 bg-gradient-to-b from-humidor-primary/5 to-transparent" />
@@ -176,6 +187,7 @@ export default function Home() {
               cta="Subscribe"
               href="#download"
               highlighted
+              subscribe
             />
           </div>
 
