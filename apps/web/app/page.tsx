@@ -25,8 +25,8 @@ function TierCard({
           : 'border-humidor-border bg-humidor-card'
       }`}
     >
-      <h3 className="font-serif text-2xl font-semibold text-humidor-cream">{title}</h3>
-      <p className="mt-2 font-serif text-3xl font-bold text-humidor-primary">{price}</p>
+      <h3 className="font-sans text-2xl font-semibold text-humidor-cream">{title}</h3>
+      <p className="mt-2 font-sans text-3xl font-bold text-humidor-primary">{price}</p>
       <ul className="mt-6 space-y-3">
         {features.map((f, i) => (
           <li key={i} className="flex items-center gap-3 text-humidor-muted">
@@ -63,7 +63,7 @@ export default function Home() {
   return (
     <main className="min-h-screen">
       {/* Hero */}
-      <section className="relative overflow-hidden px-6 pt-16 pb-24 sm:pt-24 sm:pb-32">
+      <section className="relative overflow-hidden px-6 pt-10 pb-10 sm:pt-14 sm:pb-14">
         <div className="absolute inset-0 bg-gradient-to-b from-humidor-primary/5 to-transparent" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(196,165,116,0.15),transparent)]" />
         <div className="relative mx-auto max-w-4xl text-center">
@@ -72,19 +72,19 @@ export default function Home() {
             alt="Cavaro"
             className="mx-auto h-auto w-[35rem] max-w-full"
           />
-          <p className="mt-4 text-xl text-humidor-muted sm:text-2xl">
+          <p className="mt-2 text-xl text-humidor-muted sm:text-2xl">
             Your personal cigar companion
           </p>
         </div>
       </section>
 
       {/* About */}
-      <section className="px-6 pb-16">
+      <section className="px-6 pb-10">
         <div className="mx-auto max-w-3xl">
-          <h2 className="font-serif text-2xl font-semibold text-humidor-cream sm:text-3xl">
+          <h2 className="font-sans text-2xl font-semibold text-humidor-cream sm:text-3xl">
             Why Cavaro?
           </h2>
-          <div className="mt-6 space-y-4 text-lg leading-relaxed text-humidor-muted">
+          <div className="mt-4 space-y-3 text-lg leading-relaxed text-humidor-muted">
             <p>
               Every cigar enthusiast deserves a place to track their collection, remember what they
               loved, and discover the perfect drink to pair with their next smoke.
@@ -97,24 +97,21 @@ export default function Home() {
           </div>
 
           {/* Benefits */}
-          <div className="mt-12 grid gap-8 sm:grid-cols-3">
+          <div className="mt-8 grid gap-6 sm:grid-cols-3">
             <div className="flex flex-col items-center text-center">
               <div className="rounded-full bg-humidor-card p-4 ring-1 ring-humidor-border">
                 <svg
                   className="h-8 w-8 text-humidor-primary"
+                  viewBox="0 0 32 32"
                   fill="none"
                   stroke="currentColor"
-                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                  />
+                  <rect x={4} y={2} width={24} height={10} rx={3} ry={3} />
+                  <rect x={4} y={16} width={24} height={10} rx={3} ry={3} />
                 </svg>
               </div>
-              <p className="mt-3 font-medium text-humidor-cream">Track your collection</p>
+              <p className="mt-2 font-medium text-humidor-cream">Track your collection</p>
             </div>
             <div className="flex flex-col items-center text-center">
               <div className="rounded-full bg-humidor-card p-4 ring-1 ring-humidor-border">
@@ -132,25 +129,19 @@ export default function Home() {
                   />
                 </svg>
               </div>
-              <p className="mt-3 font-medium text-humidor-cream">Favorites & notes</p>
+              <p className="mt-2 font-medium text-humidor-cream">Favorites & notes</p>
             </div>
             <div className="flex flex-col items-center text-center">
               <div className="rounded-full bg-humidor-card p-4 ring-1 ring-humidor-border">
                 <svg
                   className="h-8 w-8 text-humidor-primary"
-                  fill="none"
-                  stroke="currentColor"
                   viewBox="0 0 24 24"
+                  fill="currentColor"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"
-                  />
+                  <path d="M7.5,7L5.5,5H18.5L16.5,7M11,13V19H6V21H18V19H13V13L21,5V3H3V5L11,13Z" />
                 </svg>
               </div>
-              <p className="mt-3 font-medium text-humidor-cream">Drink pairings</p>
+              <p className="mt-2 font-medium text-humidor-cream">Drink pairings</p>
             </div>
           </div>
         </div>
@@ -159,7 +150,7 @@ export default function Home() {
       {/* Tiers */}
       <section className="px-6 pb-24">
         <div className="mx-auto max-w-4xl">
-          <h2 className="mb-10 font-serif text-2xl font-semibold text-humidor-cream sm:text-3xl">
+          <h2 className="mb-8 font-sans text-2xl font-semibold text-humidor-cream sm:text-3xl">
             Choose your plan
           </h2>
           <div className="grid gap-8 sm:grid-cols-2">
@@ -196,7 +187,7 @@ export default function Home() {
           {/* App store links placeholder */}
           <div id="download" className="mt-10 flex flex-wrap justify-center gap-4">
             <a
-              href="https://apps.apple.com/app/humidor"
+              href="https://apps.apple.com/app/cavaro"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-xl border border-humidor-border bg-humidor-card px-6 py-3 text-humidor-cream transition-colors hover:border-humidor-primary hover:bg-humidor-card/80"
@@ -207,7 +198,7 @@ export default function Home() {
               App Store
             </a>
             <a
-              href="https://play.google.com/store/apps/details?id=com.glovermedia.humidor"
+              href="https://play.google.com/store/apps/details?id=com.brannonglover.cavaro"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-xl border border-humidor-border bg-humidor-card px-6 py-3 text-humidor-cream transition-colors hover:border-humidor-primary hover:bg-humidor-card/80"
@@ -228,7 +219,13 @@ export default function Home() {
       <footer className="border-t border-humidor-border px-6 py-8">
         <div className="mx-auto max-w-4xl text-center text-sm text-humidor-subtle">
           <p>Cavaro — Your personal cigar companion</p>
-          <p className="mt-1">© {new Date().getFullYear()}</p>
+          <p className="mt-1">
+            <Link href="/contact" className="text-humidor-primary hover:underline">
+              Contact us
+            </Link>
+            {' · '}
+            © {new Date().getFullYear()}
+          </p>
         </div>
       </footer>
     </main>

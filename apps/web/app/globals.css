@@ -8,9 +8,12 @@
   --humidor-primary: #c4a574;
   --humidor-cream: #ebe4d8;
   --humidor-muted: #b8a99a;
+  /* System font stack - matches Cavaro app (iOS: San Francisco, Android: Roboto) */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 body {
   background-color: var(--humidor-bg);
   color: var(--humidor-cream);
+  font-family: var(--font-sans);
 }
