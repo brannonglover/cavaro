@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
 const SUPPORT_EMAIL = 'support@cavaroapp.com';
@@ -165,7 +166,17 @@ export default function ContactPage() {
       <footer className="border-t border-humidor-border px-6 py-8">
         <div className="mx-auto max-w-4xl text-center text-sm text-humidor-subtle">
           <p>Cavaro — Your personal cigar companion</p>
-          <p className="mt-1">© {new Date().getFullYear()}</p>
+          <p className="mt-1">
+            <Link href="/contact" className="text-humidor-primary hover:underline">
+              Contact us
+            </Link>
+            {' · '}
+            <Link href="/privacy" className="text-humidor-primary hover:underline">
+              Privacy Policy
+            </Link>
+            {' · '}
+            © {new Date().getFullYear()}
+          </p>
         </div>
       </footer>
     </main>

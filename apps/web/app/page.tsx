@@ -224,6 +224,10 @@ export default function Home() {
               Contact us
             </Link>
             {' · '}
+            <Link href="/privacy" className="text-humidor-primary hover:underline">
+              Privacy Policy
+            </Link>
+            {' · '}
             © {new Date().getFullYear()}
           </p>
         </div>
