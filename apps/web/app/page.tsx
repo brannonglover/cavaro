@@ -70,7 +70,7 @@ export default function Home() {
           <img
             src="/cavaro-logo.png"
             alt="Cavaro"
-            className="mx-auto h-auto w-[18.75rem] max-w-full"
+            className="mx-auto h-auto w-[35rem] max-w-full"
           />
           <p className="mt-4 text-xl text-humidor-muted sm:text-2xl">
             Your personal cigar companion
