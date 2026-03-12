@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-const stripeSecret = process.env.STRIPE_SECRET_KEY;
-const stripePriceId = process.env.STRIPE_PRICE_ID;
-const stripe = stripeSecret ? new Stripe(stripeSecret) : null;
-
 export async function POST(request: NextRequest) {
-  if (!stripe || !stripePriceId) {
+  const stripeSecret = process.env.STRIPE_SECRET_KEY;
+  const stripePriceId = process.env.STRIPE_PRICE_ID;
+
+  if (!stripeSecret || !stripePriceId) {
     return NextResponse.json(
       { error: 'Subscription not configured' },
       { status: 503 }
@@ -14,6 +13,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const stripe = new Stripe(stripeSecret);
     const origin = request.headers.get('origin') || request.nextUrl.origin;
 
     const session = await stripe.checkout.sessions.create({
