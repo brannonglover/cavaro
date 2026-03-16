@@ -24,7 +24,11 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     console.error('Cigars list error:', e);
-    return NextResponse.json({ error: 'Failed to fetch cigars' }, { status: 500 });
+    const detail =
+      process.env.NODE_ENV === 'development' && e && typeof e === 'object' && 'message' in e
+        ? String((e as { message?: unknown }).message)
+        : 'Failed to fetch cigars';
+    return NextResponse.json({ error: detail }, { status: 500 });
   }
 }
 
