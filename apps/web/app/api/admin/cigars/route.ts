@@ -1,0 +1,72 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { verifyAdminSession } from '@/lib/admin-auth';
+
+async function requireAdmin() {
+  const ok = await verifyAdminSession();
+  if (!ok) {
+    throw new Error('Unauthorized');
+  }
+}
+
+export async function GET() {
+  try {
+    await requireAdmin();
+    const { data, error } = await supabaseAdmin
+      .from('cigar_catalog')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return NextResponse.json(data);
+  } catch (e) {
+    if (e instanceof Error && e.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    console.error('Cigars list error:', e);
+    return NextResponse.json({ error: 'Failed to fetch cigars' }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    await requireAdmin();
+    const body = await request.json();
+    const {
+      brand,
+      name,
+      description,
+      wrapper,
+      binder,
+      filler,
+      length,
+      image,
+      line,
+    } = body;
+
+    const { data, error } = await supabaseAdmin
+      .from('cigar_catalog')
+      .insert({
+        brand: brand || null,
+        name: name || null,
+        description: description || null,
+        wrapper: wrapper || null,
+        binder: binder || null,
+        filler: filler || null,
+        length: length || null,
+        image: image || null,
+        line: line || null,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return NextResponse.json(data);
+  } catch (e) {
+    if (e instanceof Error && e.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    console.error('Cigar create error:', e);
+    return NextResponse.json({ error: 'Failed to create cigar' }, { status: 500 });
+  }
+}
