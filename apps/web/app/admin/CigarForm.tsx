@@ -3,7 +3,14 @@
 import { useState, useEffect } from 'react';
 import type { Cigar } from './AdminDashboard';
 
-const FIELDS = [
+type FieldItem = {
+  key: string;
+  label: string;
+  required?: boolean;
+  textarea?: boolean;
+};
+
+const FIELDS: FieldItem[] = [
   { key: 'brand', label: 'Brand', required: true },
   { key: 'name', label: 'Name', required: true },
   { key: 'line', label: 'Line' },
@@ -13,7 +20,7 @@ const FIELDS = [
   { key: 'filler', label: 'Filler' },
   { key: 'length', label: 'Length' },
   { key: 'image', label: 'Image URL' },
-] as const;
+];
 
 type FormData = Record<string, string>;
 
