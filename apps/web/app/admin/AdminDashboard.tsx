@@ -21,11 +21,13 @@ export interface Cigar {
 export function AdminDashboard() {
   const [cigars, setCigars] = useState<Cigar[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Cigar | null>(null);
   const [showForm, setShowForm] = useState(false);
   const router = useRouter();
 
   async function fetchCigars() {
+    setError(null);
     try {
       const res = await fetch('/api/admin/cigars');
       if (res.status === 401) {
@@ -33,8 +35,14 @@ export function AdminDashboard() {
         return;
       }
       const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || `Failed to load cigars (${res.status})`);
+        setCigars([]);
+        return;
+      }
       setCigars(Array.isArray(data) ? data : []);
-    } catch {
+    } catch (e) {
+      setError('Failed to connect. Check the console for details.');
       setCigars([]);
     } finally {
       setLoading(false);
@@ -91,6 +99,11 @@ export function AdminDashboard() {
 
   return (
     <div className="space-y-8">
+      {error && (
+        <div className="rounded-xl border border-red-500/50 bg-red-500/10 px-4 py-3 text-red-400">
+          {error}
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h2 className="font-sans text-2xl font-semibold text-humidor-cream">
           Cigar catalog
