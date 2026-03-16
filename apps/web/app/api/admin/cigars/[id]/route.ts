@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { verifyAdminSession } from '@/lib/admin-auth';
 
 async function requireAdmin() {
@@ -16,7 +16,7 @@ export async function GET(
   try {
     await requireAdmin();
     const { id } = await params;
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from('cigar_catalog')
       .select('*')
       .eq('id', parseInt(id, 10))
@@ -65,7 +65,7 @@ export async function PUT(
     if (image !== undefined) updates.image = image || null;
     if (line !== undefined) updates.line = line || null;
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from('cigar_catalog')
       .update(updates)
       .eq('id', parseInt(id, 10))
@@ -90,7 +90,7 @@ export async function DELETE(
   try {
     await requireAdmin();
     const { id } = await params;
-    const { error } = await supabaseAdmin
+    const { error } = await getSupabaseAdmin()
       .from('cigar_catalog')
       .delete()
       .eq('id', parseInt(id, 10));

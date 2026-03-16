@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { verifyAdminSession } from '@/lib/admin-auth';
 
 async function requireAdmin() {
@@ -12,7 +12,7 @@ async function requireAdmin() {
 export async function GET() {
   try {
     await requireAdmin();
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from('cigar_catalog')
       .select('*')
       .order('created_at', { ascending: false });
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       line,
     } = body;
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from('cigar_catalog')
       .insert({
         brand: brand || null,
