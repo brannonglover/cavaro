@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import type { Database } from '@/types/supabase';
 import { verifyAdminSession } from '@/lib/admin-auth';
 
 async function requireAdmin() {
@@ -54,7 +55,7 @@ export async function PUT(
       line,
     } = body;
 
-    const updates: Record<string, unknown> = {};
+    const updates: Database['public']['Tables']['cigar_catalog']['Update'] = {};
     if (brand !== undefined) updates.brand = brand || null;
     if (name !== undefined) updates.name = name || null;
     if (description !== undefined) updates.description = description || null;
