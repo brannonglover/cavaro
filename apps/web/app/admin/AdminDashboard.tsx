@@ -33,7 +33,7 @@ export function AdminDashboard() {
         return;
       }
       const data = await res.json();
-      setCigars(data);
+      setCigars(Array.isArray(data) ? data : []);
     } catch {
       setCigars([]);
     } finally {
