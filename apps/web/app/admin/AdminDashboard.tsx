@@ -74,6 +74,26 @@ export function AdminDashboard() {
     fetchCigars();
   }
 
+  function groupCigarsByBrand(cigarList: Cigar[]): [string, Cigar[]][] {
+    const byBrand = cigarList.reduce<Record<string, Cigar[]>>((acc, cigar) => {
+      const brand = cigar.brand?.trim() || 'Unbranded';
+      if (!acc[brand]) acc[brand] = [];
+      acc[brand].push(cigar);
+      return acc;
+    }, {});
+    const sorted = Object.entries(byBrand).sort(([a], [b]) => {
+      if (a === 'Unbranded') return 1;
+      if (b === 'Unbranded') return -1;
+      return a.localeCompare(b);
+    });
+    return sorted.map(([brand, cigs]) => [
+      brand,
+      cigs.sort((a, b) =>
+        (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
+      ),
+    ]);
+  }
+
   async function handleDelete(cigar: Cigar) {
     if (!confirm(`Delete "${cigar.brand} ${cigar.name}"?`)) return;
     try {
@@ -139,36 +159,43 @@ export function AdminDashboard() {
           </div>
         ) : (
           <div className="divide-y divide-humidor-border">
-            {cigars.map((c) => (
-              <div
-                key={c.id}
-                className="flex items-center justify-between gap-4 px-6 py-4"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-humidor-cream">
-                    {c.brand || '—'} {c.name || ''}
-                  </p>
-                  {c.line && (
-                    <p className="text-sm text-humidor-muted">{c.line}</p>
-                  )}
-                  {c.length && (
-                    <p className="text-sm text-humidor-subtle">{c.length}</p>
-                  )}
+            {groupCigarsByBrand(cigars).map(([brand, brandCigars]) => (
+              <div key={brand}>
+                <div className="bg-humidor-bg/50 px-6 py-2.5 text-sm font-semibold uppercase tracking-wide text-humidor-muted">
+                  {brand}
                 </div>
-                <div className="flex shrink-0 gap-2">
-                  <button
-                    onClick={() => handleEdit(c)}
-                    className="rounded-lg border border-humidor-border px-3 py-1.5 text-sm text-humidor-cream hover:border-humidor-primary"
+                {brandCigars.map((c) => (
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between gap-4 px-6 py-4"
                   >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(c)}
-                    className="rounded-lg border border-humidor-border px-3 py-1.5 text-sm text-red-400 hover:border-red-500"
-                  >
-                    Delete
-                  </button>
-                </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-humidor-cream">
+                        {c.brand || '—'} {c.name || ''}
+                      </p>
+                      {c.line && (
+                        <p className="text-sm text-humidor-muted">{c.line}</p>
+                      )}
+                      {c.length && (
+                        <p className="text-sm text-humidor-subtle">{c.length}</p>
+                      )}
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <button
+                        onClick={() => handleEdit(c)}
+                        className="rounded-lg border border-humidor-border px-3 py-1.5 text-sm text-humidor-cream hover:border-humidor-primary"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(c)}
+                        className="rounded-lg border border-humidor-border px-3 py-1.5 text-sm text-red-400 hover:border-red-500"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             ))}
           </div>

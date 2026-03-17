@@ -25,7 +25,7 @@ export async function GET() {
     }
     console.error('Cigars list error:', e);
     const detail =
-      process.env.NODE_ENV === 'development' && e && typeof e === 'object' && 'message' in e
+      e && typeof e === 'object' && 'message' in e
         ? String((e as { message?: unknown }).message)
         : 'Failed to fetch cigars';
     return NextResponse.json({ error: detail }, { status: 500 });
