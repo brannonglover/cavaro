@@ -35,6 +35,12 @@ export async function GET(
   }
 }
 
+function toStr(val: unknown): string | null {
+  if (val === undefined || val === null) return null;
+  if (typeof val === 'string') return val || null;
+  return String(val);
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -56,15 +62,22 @@ export async function PUT(
     } = body;
 
     const updates: Database['public']['Tables']['cigar_catalog']['Update'] = {};
-    if (brand !== undefined) updates.brand = brand || null;
-    if (name !== undefined) updates.name = name || null;
-    if (description !== undefined) updates.description = description || null;
-    if (wrapper !== undefined) updates.wrapper = wrapper || null;
-    if (binder !== undefined) updates.binder = binder || null;
-    if (filler !== undefined) updates.filler = filler || null;
-    if (length !== undefined) updates.length = length || null;
-    if (image !== undefined) updates.image = image || null;
-    if (line !== undefined) updates.line = line || null;
+    if (brand !== undefined) updates.brand = toStr(brand);
+    if (name !== undefined) updates.name = toStr(name);
+    if (description !== undefined) updates.description = toStr(description);
+    if (wrapper !== undefined) updates.wrapper = toStr(wrapper);
+    if (binder !== undefined) updates.binder = toStr(binder);
+    if (filler !== undefined) updates.filler = toStr(filler);
+    if (length !== undefined) updates.length = toStr(length);
+    if (image !== undefined) updates.image = toStr(image);
+    if (line !== undefined) updates.line = toStr(line);
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json(
+        { error: 'No fields to update' },
+        { status: 400 }
+      );
+    }
 
     const { data, error } = await getSupabaseAdmin()
       .from('cigar_catalog')
@@ -80,7 +93,11 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     console.error('Cigar update error:', e);
-    return NextResponse.json({ error: 'Failed to update cigar' }, { status: 500 });
+    const payload: { error: string; detail?: string } = { error: 'Failed to update cigar' };
+    if (process.env.NODE_ENV === 'development' && e instanceof Error) {
+      payload.detail = e.message;
+    }
+    return NextResponse.json(payload, { status: 500 });
   }
 }
 
