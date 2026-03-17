@@ -94,8 +94,10 @@ export async function PUT(
     }
     console.error('Cigar update error:', e);
     const payload: { error: string; detail?: string } = { error: 'Failed to update cigar' };
-    if (process.env.NODE_ENV === 'development' && e instanceof Error) {
+    if (e instanceof Error) {
       payload.detail = e.message;
+    } else if (e && typeof e === 'object' && 'message' in e) {
+      payload.detail = String((e as { message: unknown }).message);
     }
     return NextResponse.json(payload, { status: 500 });
   }

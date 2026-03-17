@@ -105,7 +105,10 @@ export function CigarForm({
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Save failed');
+        const msg = data.detail
+          ? `${data.error}: ${data.detail}`
+          : data.error || 'Save failed';
+        setError(msg);
         return;
       }
       onSaved(data?.id);
