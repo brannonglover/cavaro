@@ -92,6 +92,16 @@ export async function PUT(
     if (e instanceof Error && e.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const errMsg = e instanceof Error ? e.message : String(e);
+    if (errMsg.includes('cigar_catalog_brand_name_length_key')) {
+      return NextResponse.json(
+        {
+          error:
+            'A cigar with this brand, name, and length already exists. Change one of those fields or edit the existing cigar instead.',
+        },
+        { status: 409 }
+      );
+    }
     console.error('Cigar update error:', e);
     const payload: { error: string; detail?: string } = { error: 'Failed to update cigar' };
     if (e instanceof Error) {
