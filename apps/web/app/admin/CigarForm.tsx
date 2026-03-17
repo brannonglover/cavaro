@@ -57,19 +57,22 @@ export function CigarForm({
     }
   }, [cigar]);
 
-  // When adding a cigar, lookup existing description by brand+name+line
+  // When adding a cigar, lookup existing description: brand+name first; if line is entered, prefer brand+name+line
   useEffect(() => {
     if (cigar) return;
     const brand = form.brand?.trim();
     const name = form.name?.trim();
     const line = form.line?.trim();
-    if (!brand || !name || !line) return;
+    if (!brand || !name) return;
 
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `/api/admin/cigars/lookup?brand=${encodeURIComponent(brand)}&name=${encodeURIComponent(name)}&line=${encodeURIComponent(line)}`
-        );
+        const params = new URLSearchParams({
+          brand,
+          name,
+          ...(line && { line }),
+        });
+        const res = await fetch(`/api/admin/cigars/lookup?${params}`);
         if (!res.ok) return;
         const data = await res.json();
         if (!data?.description?.trim()) return;

@@ -17,16 +17,34 @@ export async function GET(request: NextRequest) {
     const name = searchParams.get('name')?.trim();
     const line = searchParams.get('line')?.trim();
 
-    if (!brand || !name || !line) {
-      return NextResponse.json({ error: 'brand, name and line required' }, { status: 400 });
+    if (!brand || !name) {
+      return NextResponse.json({ error: 'brand and name required' }, { status: 400 });
     }
 
+    // If line is provided, prefer exact match on brand+name+line
+    if (line) {
+      const { data: exactData, error: exactError } = await getSupabaseAdmin()
+        .from('cigar_catalog')
+        .select('id, brand, name, description, line, wrapper, binder, filler, length, image')
+        .ilike('brand', brand)
+        .ilike('name', name)
+        .ilike('line', line)
+        .not('description', 'is', null)
+        .limit(1)
+        .maybeSingle();
+
+      if (exactError) throw exactError;
+      if (exactData?.description?.trim()) {
+        return NextResponse.json(exactData);
+      }
+    }
+
+    // Fall back to brand+name only (line may be empty or no match with line)
     const { data, error } = await getSupabaseAdmin()
       .from('cigar_catalog')
       .select('id, brand, name, description, line, wrapper, binder, filler, length, image')
       .ilike('brand', brand)
       .ilike('name', name)
-      .ilike('line', line)
       .not('description', 'is', null)
       .limit(1)
       .maybeSingle();
