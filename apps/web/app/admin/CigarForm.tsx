@@ -57,24 +57,25 @@ export function CigarForm({
     }
   }, [cigar]);
 
-  // When adding a cigar, lookup existing description by brand+name
+  // When adding a cigar, lookup existing description by brand+name+line
   useEffect(() => {
     if (cigar) return;
     const brand = form.brand?.trim();
     const name = form.name?.trim();
-    if (!brand || !name) return;
+    const line = form.line?.trim();
+    if (!brand || !name || !line) return;
 
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(
-          `/api/admin/cigars/lookup?brand=${encodeURIComponent(brand)}&name=${encodeURIComponent(name)}`
+          `/api/admin/cigars/lookup?brand=${encodeURIComponent(brand)}&name=${encodeURIComponent(name)}&line=${encodeURIComponent(line)}`
         );
         if (!res.ok) return;
         const data = await res.json();
         if (!data?.description?.trim()) return;
         setForm((prev) => {
           if (prev.description?.trim()) return prev;
-          if (prev.brand?.trim() !== brand || prev.name?.trim() !== name) return prev;
+          if (prev.brand?.trim() !== brand || prev.name?.trim() !== name || prev.line?.trim() !== line) return prev;
           return { ...prev, description: data.description };
         });
       } catch {
@@ -83,7 +84,7 @@ export function CigarForm({
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [cigar, form.brand, form.name]);
+  }, [cigar, form.brand, form.name, form.line]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

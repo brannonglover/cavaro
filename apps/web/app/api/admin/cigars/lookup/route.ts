@@ -15,9 +15,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const brand = searchParams.get('brand')?.trim();
     const name = searchParams.get('name')?.trim();
+    const line = searchParams.get('line')?.trim();
 
-    if (!brand || !name) {
-      return NextResponse.json({ error: 'brand and name required' }, { status: 400 });
+    if (!brand || !name || !line) {
+      return NextResponse.json({ error: 'brand, name and line required' }, { status: 400 });
     }
 
     const { data, error } = await getSupabaseAdmin()
@@ -25,6 +26,7 @@ export async function GET(request: NextRequest) {
       .select('id, brand, name, description, line, wrapper, binder, filler, length, image')
       .ilike('brand', brand)
       .ilike('name', name)
+      .ilike('line', line)
       .not('description', 'is', null)
       .limit(1)
       .maybeSingle();
