@@ -71,11 +71,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const errMsg = e instanceof Error ? e.message : String(e);
-    if (errMsg.includes('cigar_catalog_brand_name_length_key')) {
+    if (
+      errMsg.includes('cigar_catalog_brand_name_length_key') ||
+      errMsg.includes('cigar_catalog_brand_name_line_length_key')
+    ) {
       return NextResponse.json(
         {
           error:
-            'A cigar with this brand, name, and length already exists. Use different values or edit the existing cigar instead.',
+            'A cigar with this brand, name, line, and length already exists. Use different values or edit the existing cigar instead.',
         },
         { status: 409 }
       );
