@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { CigarForm } from './CigarForm';
 
@@ -24,7 +24,14 @@ export function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Cigar | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const formRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    if (showForm && formRef.current) {
+      formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [showForm]);
 
   async function fetchCigars() {
     setError(null);
@@ -145,11 +152,13 @@ export function AdminDashboard() {
       </div>
 
       {showForm && (
-        <CigarForm
-          cigar={editing}
-          onClose={handleFormClose}
-          onSaved={handleFormClose}
-        />
+        <div ref={formRef}>
+          <CigarForm
+            cigar={editing}
+            onClose={handleFormClose}
+            onSaved={handleFormClose}
+          />
+        </div>
       )}
 
       <div className="overflow-hidden rounded-xl border border-humidor-border bg-humidor-card">
