@@ -57,6 +57,34 @@ export function CigarForm({
     }
   }, [cigar]);
 
+  // When adding a cigar, lookup existing description by brand+name
+  useEffect(() => {
+    if (cigar) return;
+    const brand = form.brand?.trim();
+    const name = form.name?.trim();
+    if (!brand || !name) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/admin/cigars/lookup?brand=${encodeURIComponent(brand)}&name=${encodeURIComponent(name)}`
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data?.description?.trim()) return;
+        setForm((prev) => {
+          if (prev.description?.trim()) return prev;
+          if (prev.brand?.trim() !== brand || prev.name?.trim() !== name) return prev;
+          return { ...prev, description: data.description };
+        });
+      } catch {
+        // ignore lookup errors
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [cigar, form.brand, form.name]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
