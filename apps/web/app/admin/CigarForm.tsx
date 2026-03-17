@@ -31,7 +31,7 @@ export function CigarForm({
 }: {
   cigar: Cigar | null;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (cigarId?: number) => void;
 }) {
   const [form, setForm] = useState<FormData>({});
   const [saving, setSaving] = useState(false);
@@ -108,7 +108,7 @@ export function CigarForm({
         setError(data.error || 'Save failed');
         return;
       }
-      onSaved();
+      onSaved(data?.id);
     } catch {
       setError('Save failed');
     } finally {

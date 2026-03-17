@@ -75,10 +75,17 @@ export function AdminDashboard() {
     setShowForm(true);
   }
 
-  function handleFormClose() {
+  async function handleFormClose(cigarId?: number) {
     setShowForm(false);
     setEditing(null);
-    fetchCigars();
+    await fetchCigars();
+    if (cigarId != null) {
+      setTimeout(() => {
+        document
+          .querySelector(`[data-cigar-id="${cigarId}"]`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
   }
 
   function groupCigarsByBrand(cigarList: Cigar[]): [string, Cigar[]][] {
@@ -176,6 +183,7 @@ export function AdminDashboard() {
                 {brandCigars.map((c) => (
                   <div
                     key={c.id}
+                    data-cigar-id={c.id}
                     className="flex items-center justify-between gap-4 px-6 py-4"
                   >
                     <div className="min-w-0 flex-1">
