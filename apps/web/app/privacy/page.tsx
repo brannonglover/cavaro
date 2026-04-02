@@ -106,6 +106,10 @@ export default function PrivacyPage() {
               Contact us
             </Link>
             {' · '}
+            <Link href="/terms" className="text-humidor-primary hover:underline">
+              Terms of Use
+            </Link>
+            {' · '}
             <Link href="/" className="text-humidor-primary hover:underline">
               Home
             </Link>

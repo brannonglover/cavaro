@@ -175,6 +175,10 @@ export default function ContactPage() {
               Privacy Policy
             </Link>
             {' · '}
+            <Link href="/terms" className="text-humidor-primary hover:underline">
+              Terms of Use
+            </Link>
+            {' · '}
             © {new Date().getFullYear()}
           </p>
         </div>
