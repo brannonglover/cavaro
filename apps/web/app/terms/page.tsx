@@ -84,10 +84,10 @@ export default function TermsPage() {
             </h2>
             <p className="leading-relaxed">
               Cavaro may offer premium features available through a paid subscription. Payment is
-              processed by our third-party payment provider. By subscribing, you agree to the
-              applicable pricing and billing terms. Subscriptions renew automatically unless cancelled
-              before the renewal date. Refunds are handled in accordance with the payment
-              provider&apos;s policies.
+              processed via Apple In-App Purchase. By subscribing, you agree to Apple&apos;s terms of
+              service and the applicable pricing and billing terms displayed at the time of purchase.
+              Subscriptions renew automatically unless cancelled through your Apple ID settings before
+              the renewal date. Refunds are handled by Apple in accordance with their refund policies.
             </p>
           </div>
 
