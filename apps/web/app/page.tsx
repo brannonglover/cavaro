@@ -1,8 +1,5 @@
 import Link from 'next/link';
-import { Suspense } from 'react';
 import { GetStartedButton } from './components/GetStartedButton';
-import { SubscribeButton } from './components/SubscribeButton';
-import { SuccessBanner } from './components/SuccessBanner';
 import { DownloadSection } from './components/DownloadSection';
 
 const FREE_CIGAR_LIMIT = 5;
@@ -14,7 +11,6 @@ function TierCard({
   cta,
   href,
   highlighted,
-  subscribe,
   download,
 }: {
   title: string;
@@ -23,7 +19,6 @@ function TierCard({
   cta: string;
   href: string;
   highlighted?: boolean;
-  subscribe?: boolean;
   download?: boolean;
 }) {
   const buttonClass = `mt-8 block w-full rounded-xl py-4 text-center font-semibold transition-colors ${
@@ -60,9 +55,7 @@ function TierCard({
           </li>
         ))}
       </ul>
-      {subscribe ? (
-        <SubscribeButton className={buttonClass}>{cta}</SubscribeButton>
-      ) : download ? (
+      {download ? (
         <GetStartedButton className={buttonClass}>{cta}</GetStartedButton>
       ) : (
         <Link href={href} className={buttonClass}>
@@ -76,9 +69,6 @@ function TierCard({
 export default function Home() {
   return (
     <main className="min-h-screen">
-      <Suspense fallback={null}>
-        <SuccessBanner />
-      </Suspense>
       {/* Hero */}
       <section className="relative overflow-hidden px-6 pt-10 pb-10 sm:pt-14 sm:pb-14">
         <div className="absolute inset-0 bg-gradient-to-b from-humidor-primary/5 to-transparent" />
@@ -185,16 +175,16 @@ export default function Home() {
             />
             <TierCard
               title="Premium"
-              price="$4.99/mo"
+              price="$2.99/mo"
               features={[
                 'Unlimited cigars',
                 'AI-powered drink pairing',
                 'All features unlocked',
               ]}
-              cta="Subscribe"
+              cta="Get the App"
               href="#download"
               highlighted
-              subscribe
+              download
             />
           </div>
 
