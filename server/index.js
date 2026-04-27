@@ -17,6 +17,10 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+app.get('/health', (_req, res) => {
+  res.json({ ok: true });
+});
+
 // Shared cigar catalog (PostgreSQL)
 app.use('/api/catalog', catalogRoutes);
 // Shared community reviews

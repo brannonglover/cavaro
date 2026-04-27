@@ -7,11 +7,14 @@
     "version": "node scripts/sync-version.js",
     "eas-build-pre-install": "node scripts/sync-version.js --with-build-number",
     "postinstall": "node scripts/apply-local-patches.js",
+    "server": "npm --prefix server start",
+    "server:dev": "npm --prefix server run dev",
     "start": "expo start",
-    "start:device": "REACT_NATIVE_PACKAGER_HOSTNAME=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo localhost) expo start",
+    "start:device": "REACT_NATIVE_PACKAGER_HOSTNAME=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo localhost) expo start --dev-client",
+    "start:tunnel": "expo start --dev-client --tunnel",
     "android": "expo run:android",
-    "ios": "expo run:ios",
-    "ios:device": "REACT_NATIVE_PACKAGER_HOSTNAME=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo localhost) expo run:ios --device",
+    "ios": "LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 expo run:ios",
+    "ios:device": "LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 REACT_NATIVE_PACKAGER_HOSTNAME=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo localhost) expo run:ios --device",
     "web": "expo start --web"
   },
   "dependencies": {

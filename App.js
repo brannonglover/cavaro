@@ -1,3 +1,4 @@
+import 'expo-dev-client';
 import { useEffect, useState } from 'react';
 import { Linking, View, StyleSheet, Text, Image, ActivityIndicator } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
