@@ -12,6 +12,8 @@ import AuthStack from './navigation/AuthStack';
 import { ClickOutsideProvider } from 'react-native-click-outside';
 import { initDatabase } from './db';
 import IapSubscriptionBridge from './components/IapSubscriptionBridge';
+import ResetPassword from './pages/ResetPassword';
+import { AUTH_CALLBACK_APP_URL } from './constants/authUrls';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -27,7 +29,7 @@ const SLOW_LOAD_THRESHOLD_MS = 1500;
 function AppContent() {
   const [isReady, setIsReady] = useState(false);
   const [showLoadingMessage, setShowLoadingMessage] = useState(false);
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, needsPasswordReset, supabase, clearPasswordReset } = useAuth();
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -81,6 +83,14 @@ function AppContent() {
         <NavigationContainerWithAnalytics>
           <AuthStack onAuthenticated={() => {}} />
         </NavigationContainerWithAnalytics>
+      );
+    }
+    if (needsPasswordReset) {
+      return (
+        <ResetPassword
+          supabase={supabase}
+          onComplete={clearPasswordReset}
+        />
       );
     }
     return (
@@ -139,8 +149,13 @@ const styles = StyleSheet.create({
 
 function createSessionFromAuthUrl(url, supabase) {
   const hashIndex = url.indexOf('#');
-  const hash = hashIndex >= 0 ? url.substring(hashIndex + 1) : '';
-  const params = new URLSearchParams(hash);
+  const queryIndex = url.indexOf('?');
+  const paramString = hashIndex >= 0
+    ? url.substring(hashIndex + 1)
+    : queryIndex >= 0
+      ? url.substring(queryIndex + 1)
+      : '';
+  const params = new URLSearchParams(paramString);
   const access_token = params.get('access_token');
   const refresh_token = params.get('refresh_token');
   if (!access_token || !supabase) return null;
@@ -150,19 +165,21 @@ function createSessionFromAuthUrl(url, supabase) {
   });
 }
 
-/** Email magic-link / OAuth: cavaro://...#access_token=... */
+/** Email magic-link / OAuth / password recovery: cavaro://auth/callback#access_token=... */
 function AuthDeepLinkHandler() {
   const { supabase } = useAuth();
 
   useEffect(() => {
     const handleIncomingUrl = async (url) => {
       if (!url || !supabase) return;
-      if (url.includes('access_token')) {
-        try {
-          await createSessionFromAuthUrl(url, supabase);
-        } catch (e) {
-          console.warn('Auth callback error:', e);
-        }
+      const isAuthCallback =
+        url.includes('access_token') ||
+        url.startsWith(`${AUTH_CALLBACK_APP_URL}`);
+      if (!isAuthCallback) return;
+      try {
+        await createSessionFromAuthUrl(url, supabase);
+      } catch (e) {
+        console.warn('Auth callback error:', e);
       }
     };
 

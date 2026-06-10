@@ -50,6 +50,7 @@ export function AuthProvider({ children }) {
   const [tier, setTier] = useState('free'); // 'free' | 'premium'
   const [loading, setLoading] = useState(true);
   const [previewFreeTier, setPreviewFreeTier] = useState(false);
+  const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
 
   useEffect(() => {
     if (!supabase) {
@@ -79,6 +80,14 @@ export function AuthProvider({ children }) {
       });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setNeedsPasswordReset(true);
+      } else if (event === 'USER_UPDATED') {
+        setNeedsPasswordReset(false);
+      } else if (event === 'SIGNED_OUT') {
+        setNeedsPasswordReset(false);
+      }
+
       const u = session?.user ?? null;
       setUser(u);
       setUserId(u?.id ?? null);
@@ -128,6 +137,8 @@ export function AuthProvider({ children }) {
     actualTier: tier,
     loading,
     supabase,
+    needsPasswordReset,
+    clearPasswordReset: () => setNeedsPasswordReset(false),
     previewFreeTier,
     setPreviewFreeTier,
     refreshTier: async () => {

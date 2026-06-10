@@ -14,6 +14,7 @@ import {
 import colors from '../theme/colors';
 import { KEYBOARD_ACCESSORY_ID } from '../components/KeyboardAccessory';
 import { trackEvent } from '../lib/analytics';
+import { AUTH_CALLBACK_WEB_URL } from '../constants/authUrls';
 
 function isDuplicateSignupError(error) {
   if (!error) return false;
@@ -59,7 +60,7 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin,
       const { data, error } = await supabase.auth.signUp(
         { email: e, password: p },
         {
-          emailRedirectTo: 'cavaro://auth/callback',
+          emailRedirectTo: AUTH_CALLBACK_WEB_URL,
         }
       );
       if (error) {

@@ -13,17 +13,21 @@ import {
 } from 'react-native';
 import colors from '../theme/colors';
 import { KEYBOARD_ACCESSORY_ID } from '../components/KeyboardAccessory';
-import { AUTH_CALLBACK_WEB_URL } from '../constants/authUrls';
 
-export default function ForgotPassword({ supabase, onBack, initialEmail = '' }) {
-  const [email, setEmail] = useState(initialEmail);
+export default function ResetPassword({ supabase, onComplete }) {
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [sentFor, setSentFor] = useState(null);
 
-  const handleReset = async () => {
-    const e = email.trim();
-    if (!e) {
-      Alert.alert('Missing email', 'Please enter your email address.');
+  const handleSubmit = async () => {
+    const p = password;
+    const c = confirmPassword;
+    if (p.length < 6) {
+      Alert.alert('Password too short', 'Use at least 6 characters.');
+      return;
+    }
+    if (p !== c) {
+      Alert.alert('Passwords do not match', 'Please try again.');
       return;
     }
     if (!supabase) {
@@ -32,35 +36,17 @@ export default function ForgotPassword({ supabase, onBack, initialEmail = '' }) 
     }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(e, {
-        redirectTo: AUTH_CALLBACK_WEB_URL,
-      });
+      const { error } = await supabase.auth.updateUser({ password: p });
       if (error) throw error;
-      setSentFor(e);
+      Alert.alert('Password updated', 'Your new password is ready. You are signed in.', [
+        { text: 'OK', onPress: () => onComplete?.() },
+      ]);
     } catch (err) {
-      Alert.alert('Reset failed', err.message || 'Please try again.');
+      Alert.alert('Update failed', err.message || 'Please try again.');
     } finally {
       setLoading(false);
     }
   };
-
-  if (sentFor) {
-    return (
-      <View style={styles.screen}>
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.container}>
-            <Text style={styles.title}>Check your email</Text>
-            <Text style={styles.subtitle}>
-              We sent a password reset link to {sentFor}. Open the link in your email to set a new password on cavaroapp.com, then sign in here with your new password.
-            </Text>
-            <Pressable style={styles.button} onPress={onBack}>
-              <Text style={styles.buttonText}>Back to sign in</Text>
-            </Pressable>
-          </View>
-        </SafeAreaView>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.screen}>
@@ -70,38 +56,44 @@ export default function ForgotPassword({ supabase, onBack, initialEmail = '' }) 
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={40}
         >
-          <Pressable onPress={onBack} style={styles.backBtn} hitSlop={12}>
-            <Text style={styles.backText}>← Back</Text>
-          </Pressable>
-
-          <Text style={styles.title}>Forgot password</Text>
+          <Text style={styles.title}>Set new password</Text>
           <Text style={styles.subtitle}>
-            Enter your email and we will send you a link to reset your password.
+            Choose a new password for your Cavaro account.
           </Text>
 
           <TextInput
             style={styles.input}
-            placeholder="Email"
+            placeholder="New password"
             placeholderTextColor={colors.placeholderText}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            editable={!loading}
+            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
+            returnKeyType="next"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Confirm new password"
+            placeholderTextColor={colors.placeholderText}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
             editable={!loading}
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
             returnKeyType="done"
+            onSubmitEditing={handleSubmit}
           />
 
           <Pressable
             style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleReset}
+            onPress={handleSubmit}
             disabled={loading}
           >
             {loading ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={styles.buttonText}>Send reset link</Text>
+              <Text style={styles.buttonText}>Update password</Text>
             )}
           </Pressable>
         </KeyboardAvoidingView>
@@ -121,14 +113,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-  },
-  backBtn: {
-    alignSelf: 'flex-start',
-    marginBottom: 24,
-  },
-  backText: {
-    fontSize: 16,
-    color: colors.primary,
+    justifyContent: 'center',
   },
   title: {
     fontSize: 28,
