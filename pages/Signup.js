@@ -15,11 +15,28 @@ import colors from '../theme/colors';
 import { KEYBOARD_ACCESSORY_ID } from '../components/KeyboardAccessory';
 import { trackEvent } from '../lib/analytics';
 
-export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin }) {
+function isDuplicateSignupError(error) {
+  if (!error) return false;
+  const msg = String(error.message || '').toLowerCase();
+  return (
+    error.status === 422 ||
+    error.code === 'user_already_exists' ||
+    msg.includes('already registered') ||
+    msg.includes('already exists') ||
+    msg.includes('user already')
+  );
+}
+
+function isDuplicateSignupResponse(data) {
+  return data?.user != null && (!data.user.identities || data.user.identities.length === 0);
+}
+
+export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin, onGoToForgotPassword }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [checkEmailFor, setCheckEmailFor] = useState(null);
+  const [alreadyHasAccount, setAlreadyHasAccount] = useState(false);
 
   const handleSignup = async () => {
     const e = email.trim();
@@ -37,6 +54,7 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin 
       return;
     }
     setLoading(true);
+    setAlreadyHasAccount(false);
     try {
       const { data, error } = await supabase.auth.signUp(
         { email: e, password: p },
@@ -44,7 +62,17 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin 
           emailRedirectTo: 'cavaro://auth/callback',
         }
       );
-      if (error) throw error;
+      if (error) {
+        if (isDuplicateSignupError(error)) {
+          setAlreadyHasAccount(true);
+          return;
+        }
+        throw error;
+      }
+      if (isDuplicateSignupResponse(data)) {
+        setAlreadyHasAccount(true);
+        return;
+      }
       trackEvent('signup_success', { tier });
       if (data.session) {
         // User is immediately logged in (email confirmation disabled)
@@ -106,7 +134,10 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin 
             placeholder="Email"
             placeholderTextColor={colors.placeholderText}
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => {
+              setEmail(text);
+              setAlreadyHasAccount(false);
+            }}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
@@ -119,7 +150,10 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin 
             placeholder="Password (min 6 characters)"
             placeholderTextColor={colors.placeholderText}
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(text) => {
+              setPassword(text);
+              setAlreadyHasAccount(false);
+            }}
             secureTextEntry
             editable={!loading}
             inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
@@ -137,6 +171,18 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin 
               <Text style={styles.buttonText}>Sign up</Text>
             )}
           </Pressable>
+
+          {alreadyHasAccount && (
+            <View style={styles.alreadyAccountBlock}>
+              <Text style={styles.errorText}>You already have an account with us.</Text>
+              <Pressable
+                style={styles.linkBtn}
+                onPress={() => onGoToForgotPassword?.(email.trim())}
+              >
+                <Text style={styles.linkText}>Forgot password?</Text>
+              </Pressable>
+            </View>
+          )}
         </KeyboardAvoidingView>
       </SafeAreaView>
     </View>
@@ -198,5 +244,22 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: '#fff',
+  },
+  alreadyAccountBlock: {
+    marginTop: 20,
+    alignItems: 'center',
+    gap: 8,
+  },
+  errorText: {
+    fontSize: 15,
+    color: colors.warning,
+    textAlign: 'center',
+  },
+  linkBtn: {
+    paddingVertical: 8,
+  },
+  linkText: {
+    fontSize: 15,
+    color: colors.primary,
   },
 });

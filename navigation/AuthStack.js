@@ -4,6 +4,7 @@ import { trackEvent } from '../lib/analytics';
 import Landing from '../pages/Landing';
 import Login from '../pages/Login';
 import Signup from '../pages/Signup';
+import ForgotPassword from '../pages/ForgotPassword';
 import { useAuth } from '../context/AuthContext';
 import colors from '../theme/colors';
 
@@ -54,6 +55,15 @@ export default function AuthStack({ onAuthenticated }) {
           />
         )}
       </Stack.Screen>
+      <Stack.Screen name="ForgotPassword">
+        {({ navigation, route }) => (
+          <ForgotPassword
+            supabase={supabase}
+            initialEmail={route.params?.email ?? ''}
+            onBack={() => navigation.navigate('Login')}
+          />
+        )}
+      </Stack.Screen>
       <Stack.Screen name="Signup">
         {({ navigation }) => (
           <Signup
@@ -62,6 +72,7 @@ export default function AuthStack({ onAuthenticated }) {
             onSuccess={onAuthenticated}
             onBack={() => navigation.goBack()}
             onGoToLogin={() => navigation.navigate('Login')}
+            onGoToForgotPassword={(email) => navigation.navigate('ForgotPassword', { email })}
           />
         )}
       </Stack.Screen>

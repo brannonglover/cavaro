@@ -2,7 +2,10 @@ const express = require('express');
 const nodemailer = require('nodemailer');
 
 const router = express.Router();
-const FEEDBACK_EMAIL = 'brannonglover@gmail.com';
+const FEEDBACK_EMAILS = {
+  'Bag Count': 'support@gloverlabsstudio.com',
+};
+const DEFAULT_FEEDBACK_EMAIL = 'brannonglover@gmail.com';
 
 // Create transporter - uses Gmail SMTP when credentials are set
 function getTransporter() {
@@ -32,22 +35,26 @@ router.post('/', async (req, res) => {
       });
     }
 
+    const appName = typeof req.body.app === 'string' && req.body.app.trim() ? req.body.app.trim() : 'Cavaro';
+    const appVersion = typeof req.body.appVersion === 'string' ? req.body.appVersion.trim() : '';
     const typeLabel = type || 'General';
-    const subject = `[Cavaro Feedback] ${typeLabel}: ${message.slice(0, 50)}${message.length > 50 ? '...' : ''}`;
+    const feedbackEmail = FEEDBACK_EMAILS[appName] || DEFAULT_FEEDBACK_EMAIL;
+    const subject = `[${appName} Feedback] ${typeLabel}: ${message.slice(0, 50)}${message.length > 50 ? '...' : ''}`;
     const html = `
+      <p><strong>App:</strong> ${appName}${appVersion ? ` (${appVersion})` : ''}</p>
       <p><strong>Type:</strong> ${typeLabel}</p>
       <p><strong>Message:</strong></p>
       <p>${message.trim().replace(/\n/g, '<br>')}</p>
       <hr>
-      <p style="color:#888;font-size:12px;">Sent from Cavaro app</p>
+      <p style="color:#888;font-size:12px;">Sent from ${appName} app</p>
     `;
 
     await transporter.sendMail({
       from: process.env.GMAIL_USER,
-      to: FEEDBACK_EMAIL,
+      to: feedbackEmail,
       subject,
       html,
-      text: `Type: ${typeLabel}\n\nMessage:\n${message.trim()}`,
+      text: `App: ${appName}${appVersion ? ` (${appVersion})` : ''}\nType: ${typeLabel}\n\nMessage:\n${message.trim()}`,
     });
 
     res.json({ success: true });
