@@ -1,3 +1,16 @@
 {
-  "/page": "app/page.js"
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/api/admin/cigars/[id]/route": "app/api/admin/cigars/[id]/route.js",
+  "/api/admin/cigars/lookup/route": "app/api/admin/cigars/lookup/route.js",
+  "/api/admin/cigars/route": "app/api/admin/cigars/route.js",
+  "/api/admin/login/route": "app/api/admin/login/route.js",
+  "/api/admin/logout/route": "app/api/admin/logout/route.js",
+  "/auth/callback/page": "app/auth/callback/page.js",
+  "/contact/page": "app/contact/page.js",
+  "/page": "app/page.js",
+  "/privacy/page": "app/privacy/page.js",
+  "/success/page": "app/success/page.js",
+  "/terms/page": "app/terms/page.js"
 }
