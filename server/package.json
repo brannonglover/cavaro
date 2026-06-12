@@ -11,6 +11,7 @@
     "init-reviews": "node scripts/initReviews.js",
     "seed-reviews": "node scripts/seedReviews.js",
     "add-line-column": "node scripts/addLineColumn.js",
+    "migrate-catalog": "node scripts/migrate-catalog.js",
     "add-apple-iap-column": "node scripts/add-apple-iap-column.js",
     "android": "expo run:android",
     "ios": "expo run:ios"

@@ -298,7 +298,10 @@ export default function AddCigar() {
       navigation.goBack();
     } catch (error) {
       console.log('Add failed:', error);
-      Alert.alert('Failed to add cigar', error.message || 'Please try again.');
+      Alert.alert(
+        'Failed to add cigar',
+        error.message || 'Could not save cigar locally. Please try again.'
+      );
     }
   }
 
@@ -329,21 +332,9 @@ export default function AddCigar() {
           console.warn('Image upload failed, saving without image:', e.message);
         }
       }
-      // Add to shared catalog (Postgres) so other users can see it
-      await addCigarToCatalog({
-        brand: customBrand.trim(),
-        name: customName.trim(),
-        line: customLine.trim() || '',
-        description: customDesc || '',
-        wrapper: customWrapper || '',
-        binder: customBinder || '',
-        filler: customFiller || '',
-        length: customSize.trim(),
-        image: imageUrl,
-      });
-      // Add to user's local Cavaro
       const qty = Math.max(1, parseInt(customQuantity, 10) || 1);
       const dateToUse = dateAdded?.trim() || new Date().toISOString().slice(0, 10);
+
       await db.runAsync(
         'INSERT INTO cigars (brand, name, line, description, wrapper, binder, filler, length, image, quantity, collection, date_added) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         customBrand.trim(),
@@ -360,10 +351,34 @@ export default function AddCigar() {
         dateToUse
       );
       trackEvent('cigar_added', { source: 'custom', quantity: qty });
-      navigation.goBack();
+
+      try {
+        await addCigarToCatalog({
+          brand: customBrand.trim(),
+          name: customName.trim(),
+          line: customLine.trim() || '',
+          description: customDesc || '',
+          wrapper: customWrapper || '',
+          binder: customBinder || '',
+          filler: customFiller || '',
+          length: customSize.trim(),
+          image: imageUrl,
+        });
+        navigation.goBack();
+      } catch (catalogErr) {
+        console.warn('Catalog sync failed:', catalogErr.message);
+        Alert.alert(
+          'Added to Cavaro',
+          'Your cigar was saved to your collection, but it could not be added to the shared catalog right now. You can still use it in Cavaro.',
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      }
     } catch (error) {
       console.log('Add custom failed:', error);
-      Alert.alert('Failed to add cigar', error.message || 'Please check your connection and try again.');
+      Alert.alert(
+        'Failed to add cigar',
+        error.message || 'Could not save cigar locally. Please try again.'
+      );
     }
   }
 

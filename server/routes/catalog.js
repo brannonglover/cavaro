@@ -1,10 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/postgres');
+const { ensureCatalogSchema } = require('../lib/catalogSchema');
+
+let schemaReady = null;
+function readyCatalogSchema() {
+  if (!schemaReady) {
+    schemaReady = ensureCatalogSchema(pool).catch((err) => {
+      schemaReady = null;
+      throw err;
+    });
+  }
+  return schemaReady;
+}
 
 // GET /api/catalog - fetch all cigars for shared catalog
 router.get('/', async (req, res) => {
   try {
+    await readyCatalogSchema();
     const result = await pool.query(
       'SELECT id, brand, name, line, description, wrapper, binder, filler, length, image FROM cigar_catalog ORDER BY brand, name, length'
     );
@@ -23,6 +36,7 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Brand, name, and length are required' });
   }
   try {
+    await readyCatalogSchema();
     const result = await pool.query(
       `INSERT INTO cigar_catalog (brand, name, line, description, wrapper, binder, filler, length, image)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -48,8 +62,12 @@ router.post('/', async (req, res) => {
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error('Catalog POST error:', err);
-    res.status(500).json({ error: 'Failed to add cigar to catalog' });
+    console.error('Catalog POST error:', err.message || err, err.stack);
+    const detail = process.env.NODE_ENV !== 'production' ? err.message : undefined;
+    res.status(500).json({
+      error: 'Failed to add cigar to catalog',
+      ...(detail && { detail }),
+    });
   }
 });
 
