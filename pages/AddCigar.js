@@ -23,8 +23,10 @@ import { useAuth } from '../context/AuthContext';
 import colors from '../theme/colors';
 import { pickCigarImage, takeCigarPhoto } from '../utils/imagePicker';
 import DatePickerField, { getTodayDateString } from '../components/DatePickerField';
+import CreatableSelectField from '../components/CreatableSelectField';
 import UpgradeToPremiumModal from '../components/UpgradeToPremiumModal';
 import { trackEvent } from '../lib/analytics';
+import { collectBlendValues, loadKnownBlendOptions } from '../utils/blendOptions';
 
 const DropdownArrowDown = ({ style }) => (
   <View style={style}>
@@ -84,6 +86,7 @@ export default function AddCigar() {
   const [brandArr, setBrandArr] = useState([]);
   const [cigarNameArr, setCigarNameArr] = useState([]);
   const [cigarSizeArr, setCigarSizeArr] = useState([]);
+  const [blendOptions, setBlendOptions] = useState({ wrapper: [], binder: [], filler: [] });
 
   // Dropdown open state
   const [brandOpen, setBrandOpen] = useState(false);
@@ -107,6 +110,28 @@ export default function AddCigar() {
   useEffect(() => {
     loadCatalog();
   }, []);
+
+  useEffect(() => {
+    async function refreshBlendOptions() {
+      try {
+        const cigarRows = await db.getAllAsync('SELECT wrapper, binder, filler FROM cigars');
+        const rows = [...data, ...cigarRows];
+        setBlendOptions({
+          wrapper: collectBlendValues(rows, 'wrapper'),
+          binder: collectBlendValues(rows, 'binder'),
+          filler: collectBlendValues(rows, 'filler'),
+        });
+      } catch (err) {
+        console.warn('Failed to load blend options:', err.message);
+        try {
+          setBlendOptions(await loadKnownBlendOptions(db));
+        } catch (fallbackErr) {
+          console.warn('Blend options fallback failed:', fallbackErr.message);
+        }
+      }
+    }
+    refreshBlendOptions();
+  }, [data]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -396,7 +421,15 @@ export default function AddCigar() {
           <Text style={styles.title}>
             Add Cigar{enforceLimit ? ` (${cigarCount}/${FREE_CIGAR_LIMIT})` : ''}
           </Text>
-          <View style={styles.backBtn} />
+          {!showCustom ? (
+            <Pressable onPress={() => setShowCustom(true)} style={styles.headerActionBtn} hitSlop={12}>
+              <Text style={styles.switchLinkText}>+ Add new</Text>
+            </Pressable>
+          ) : (
+            <Pressable onPress={() => setShowCustom(false)} style={styles.headerActionBtn} hitSlop={12}>
+              <Text style={styles.switchLinkText}>Back to catalog</Text>
+            </Pressable>
+          )}
         </View>
 
         <ScrollView
@@ -409,10 +442,6 @@ export default function AddCigar() {
         >
           {!showCustom ? (
             <>
-              <Pressable style={styles.switchLinkTop} onPress={() => setShowCustom(true)}>
-                <Text style={styles.switchLinkText}>Add new</Text>
-              </Pressable>
-
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Select from catalog</Text>
                 <Text style={styles.sectionSubtitle}>Choose brand, name, and size from the database</Text>
@@ -663,41 +692,32 @@ export default function AddCigar() {
                 />
               </View>
 
-              <View style={styles.field}>
-                <Text style={styles.label}>Wrapper (optional)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={customWrapper}
-                  onChangeText={setCustomWrapper}
-                  placeholder="e.g. Honduras"
-                  placeholderTextColor={colors.placeholderText}
-                  returnKeyType="done"
-                />
-              </View>
+              <CreatableSelectField
+                label="Wrapper (optional)"
+                value={customWrapper}
+                onChangeText={setCustomWrapper}
+                options={blendOptions.wrapper}
+                placeholder="e.g. Honduras"
+                zIndex={3000}
+              />
 
-              <View style={styles.field}>
-                <Text style={styles.label}>Binder (optional)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={customBinder}
-                  onChangeText={setCustomBinder}
-                  placeholder="e.g. Nicaragua"
-                  placeholderTextColor={colors.placeholderText}
-                  returnKeyType="done"
-                />
-              </View>
+              <CreatableSelectField
+                label="Binder (optional)"
+                value={customBinder}
+                onChangeText={setCustomBinder}
+                options={blendOptions.binder}
+                placeholder="e.g. Nicaragua"
+                zIndex={2000}
+              />
 
-              <View style={styles.field}>
-                <Text style={styles.label}>Filler (optional)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={customFiller}
-                  onChangeText={setCustomFiller}
-                  placeholder="e.g. Honduras, Nicaragua"
-                  placeholderTextColor={colors.placeholderText}
-                  returnKeyType="done"
-                />
-              </View>
+              <CreatableSelectField
+                label="Filler (optional)"
+                value={customFiller}
+                onChangeText={setCustomFiller}
+                options={blendOptions.filler}
+                placeholder="e.g. Honduras, Nicaragua"
+                zIndex={1000}
+              />
 
               <View style={styles.field}>
                 <Text style={styles.label}>Photo (optional)</Text>
@@ -721,10 +741,6 @@ export default function AddCigar() {
                 disabled={!isCustomValid}
               >
                 <Text style={[styles.primaryBtnText, !isCustomValid && styles.primaryBtnTextDisabled]}>Add to Catalog & Cavaro</Text>
-              </Pressable>
-
-              <Pressable style={styles.switchLink} onPress={() => setShowCustom(false)}>
-                <Text style={styles.switchLinkText}>← Back to catalog</Text>
               </Pressable>
             </>
           )}
@@ -765,6 +781,10 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     minWidth: 70,
+  },
+  headerActionBtn: {
+    minWidth: 110,
+    alignItems: 'flex-end',
   },
   backText: {
     fontSize: 17,
@@ -890,16 +910,6 @@ const styles = StyleSheet.create({
   },
   primaryBtnTextDisabled: {
     color: colors.textMuted,
-  },
-  switchLink: {
-    marginTop: 20,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  switchLinkTop: {
-    marginBottom: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
   },
   switchLinkText: {
     fontSize: 16,

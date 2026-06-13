@@ -21,8 +21,10 @@ import { uploadCigarImage } from '../api/upload';
 import colors from '../theme/colors';
 import { pickCigarImage, takeCigarPhoto } from '../utils/imagePicker';
 import DatePickerField from '../components/DatePickerField';
+import CreatableSelectField from '../components/CreatableSelectField';
 import UpgradeToPremiumModal from '../components/UpgradeToPremiumModal';
 import { trackEvent } from '../lib/analytics';
+import { loadKnownBlendOptions } from '../utils/blendOptions';
 
 // Size format: #x## or #.#x## (e.g. 6x52, 7.5x50) - no slashes
 const SIZE_FORMAT = /^\d+(\.\d+)?x\d+(\.\d+)?$/;
@@ -48,6 +50,7 @@ export default function EditCigar() {
   const [quantity, setQuantity] = useState(String(cigar?.quantity ?? 1));
   const [dateAdded, setDateAdded] = useState(cigar?.date_added ?? '');
   const [upgradeModal, setUpgradeModal] = useState({ visible: false, message: '', accessToken: null, userId: null });
+  const [blendOptions, setBlendOptions] = useState({ wrapper: [], binder: [], filler: [] });
 
   const scrollViewRef = useRef(null);
 
@@ -58,6 +61,12 @@ export default function EditCigar() {
       scrollViewRef.current?.scrollTo({ y: 0, animated: false });
     }, [])
   );
+
+  useEffect(() => {
+    loadKnownBlendOptions(db)
+      .then(setBlendOptions)
+      .catch((err) => console.warn('Failed to load blend options:', err.message));
+  }, []);
 
   async function handleAddImage() {
     if (tier === 'free' && supabase) {
@@ -298,41 +307,32 @@ export default function EditCigar() {
             />
           </View>
 
-          <View style={styles.field}>
-            <Text style={styles.label}>Wrapper (optional)</Text>
-            <TextInput
-              style={styles.input}
-              value={wrapper}
-              onChangeText={setWrapper}
-              placeholder="e.g. Honduras"
-              placeholderTextColor={colors.placeholderText}
-              returnKeyType="done"
-            />
-          </View>
+          <CreatableSelectField
+            label="Wrapper (optional)"
+            value={wrapper}
+            onChangeText={setWrapper}
+            options={blendOptions.wrapper}
+            placeholder="e.g. Honduras"
+            zIndex={3000}
+          />
 
-          <View style={styles.field}>
-            <Text style={styles.label}>Binder (optional)</Text>
-            <TextInput
-              style={styles.input}
-              value={binder}
-              onChangeText={setBinder}
-              placeholder="e.g. Nicaragua"
-              placeholderTextColor={colors.placeholderText}
-              returnKeyType="done"
-            />
-          </View>
+          <CreatableSelectField
+            label="Binder (optional)"
+            value={binder}
+            onChangeText={setBinder}
+            options={blendOptions.binder}
+            placeholder="e.g. Nicaragua"
+            zIndex={2000}
+          />
 
-          <View style={styles.field}>
-            <Text style={styles.label}>Filler (optional)</Text>
-            <TextInput
-              style={styles.input}
-              value={filler}
-              onChangeText={setFiller}
-              placeholder="e.g. Honduras, Nicaragua"
-              placeholderTextColor={colors.placeholderText}
-              returnKeyType="done"
-            />
-          </View>
+          <CreatableSelectField
+            label="Filler (optional)"
+            value={filler}
+            onChangeText={setFiller}
+            options={blendOptions.filler}
+            placeholder="e.g. Honduras, Nicaragua"
+            zIndex={1000}
+          />
 
           <View style={styles.field}>
             <Text style={styles.label}>Photo (optional)</Text>
