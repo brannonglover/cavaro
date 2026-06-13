@@ -6,15 +6,14 @@ import {
   TextInput,
   Pressable,
   SafeAreaView,
-  KeyboardAvoidingView,
-  Platform,
+  ScrollView,
   Alert,
   ActivityIndicator,
 } from 'react-native';
 import colors from '../theme/colors';
-import { KEYBOARD_ACCESSORY_ID } from '../components/KeyboardAccessory';
 import { trackEvent } from '../lib/analytics';
 import { AUTH_CALLBACK_WEB_URL } from '../constants/authUrls';
+import { useAuth } from '../context/AuthContext';
 
 function isDuplicateSignupError(error) {
   if (!error) return false;
@@ -33,6 +32,7 @@ function isDuplicateSignupResponse(data) {
 }
 
 export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin, onGoToForgotPassword }) {
+  const { setPendingPremiumSubscribe } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -77,6 +77,9 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin,
       trackEvent('signup_success', { tier });
       if (data.session) {
         // User is immediately logged in (email confirmation disabled)
+        if (tier === 'premium') {
+          setPendingPremiumSubscribe(true);
+        }
         onSuccess?.();
       } else {
         // Email confirmation required – show check-your-email screen
@@ -116,10 +119,11 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin,
   return (
     <View style={styles.screen}>
       <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView
-          style={styles.container}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={40}
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           <Pressable onPress={onBack} style={styles.backBtn} hitSlop={12}>
             <Text style={styles.backText}>← Back</Text>
@@ -127,39 +131,53 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin,
 
           <Text style={styles.title}>Create account</Text>
           <Text style={styles.subtitle}>
-            {tier === 'premium' ? 'Subscribe for $2.99/mo after signup' : 'Free tier: up to 5 cigars'}
+            {tier === 'premium'
+              ? 'Step 1: Create your Cavaro account. Step 2: Subscribe with your Apple ID for App Store billing.'
+              : 'Free tier: up to 5 cigars'}
           </Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor={colors.placeholderText}
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text);
-              setAlreadyHasAccount(false);
-            }}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            editable={!loading}
-            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
-            returnKeyType="done"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Password (min 6 characters)"
-            placeholderTextColor={colors.placeholderText}
-            value={password}
-            onChangeText={(text) => {
-              setPassword(text);
-              setAlreadyHasAccount(false);
-            }}
-            secureTextEntry
-            editable={!loading}
-            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
-            returnKeyType="done"
-          />
+          <View style={styles.inputWrap}>
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              placeholderTextColor={colors.placeholderText}
+              value={email}
+              onChangeText={(text) => {
+                setEmail(text);
+                setAlreadyHasAccount(false);
+              }}
+              textContentType="emailAddress"
+              autoComplete="email"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              importantForAutofill="yes"
+              editable={!loading}
+              returnKeyType="next"
+            />
+          </View>
+          <View style={styles.inputWrap}>
+            <TextInput
+              style={styles.input}
+              placeholder="Password (min 6 characters)"
+              placeholderTextColor={colors.placeholderText}
+              value={password}
+              onChangeText={(text) => {
+                setPassword(text);
+                setAlreadyHasAccount(false);
+              }}
+              textContentType="newPassword"
+              autoComplete="password-new"
+              passwordRules="minlength: 6;"
+              autoCapitalize="none"
+              autoCorrect={false}
+              importantForAutofill="yes"
+              secureTextEntry
+              editable={!loading}
+              returnKeyType="done"
+              onSubmitEditing={handleSignup}
+            />
+          </View>
 
           <Pressable
             style={[styles.button, loading && styles.buttonDisabled]}
@@ -184,7 +202,7 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin,
               </Pressable>
             </View>
           )}
-        </KeyboardAvoidingView>
+        </ScrollView>
       </SafeAreaView>
     </View>
   );
@@ -200,6 +218,13 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    padding: 24,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
     padding: 24,
   },
   backBtn: {
@@ -221,15 +246,17 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: 24,
   },
-  input: {
+  inputWrap: {
     backgroundColor: colors.cardBg,
     borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: colors.textPrimary,
     borderWidth: 1,
     borderColor: colors.cardBorder,
     marginBottom: 16,
+  },
+  input: {
+    padding: 16,
+    fontSize: 16,
+    color: colors.textPrimary,
   },
   button: {
     backgroundColor: colors.primary,

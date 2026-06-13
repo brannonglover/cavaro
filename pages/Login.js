@@ -6,22 +6,24 @@ import {
   TextInput,
   Pressable,
   SafeAreaView,
-  KeyboardAvoidingView,
-  Platform,
+  ScrollView,
   Alert,
   ActivityIndicator,
 } from 'react-native';
 import colors from '../theme/colors';
-import { KEYBOARD_ACCESSORY_ID } from '../components/KeyboardAccessory';
 import { restoreSubscription } from '../api/subscription';
 import { useAuth } from '../context/AuthContext';
 import { trackEvent } from '../lib/analytics';
+import RestoreSubscriptionResultModal, {
+  getRestoreSubscriptionAlert,
+} from '../components/RestoreSubscriptionResultModal';
 
 export default function Login({ supabase, onSuccess, onBack, restoreAfterSignIn }) {
   const { refreshTier } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [restoreAlert, setRestoreAlert] = useState(null);
 
   const handleLogin = async () => {
     const e = email.trim();
@@ -42,15 +44,10 @@ export default function Login({ supabase, onSuccess, onBack, restoreAfterSignIn 
       if (restoreAfterSignIn) {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.access_token) {
-          try {
-            const { restored } = await restoreSubscription(session.access_token);
-            refreshTier?.();
-            if (restored) {
-              Alert.alert('Subscription restored', 'Welcome back! Your Premium features are now active.');
-            }
-          } catch (err) {
-            Alert.alert('Restore failed', err.message || 'Could not restore subscription.');
-          }
+          const result = await restoreSubscription(session.access_token);
+          refreshTier?.();
+          const alert = getRestoreSubscriptionAlert(result);
+          if (alert) setRestoreAlert(alert);
         }
       }
       onSuccess?.();
@@ -63,11 +60,16 @@ export default function Login({ supabase, onSuccess, onBack, restoreAfterSignIn 
 
   return (
     <View style={styles.screen}>
+      <RestoreSubscriptionResultModal
+        alert={restoreAlert}
+        onClose={() => setRestoreAlert(null)}
+      />
       <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView
-          style={styles.container}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={40}
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           <Pressable onPress={onBack} style={styles.backBtn} hitSlop={12}>
             <Text style={styles.backText}>← Back</Text>
@@ -76,30 +78,41 @@ export default function Login({ supabase, onSuccess, onBack, restoreAfterSignIn 
           <Text style={styles.title}>Sign in</Text>
           <Text style={styles.subtitle}>Welcome back</Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor={colors.placeholderText}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            editable={!loading}
-            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
-            returnKeyType="done"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor={colors.placeholderText}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            editable={!loading}
-            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
-            returnKeyType="done"
-          />
+          <View style={styles.inputWrap}>
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              placeholderTextColor={colors.placeholderText}
+              value={email}
+              onChangeText={setEmail}
+              textContentType="username"
+              autoComplete="username"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              importantForAutofill="yes"
+              editable={!loading}
+              returnKeyType="next"
+            />
+          </View>
+          <View style={styles.inputWrap}>
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              placeholderTextColor={colors.placeholderText}
+              value={password}
+              onChangeText={setPassword}
+              textContentType="password"
+              autoComplete="password"
+              autoCapitalize="none"
+              autoCorrect={false}
+              importantForAutofill="yes"
+              secureTextEntry
+              editable={!loading}
+              returnKeyType="done"
+              onSubmitEditing={handleLogin}
+            />
+          </View>
 
           <Pressable
             style={[styles.button, loading && styles.buttonDisabled]}
@@ -112,7 +125,7 @@ export default function Login({ supabase, onSuccess, onBack, restoreAfterSignIn 
               <Text style={styles.buttonText}>Sign in</Text>
             )}
           </Pressable>
-        </KeyboardAvoidingView>
+        </ScrollView>
       </SafeAreaView>
     </View>
   );
@@ -126,8 +139,11 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  container: {
+  scroll: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
     padding: 24,
   },
   backBtn: {
@@ -149,15 +165,17 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: 24,
   },
-  input: {
+  inputWrap: {
     backgroundColor: colors.cardBg,
     borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: colors.textPrimary,
     borderWidth: 1,
     borderColor: colors.cardBorder,
     marginBottom: 16,
+  },
+  input: {
+    padding: 16,
+    fontSize: 16,
+    color: colors.textPrimary,
   },
   button: {
     backgroundColor: colors.primary,

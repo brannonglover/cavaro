@@ -6,13 +6,11 @@ import {
   TextInput,
   Pressable,
   SafeAreaView,
-  KeyboardAvoidingView,
-  Platform,
+  ScrollView,
   Alert,
   ActivityIndicator,
 } from 'react-native';
 import colors from '../theme/colors';
-import { KEYBOARD_ACCESSORY_ID } from '../components/KeyboardAccessory';
 import { AUTH_CALLBACK_WEB_URL } from '../constants/authUrls';
 
 export default function ForgotPassword({ supabase, onBack, initialEmail = '' }) {
@@ -65,10 +63,11 @@ export default function ForgotPassword({ supabase, onBack, initialEmail = '' }) 
   return (
     <View style={styles.screen}>
       <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView
-          style={styles.container}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={40}
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           <Pressable onPress={onBack} style={styles.backBtn} hitSlop={12}>
             <Text style={styles.backText}>← Back</Text>
@@ -79,19 +78,24 @@ export default function ForgotPassword({ supabase, onBack, initialEmail = '' }) 
             Enter your email and we will send you a link to reset your password.
           </Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor={colors.placeholderText}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            editable={!loading}
-            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
-            returnKeyType="done"
-          />
+          <View style={styles.inputWrap}>
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              placeholderTextColor={colors.placeholderText}
+              value={email}
+              onChangeText={setEmail}
+              textContentType="emailAddress"
+              autoComplete="email"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              importantForAutofill="yes"
+              editable={!loading}
+              returnKeyType="done"
+              onSubmitEditing={handleReset}
+            />
+          </View>
 
           <Pressable
             style={[styles.button, loading && styles.buttonDisabled]}
@@ -104,7 +108,7 @@ export default function ForgotPassword({ supabase, onBack, initialEmail = '' }) 
               <Text style={styles.buttonText}>Send reset link</Text>
             )}
           </Pressable>
-        </KeyboardAvoidingView>
+        </ScrollView>
       </SafeAreaView>
     </View>
   );
@@ -120,6 +124,13 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    padding: 24,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
     padding: 24,
   },
   backBtn: {
@@ -141,15 +152,17 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: 24,
   },
-  input: {
+  inputWrap: {
     backgroundColor: colors.cardBg,
     borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: colors.textPrimary,
     borderWidth: 1,
     borderColor: colors.cardBorder,
     marginBottom: 16,
+  },
+  input: {
+    padding: 16,
+    fontSize: 16,
+    color: colors.textPrimary,
   },
   button: {
     backgroundColor: colors.primary,

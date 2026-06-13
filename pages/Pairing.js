@@ -22,8 +22,11 @@ import { API_BASE_URL } from '../api/config';
 import { useAuth } from '../context/AuthContext';
 import { trackEvent } from '../lib/analytics';
 import colors from '../theme/colors';
-import { KEYBOARD_ACCESSORY_ID } from '../components/KeyboardAccessory';
 import SubscriptionLegalLinks from '../components/SubscriptionLegalLinks';
+import RestoreSubscriptionResultModal, {
+  getRestoreSubscriptionAlert,
+  getSubscribeFailureAlert,
+} from '../components/RestoreSubscriptionResultModal';
 
 function Pairing() {
   const { tier, supabase, refreshTier } = useAuth();
@@ -39,6 +42,7 @@ function Pairing() {
   const [loading, setLoading] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [restoreLoading, setRestoreLoading] = useState(false);
+  const [restoreAlert, setRestoreAlert] = useState(null);
 
   const handleSubscribe = async () => {
     if (!supabase) {
@@ -72,13 +76,20 @@ function Pairing() {
             },
           ]
         );
+      } else if (result?.alreadyOwned) {
+        refreshTier?.();
+        const alert = getRestoreSubscriptionAlert(result.restoreResult);
+        if (alert) setRestoreAlert(alert);
       } else if (result?.unavailable) {
         Alert.alert('Premium', result.message || 'Subscriptions are not available on this device.');
       } else if (result?.started && result.outcomePromise) {
         const out = await result.outcomePromise;
         refreshTier?.();
         if (out.status === 'failed') {
-          Alert.alert('Subscribe failed', out.message || 'Could not verify subscription.');
+          const alert = out.restoreResult
+            ? getRestoreSubscriptionAlert(out.restoreResult)
+            : getSubscribeFailureAlert(out.message, { alreadyOwned: out.alreadyOwned });
+          if (alert) setRestoreAlert(alert);
         }
       }
     } catch (err) {
@@ -123,17 +134,10 @@ function Pairing() {
     }
     setRestoreLoading(true);
     try {
-      const { tier, restored } = await restoreSubscription(session.access_token);
+      const result = await restoreSubscription(session.access_token);
       refreshTier?.();
-      if (restored) {
-        Alert.alert('Subscription restored', 'Welcome back! Your Premium features are now active.');
-      } else if (tier === 'premium') {
-        Alert.alert('Already active', 'Your subscription is already active.');
-      } else {
-        Alert.alert('No subscription found', 'We couldn\'t find an active subscription for this account. If you recently subscribed, try again in a moment.');
-      }
-    } catch (err) {
-      Alert.alert('Restore failed', err.message || 'Could not restore subscription. Please try again.');
+      const alert = getRestoreSubscriptionAlert(result);
+      if (alert) setRestoreAlert(alert);
     } finally {
       setRestoreLoading(false);
     }
@@ -164,7 +168,12 @@ function Pairing() {
   const showUpgrade = tier === 'free' && supabase;
   if (showUpgrade) {
     return (
-      <View style={styles.screen}>
+      <>
+        <RestoreSubscriptionResultModal
+          alert={restoreAlert}
+          onClose={() => setRestoreAlert(null)}
+        />
+        <View style={styles.screen}>
         <SafeAreaView style={styles.container}>
           <View style={styles.header}>
             <View>
@@ -210,11 +219,17 @@ function Pairing() {
           </View>
         </SafeAreaView>
       </View>
+      </>
     );
   }
 
   return (
-    <View style={styles.screen}>
+    <>
+      <RestoreSubscriptionResultModal
+        alert={restoreAlert}
+        onClose={() => setRestoreAlert(null)}
+      />
+      <View style={styles.screen}>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <View>
@@ -228,19 +243,21 @@ function Pairing() {
           style={styles.content}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={100}
+          collapsable={false}
         >
           <Text style={styles.label}>What cigar are you about to smoke?</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. Padrón 1964 Anniversary, Montecristo No. 2..."
-            placeholderTextColor={colors.placeholderText}
-            value={cigar}
-            onChangeText={setCigar}
-            editable={!loading}
-            autoCapitalize="words"
-            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
-            returnKeyType="done"
-          />
+          <View collapsable={false}>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. Padrón 1964 Anniversary, Montecristo No. 2..."
+              placeholderTextColor={colors.placeholderText}
+              value={cigar}
+              onChangeText={setCigar}
+              editable={!loading}
+              autoCapitalize="words"
+              returnKeyType="done"
+            />
+          </View>
 
           <Pressable
             style={[styles.button, (!cigar.trim() || loading) && styles.buttonDisabled]}
@@ -272,6 +289,7 @@ function Pairing() {
         </KeyboardAvoidingView>
       </SafeAreaView>
     </View>
+    </>
   );
 }
 

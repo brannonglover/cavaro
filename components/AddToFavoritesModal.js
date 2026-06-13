@@ -96,7 +96,7 @@ export default function AddToFavoritesModal({ visible, cigar, onAdd, onCancel })
           <Pressable onPress={() => {}}>
             <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetTranslateY }] }]}>
               <View style={styles.iconWrap}>
-                <MaterialCommunityIcons name="star-plus-outline" size={32} color={colors.primary} />
+                <MaterialCommunityIcons name="heart-plus-outline" size={32} color={colors.primary} />
               </View>
               <Text style={styles.title}>Add to favorites</Text>
               <Text style={styles.subtitle}>

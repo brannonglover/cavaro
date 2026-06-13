@@ -15,7 +15,6 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { sendFeedback } from '../api/feedback';
 import colors from '../theme/colors';
-import { KEYBOARD_ACCESSORY_ID } from './KeyboardAccessory';
 
 const FEEDBACK_TYPES = [
   { label: 'General thought', value: 'General' },
@@ -61,6 +60,7 @@ export default function FeedbackModal({ visible, onClose }) {
         <KeyboardAvoidingView
           style={styles.overlayInner}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          collapsable={false}
         >
           <Pressable style={styles.sheet} onPress={() => {}}>
           <View style={styles.header}>
@@ -77,6 +77,7 @@ export default function FeedbackModal({ visible, onClose }) {
             style={styles.scroll}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
+            collapsable={false}
           >
             <Text style={styles.label}>Type</Text>
             <View style={styles.typeRow}>
@@ -103,7 +104,6 @@ export default function FeedbackModal({ visible, onClose }) {
               multiline
               numberOfLines={4}
               editable={!sending}
-              inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
               returnKeyType="done"
               blurOnSubmit={true}
             />

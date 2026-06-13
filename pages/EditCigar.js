@@ -19,7 +19,6 @@ import { db } from '../db';
 import { useAuth } from '../context/AuthContext';
 import { uploadCigarImage } from '../api/upload';
 import colors from '../theme/colors';
-import { KEYBOARD_ACCESSORY_ID } from '../components/KeyboardAccessory';
 import { pickCigarImage, takeCigarPhoto } from '../utils/imagePicker';
 import DatePickerField from '../components/DatePickerField';
 import UpgradeToPremiumModal from '../components/UpgradeToPremiumModal';
@@ -188,6 +187,7 @@ export default function EditCigar() {
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        collapsable={false}
       >
         <View style={styles.header}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={12}>
@@ -203,6 +203,7 @@ export default function EditCigar() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          collapsable={false}
         >
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Edit cigar details</Text>
@@ -218,7 +219,6 @@ export default function EditCigar() {
               placeholder="e.g. Alec Bradley"
               placeholderTextColor={colors.placeholderText}
               autoCapitalize="words"
-              inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
               returnKeyType="done"
             />
           </View>
@@ -232,7 +232,6 @@ export default function EditCigar() {
               placeholder="e.g. Prensado"
               placeholderTextColor={colors.placeholderText}
               autoCapitalize="words"
-              inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
               returnKeyType="done"
             />
           </View>
@@ -246,7 +245,6 @@ export default function EditCigar() {
               placeholder="e.g. Blue Label, Series JJ"
               placeholderTextColor={colors.placeholderText}
               autoCapitalize="words"
-              inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
             />
           </View>
 
@@ -258,7 +256,6 @@ export default function EditCigar() {
               onChangeText={setSize}
               placeholder="e.g. 6x52 or 7.5x50"
               placeholderTextColor={colors.placeholderText}
-              inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
               returnKeyType="done"
             />
             {size && !isValidSizeFormat(size) && (
@@ -275,7 +272,6 @@ export default function EditCigar() {
               placeholder="1"
               placeholderTextColor={colors.placeholderText}
               keyboardType="number-pad"
-              inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
             />
           </View>
 
@@ -297,7 +293,6 @@ export default function EditCigar() {
               placeholderTextColor={colors.placeholderText}
               multiline
               numberOfLines={3}
-              inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
               returnKeyType="done"
               blurOnSubmit={true}
             />
@@ -311,7 +306,6 @@ export default function EditCigar() {
               onChangeText={setWrapper}
               placeholder="e.g. Honduras"
               placeholderTextColor={colors.placeholderText}
-              inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
               returnKeyType="done"
             />
           </View>
@@ -324,7 +318,6 @@ export default function EditCigar() {
               onChangeText={setBinder}
               placeholder="e.g. Nicaragua"
               placeholderTextColor={colors.placeholderText}
-              inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
               returnKeyType="done"
             />
           </View>
@@ -337,7 +330,6 @@ export default function EditCigar() {
               onChangeText={setFiller}
               placeholder="e.g. Honduras, Nicaragua"
               placeholderTextColor={colors.placeholderText}
-              inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
               returnKeyType="done"
             />
           </View>

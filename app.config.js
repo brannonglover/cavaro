@@ -39,6 +39,7 @@ module.exports = {
       supportsTablet: true,
       bundleIdentifier: "com.brannonglover.cavaro",
       buildNumber,
+      associatedDomains: ["webcredentials:cavaroapp.com"],
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         LSApplicationQueriesSchemes: ["https", "http"],

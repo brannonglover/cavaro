@@ -23,6 +23,10 @@ import { useAuth } from '../context/AuthContext';
 import { trackEvent } from '../lib/analytics';
 import colors from '../theme/colors';
 import SubscriptionLegalLinks from '../components/SubscriptionLegalLinks';
+import RestoreSubscriptionResultModal, {
+  getRestoreSubscriptionAlert,
+  getSubscribeFailureAlert,
+} from '../components/RestoreSubscriptionResultModal';
 
 function filterCatalogByTaste(catalog, keywords) {
   if (!keywords?.length || !catalog?.length) return [];
@@ -117,6 +121,7 @@ export default function Search({ navigation }) {
   const [catalog, setCatalog] = useState([]);
   const [searchLimitReached, setSearchLimitReached] = useState(false);
   const [searchSignInRequired, setSearchSignInRequired] = useState(false);
+  const [restoreAlert, setRestoreAlert] = useState(null);
 
   const runSearch = useCallback(async () => {
     const keywords = [
@@ -207,6 +212,12 @@ export default function Search({ navigation }) {
         );
         return;
       }
+      if (result?.alreadyOwned) {
+        refreshTier?.();
+        const alert = getRestoreSubscriptionAlert(result.restoreResult);
+        if (alert) setRestoreAlert(alert);
+        return;
+      }
       if (result?.unavailable) {
         Alert.alert('Premium', result.message || 'Not available on this device.');
         return;
@@ -215,7 +226,10 @@ export default function Search({ navigation }) {
         const out = await result.outcomePromise;
         refreshTier?.();
         if (out.status === 'failed') {
-          Alert.alert('Subscribe failed', out.message || 'Could not verify subscription.');
+          const alert = out.restoreResult
+            ? getRestoreSubscriptionAlert(out.restoreResult)
+            : getSubscribeFailureAlert(out.message, { alreadyOwned: out.alreadyOwned });
+          if (alert) setRestoreAlert(alert);
         }
       }
     } catch (err) {
@@ -230,19 +244,10 @@ export default function Search({ navigation }) {
       Alert.alert('Sign in required', 'Please sign in to restore your subscription.');
       return;
     }
-    try {
-      const { tier: newTier, restored } = await restoreSubscription(session.access_token);
-      refreshTier?.();
-      if (restored) {
-        Alert.alert('Subscription restored', 'Welcome back! Your Premium features are now active.');
-      } else if (newTier === 'premium') {
-        Alert.alert('Already active', 'Your subscription is already active.');
-      } else {
-        Alert.alert('No subscription found', 'We couldn\'t find an active subscription for this account.');
-      }
-    } catch (err) {
-      Alert.alert('Restore failed', err.message || 'Could not restore subscription.');
-    }
+    const result = await restoreSubscription(session.access_token);
+    refreshTier?.();
+    const alert = getRestoreSubscriptionAlert(result);
+    if (alert) setRestoreAlert(alert);
   };
 
   const toggleFlavor = (flavor) => {
@@ -269,7 +274,12 @@ export default function Search({ navigation }) {
   const getSearchCardKey = (c) => `search-${c.id}-${c.brand}-${c.name}-${c.length}`;
 
   return (
-    <View style={styles.screen}>
+    <>
+      <RestoreSubscriptionResultModal
+        alert={restoreAlert}
+        onClose={() => setRestoreAlert(null)}
+      />
+      <View style={styles.screen}>
       <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <Text style={styles.title}>Search</Text>
@@ -277,7 +287,7 @@ export default function Search({ navigation }) {
       </View>
 
       <View style={styles.searchSection}>
-        <View style={styles.searchBar}>
+        <View style={styles.searchBar} collapsable={false}>
           <MaterialCommunityIcons name="magnify" size={22} color={colors.textMuted} />
           <TextInput
             style={styles.searchInput}
@@ -446,6 +456,7 @@ export default function Search({ navigation }) {
       )}
       </SafeAreaView>
     </View>
+    </>
   );
 }
 

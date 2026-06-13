@@ -14,7 +14,17 @@ const COLLECTIONS = {
   CAVARO: 'cavaro',
   LIKES: 'likes',
   DISLIKES: 'dislikes',
+  ARCHIVE: 'archive',
 };
+
+/** Smoked cigars still in Cavaro with no favorite/dislike decision yet. */
+export const ARCHIVE_WHERE =
+  "collection = 'cavaro' AND quantity = 0 AND is_favorite = 0 AND EXISTS (SELECT 1 FROM smoke_history sh WHERE sh.cigar_id = cigars.id)";
+
+export async function getArchiveCount() {
+  const row = await db.getFirstAsync(`SELECT COUNT(*) as n FROM cigars WHERE ${ARCHIVE_WHERE}`);
+  return row?.n ?? 0;
+}
 
 export { COLLECTIONS };
 

@@ -1,10 +1,15 @@
 import { API_BASE_URL } from './config';
 import {
+  cancelIapPurchaseWaiters,
+  getActivePremiumPurchaseIfOwned,
   restoreAppleSubscription,
   isIapAvailable,
+  isIapAlreadyOwned,
   premiumUnavailableMessage,
   requestPremiumPurchase,
+  syncPremiumAfterAlreadyOwned,
   waitForIapPurchaseResult,
+  whenIapReady,
 } from '../lib/iap';
 
 /**
@@ -35,6 +40,11 @@ export async function getSubscriptionStatus() {
 /**
  * Start Apple IAP purchase (iOS). When { started: true }, await outcomePromise for completion/cancel.
  */
+async function syncAlreadyOwnedPremium(accessToken) {
+  const restoreResult = await syncPremiumAfterAlreadyOwned(accessToken);
+  return { alreadyOwned: true, restoreResult };
+}
+
 export async function subscribeOrManage(accessToken, tier, userId) {
   if (tier === 'premium') {
     return { alreadySubscribed: true };
@@ -42,8 +52,31 @@ export async function subscribeOrManage(accessToken, tier, userId) {
   if (!isIapAvailable()) {
     return { unavailable: true, message: premiumUnavailableMessage() };
   }
+
+  const ready = await whenIapReady();
+  if (!ready) {
+    throw new Error(
+      'Could not connect to the App Store. Check your network and Apple ID under Settings, then try again.',
+    );
+  }
+
+  // Avoid StoreKit "already-owned" when Apple ID already has our subscription product.
+  const ownedPurchase = await getActivePremiumPurchaseIfOwned();
+  if (ownedPurchase) {
+    return syncAlreadyOwnedPremium(accessToken);
+  }
+
+  try {
+    await requestPremiumPurchase(userId);
+  } catch (e) {
+    if (isIapAlreadyOwned(e)) {
+      return syncAlreadyOwnedPremium(accessToken);
+    }
+    cancelIapPurchaseWaiters();
+    throw e;
+  }
+
   const outcomePromise = waitForIapPurchaseResult();
-  await requestPremiumPurchase(userId);
   return { started: true, outcomePromise };
 }
 
@@ -51,5 +84,24 @@ export async function subscribeOrManage(accessToken, tier, userId) {
  * Restore Apple subscription and sync tier with the server.
  */
 export async function restoreSubscription(accessToken) {
-  return restoreAppleSubscription(accessToken);
+  try {
+    if (isIapAvailable()) {
+      const ready = await whenIapReady();
+      if (!ready) {
+        return {
+          tier: 'free',
+          restored: false,
+          error:
+            'Could not connect to the App Store. Check your network and Apple ID under Settings, then try again.',
+        };
+      }
+    }
+    return await restoreAppleSubscription(accessToken);
+  } catch (e) {
+    return {
+      tier: 'free',
+      restored: false,
+      error: e.message || 'Could not sync subscription with the server.',
+    };
+  }
 }

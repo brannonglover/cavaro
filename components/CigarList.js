@@ -4,7 +4,7 @@ import { StyleSheet, Text, View, FlatList, Pressable, Image, Animated, Alert } f
 import { Swipeable } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { db, COLLECTIONS } from '../db';
+import { db, COLLECTIONS, ARCHIVE_WHERE } from '../db';
 import colors from '../theme/colors';
 import ImageViewerModal from './ImageViewerModal';
 import AddToFavoritesModal from './AddToFavoritesModal';
@@ -390,20 +390,26 @@ export default function CigarList({ view, onEditCigar }) {
     FROM cigars
     WHERE ${whereClause}`;
 
+  const loadCigarsForView = async (viewName) => {
+    if (viewName === COLLECTIONS.LIKES) {
+      return db.getAllAsync(
+        cigarQuery('collection = ? OR (collection = ? AND is_favorite = 1)'),
+        COLLECTIONS.LIKES,
+        COLLECTIONS.CAVARO
+      );
+    }
+    if (viewName === COLLECTIONS.CAVARO) {
+      return db.getAllAsync(cigarQuery('collection = ? AND quantity > 0'), COLLECTIONS.CAVARO);
+    }
+    if (viewName === COLLECTIONS.ARCHIVE) {
+      return db.getAllAsync(cigarQuery(ARCHIVE_WHERE));
+    }
+    return db.getAllAsync(cigarQuery('collection = ?'), viewName);
+  };
+
   const refreshList = async () => {
     try {
-      let rows;
-      if (view === COLLECTIONS.LIKES) {
-        rows = await db.getAllAsync(
-          cigarQuery('collection = ? OR (collection = ? AND is_favorite = 1)', [COLLECTIONS.LIKES, COLLECTIONS.CAVARO]),
-          COLLECTIONS.LIKES,
-          COLLECTIONS.CAVARO
-        );
-      } else if (view === COLLECTIONS.CAVARO) {
-        rows = await db.getAllAsync(cigarQuery('collection = ? AND quantity > 0', view), view);
-      } else {
-        rows = await db.getAllAsync(cigarQuery('collection = ?', view), view);
-      }
+      const rows = await loadCigarsForView(view);
       setViewList(rows);
     } catch (error) {
       console.log(error);
@@ -492,7 +498,7 @@ export default function CigarList({ view, onEditCigar }) {
     const dateToUse = smokedDate?.trim() || null;
     try {
       const quantity = Math.max(0, parseInt(cigar.quantity, 10) || 1);
-      const isFromCavaro = view === COLLECTIONS.CAVARO;
+      const isFromCavaro = view === COLLECTIONS.CAVARO || view === COLLECTIONS.ARCHIVE;
       const shouldLeaveCavaro = isFromCavaro && quantity < 2;
       if (shouldLeaveCavaro) {
         await db.runAsync(
@@ -620,6 +626,16 @@ export default function CigarList({ view, onEditCigar }) {
     });
   };
 
+  const restoreToCavaro = async (id) => {
+    try {
+      trackEvent('cigar_restored_from_archive');
+      await db.runAsync('UPDATE cigars SET quantity = 1 WHERE id = ?', id);
+      refreshList();
+    } catch (error) {
+      console.log(`Error restoring cigar: ${error}`);
+    }
+  };
+
   const deleteCigar = async (id) => {
     try {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
@@ -638,18 +654,7 @@ export default function CigarList({ view, onEditCigar }) {
       let cancelled = false;
       const load = async () => {
         try {
-          let rows;
-          if (view === COLLECTIONS.LIKES) {
-            rows = await db.getAllAsync(
-              cigarQuery('collection = ? OR (collection = ? AND is_favorite = 1)'),
-              COLLECTIONS.LIKES,
-              COLLECTIONS.CAVARO
-            );
-          } else if (view === COLLECTIONS.CAVARO) {
-            rows = await db.getAllAsync(cigarQuery('collection = ? AND quantity > 0'), view);
-          } else {
-            rows = await db.getAllAsync(cigarQuery('collection = ?'), view);
-          }
+          const rows = await loadCigarsForView(view);
           if (!cancelled) setViewList(rows);
         } catch (error) {
           console.log(error);
@@ -748,7 +753,7 @@ export default function CigarList({ view, onEditCigar }) {
             isExpanded={show && detailsKey === cigarNum}
             cigar={cigar}
           />
-          {(view === 'cavaro' || view === 'likes' || view === 'dislikes') && (
+          {(view === 'cavaro' || view === 'likes' || view === 'dislikes' || view === 'archive') && (
             <ExpandableFavoriteNotes
               isExpanded={expandedNotes === cigar.id}
               cigar={cigar}
@@ -762,7 +767,7 @@ export default function CigarList({ view, onEditCigar }) {
               }}
             />
           )}
-          {(view === 'cavaro' || view === 'likes') && (
+          {(view === 'cavaro' || view === 'likes' || view === 'archive') && (
             <View style={styles.actionIcons}>
               <View style={styles.notesIconBtn}>
                 <Pressable
@@ -796,6 +801,23 @@ export default function CigarList({ view, onEditCigar }) {
                 />
               </View>
               <View style={styles.rightActionIcons}>
+                {view === 'archive' && (
+                  <Pressable
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      restoreToCavaro(cigar.id);
+                    }}
+                    hitSlop={8}
+                    style={styles.iconBtn}
+                    accessibilityLabel="Restore to Cavaro"
+                  >
+                    <MaterialCommunityIcons
+                      name="archive-arrow-up-outline"
+                      size={24}
+                      color={colors.textSecondary}
+                    />
+                  </Pressable>
+                )}
                 {view === 'cavaro' && (cigar.quantity ?? 1) > 0 && (
                   <Pressable
                     onPress={(e) => {
@@ -822,12 +844,12 @@ export default function CigarList({ view, onEditCigar }) {
                   style={styles.iconBtn}
                 >
                   <MaterialCommunityIcons
-                    name={(cigar.is_favorite ?? 0) ? 'star' : 'star-outline'}
+                    name={(cigar.is_favorite ?? 0) ? 'heart' : 'heart-outline'}
                     size={24}
                     color={(cigar.is_favorite ?? 0) ? colors.primary : colors.textSecondary}
                   />
                 </Pressable>
-                {view === 'cavaro' && (
+                {(view === 'cavaro' || view === 'archive') && (
                   <Pressable
                     onPress={(e) => {
                       e.stopPropagation();
@@ -957,6 +979,15 @@ export default function CigarList({ view, onEditCigar }) {
         <View style={styles.emptyState}>
           <Text style={styles.emptyStateText}>
             Cavaro without cigars is just a fancy box. Time to fill it up.
+          </Text>
+        </View>
+      );
+    }
+    if (view === COLLECTIONS.ARCHIVE) {
+      return (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>
+            Nothing here yet. Cigars you smoke will appear here until you add your thoughts or sort them into Favorites or Dislikes.
           </Text>
         </View>
       );

@@ -1,4 +1,8 @@
+const crypto = require('crypto');
 const { AppStoreServerAPIClient, Environment, Status } = require('@apple/app-store-server-library');
+
+const P8_HEADER = '-----BEGIN PRIVATE KEY-----';
+const P8_FOOTER = '-----END PRIVATE KEY-----';
 
 function decodeJwsPayload(jws) {
   if (!jws || typeof jws !== 'string') return null;
@@ -23,31 +27,110 @@ function getEnvironment() {
 /**
  * App Store Server API client (JWT auth). Requires .p8 key in APP_STORE_PRIVATE_KEY.
  */
-function normalizeP8Key(key) {
-  if (!key?.trim()) return null;
-  if (key.includes('-----BEGIN')) return key.replace(/\\n/g, '\n');
+function normalizeP8Key(raw) {
+  if (!raw?.trim()) return null;
+  let key = raw.trim();
+
+  if (
+    (key.startsWith('"') && key.endsWith('"')) ||
+    (key.startsWith("'") && key.endsWith("'"))
+  ) {
+    key = key.slice(1, -1).trim();
+  }
+
+  key = key.replace(/\\n/g, '\n');
+
+  if (!key.includes(P8_HEADER)) {
+    try {
+      const decoded = Buffer.from(key.replace(/\s/g, ''), 'base64').toString('utf8');
+      if (decoded.includes(P8_HEADER)) {
+        key = decoded.replace(/\\n/g, '\n');
+      } else {
+        const compact = key.replace(/\s/g, '');
+        if (/^[A-Za-z0-9+/=]+$/.test(compact) && compact.length > 100) {
+          const body = compact.match(/.{1,64}/g)?.join('\n') || compact;
+          key = `${P8_HEADER}\n${body}\n${P8_FOOTER}`;
+        }
+      }
+    } catch {
+      /* keep original */
+    }
+  }
+
+  return key.trim();
+}
+
+function validateP8Key(key) {
+  if (!key) {
+    return { ok: false, error: 'APP_STORE_PRIVATE_KEY is not set' };
+  }
+  if (!key.includes(P8_HEADER) || !key.includes(P8_FOOTER)) {
+    return {
+      ok: false,
+      error:
+        'APP_STORE_PRIVATE_KEY must be the full .p8 PEM from App Store Connect (including BEGIN/END lines)',
+    };
+  }
+  const body = key.replace(P8_HEADER, '').replace(P8_FOOTER, '').replace(/\s/g, '');
+  if (body.length < 100) {
+    return {
+      ok: false,
+      error:
+        'APP_STORE_PRIVATE_KEY looks truncated. Paste the entire .p8 file contents, not just the header line.',
+    };
+  }
   try {
-    return Buffer.from(key, 'base64').toString('utf8');
-  } catch {
-    return key;
+    crypto.createPrivateKey({ key, format: 'pem', type: 'pkcs8' });
+    return { ok: true };
+  } catch (e) {
+    return {
+      ok: false,
+      error: `APP_STORE_PRIVATE_KEY is invalid for ES256: ${e.message}`,
+    };
   }
 }
 
+function getNormalizedP8Key() {
+  return normalizeP8Key(process.env.APP_STORE_PRIVATE_KEY);
+}
+
+function getIapConfigIssues() {
+  const issues = [];
+  if (!process.env.APP_STORE_PRIVATE_KEY) issues.push('APP_STORE_PRIVATE_KEY');
+  if (!process.env.APP_STORE_KEY_ID) issues.push('APP_STORE_KEY_ID');
+  if (!process.env.APP_STORE_ISSUER_ID) issues.push('APP_STORE_ISSUER_ID');
+  if (process.env.APP_STORE_PRIVATE_KEY) {
+    const validation = validateP8Key(getNormalizedP8Key());
+    if (!validation.ok) issues.push(validation.error);
+  }
+  return issues;
+}
+
 function createApiClient() {
-  const key = normalizeP8Key(process.env.APP_STORE_PRIVATE_KEY);
+  const key = getNormalizedP8Key();
   const keyId = process.env.APP_STORE_KEY_ID;
   const issuerId = process.env.APP_STORE_ISSUER_ID;
   const bundleId = getBundleId();
   if (!key || !keyId || !issuerId) return null;
+
+  const validation = validateP8Key(key);
+  if (!validation.ok) {
+    throw new Error(validation.error);
+  }
+
   return new AppStoreServerAPIClient(key, keyId, issuerId, bundleId, getEnvironment());
 }
 
 function iapConfigured() {
-  return !!(
-    process.env.APP_STORE_PRIVATE_KEY &&
-    process.env.APP_STORE_KEY_ID &&
-    process.env.APP_STORE_ISSUER_ID
-  );
+  return getIapConfigIssues().length === 0;
+}
+
+function formatAppleApiError(err) {
+  const msg = err?.message || String(err);
+  if (/asymmetric key|ES256|invalid for ES256|truncated|must be the full/i.test(msg)) {
+    return `${msg}. Download a fresh In-App Purchase key (.p8) from App Store Connect → Users and Access → Integrations → In-App Purchase, set APP_STORE_PRIVATE_KEY in server/.env (use \\n for newlines on one line), then restart the server.`;
+  }
+  return msg;
 }
 
 /**
@@ -129,8 +212,12 @@ module.exports = {
   getBundleId,
   getPremiumProductId,
   getEnvironment,
+  normalizeP8Key,
+  validateP8Key,
+  getIapConfigIssues,
   createApiClient,
   iapConfigured,
+  formatAppleApiError,
   getTransactionFromApple,
   assertTransactionMatchesUser,
   syncSubscriptionTierFromApple,

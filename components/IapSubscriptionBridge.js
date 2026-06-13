@@ -2,7 +2,14 @@ import { useEffect, useRef } from 'react';
 import { Platform, AppState, DeviceEventEmitter } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { IOS_PREMIUM_PRODUCT_ID } from '../constants/iap';
-import { verifyAppleTransaction, initIapConnection } from '../lib/iap';
+import {
+  verifyAppleTransaction,
+  ensureIapConnection,
+  refreshIapConnectionOnResume,
+  isIapAlreadyOwned,
+  isIapUserCancelled,
+  syncPremiumAfterAlreadyOwned,
+} from '../lib/iap';
 
 function getIapModule() {
   if (Platform.OS !== 'ios') return null;
@@ -13,12 +20,40 @@ function getIapModule() {
   }
 }
 
+function isPremiumPurchaseError(err) {
+  if (!err?.productId) return true;
+  return err.productId === IOS_PREMIUM_PRODUCT_ID;
+}
+
+async function handleAlreadyOwnedPurchase(supabase, setTierFromSubscription, refreshTier) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    DeviceEventEmitter.emit('iapPurchaseFailed', { message: 'Sign in required' });
+    return;
+  }
+  const restoreResult = await syncPremiumAfterAlreadyOwned(session.access_token);
+  if (restoreResult.tier === 'premium' || restoreResult.restored) {
+    setTierFromSubscription?.('premium');
+    await refreshTier?.();
+    DeviceEventEmitter.emit('iapPurchaseCompleted');
+    return;
+  }
+  DeviceEventEmitter.emit('iapPurchaseFailed', {
+    message:
+      restoreResult.error ||
+      'Your Apple ID already has Premium, but Cavaro could not activate it yet. Tap Restore subscription to try again.',
+    alreadyOwned: true,
+    restoreResult,
+  });
+}
+
 /**
  * Initializes StoreKit and verifies purchases when the user completes checkout.
  */
 export default function IapSubscriptionBridge() {
   const { user, supabase, refreshTier, setTierFromSubscription } = useAuth();
-  const handlersRef = useRef({ inFlight: false });
+  const processedTransactionsRef = useRef(new Set());
+  const alreadyOwnedSyncRef = useRef(null);
 
   useEffect(() => {
     if (Platform.OS !== 'ios') return undefined;
@@ -29,20 +64,22 @@ export default function IapSubscriptionBridge() {
     let errorSub;
 
     (async () => {
-      await initIapConnection();
+      const ready = await ensureIapConnection();
+      if (!ready) return;
       purchaseSub = iap.purchaseUpdatedListener(async (purchase) => {
         if (purchase.productId !== IOS_PREMIUM_PRODUCT_ID) return;
-        if (handlersRef.current.inFlight) return;
-        handlersRef.current.inFlight = true;
+        const tid = purchase.transactionId || purchase.id;
+        if (!tid) {
+          DeviceEventEmitter.emit('iapPurchaseFailed', { message: 'Missing transaction' });
+          return;
+        }
+        if (processedTransactionsRef.current.has(tid)) return;
+        processedTransactionsRef.current.add(tid);
+
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (!session?.access_token) {
             DeviceEventEmitter.emit('iapPurchaseFailed', { message: 'Sign in required' });
-            return;
-          }
-          const tid = purchase.transactionId || purchase.id;
-          if (!tid) {
-            DeviceEventEmitter.emit('iapPurchaseFailed', { message: 'Missing transaction' });
             return;
           }
           await verifyAppleTransaction(session.access_token, tid);
@@ -59,21 +96,34 @@ export default function IapSubscriptionBridge() {
           DeviceEventEmitter.emit('iapPurchaseCompleted');
         } catch (e) {
           const message = e?.message || String(e);
-          console.warn('IAP verify:', message);
+          if (__DEV__) console.warn('IAP verify:', message);
           DeviceEventEmitter.emit('iapPurchaseFailed', { message });
-        } finally {
-          handlersRef.current.inFlight = false;
         }
       });
 
-      errorSub = iap.purchaseErrorListener((err) => {
-        if (__DEV__) console.warn('IAP purchase error:', err);
-        const code = err?.code;
-        if (code === 'E_USER_CANCELLED' || code === 'user-cancelled') {
+      errorSub = iap.purchaseErrorListener(async (err) => {
+        if (isIapUserCancelled(err)) {
           DeviceEventEmitter.emit('iapPurchaseCancelled');
-        } else {
-          DeviceEventEmitter.emit('iapPurchaseFailed', { message: err?.message || 'Purchase failed' });
+          return;
         }
+        if (isIapAlreadyOwned(err)) {
+          if (alreadyOwnedSyncRef.current) {
+            await alreadyOwnedSyncRef.current;
+            return;
+          }
+          alreadyOwnedSyncRef.current = handleAlreadyOwnedPurchase(
+            supabase,
+            setTierFromSubscription,
+            refreshTier
+          ).finally(() => {
+            alreadyOwnedSyncRef.current = null;
+          });
+          await alreadyOwnedSyncRef.current;
+          return;
+        }
+        if (!isPremiumPurchaseError(err)) return;
+        if (__DEV__) console.warn('IAP purchase error:', err);
+        DeviceEventEmitter.emit('iapPurchaseFailed', { message: err?.message || 'Purchase failed' });
       });
     })();
 
@@ -83,11 +133,13 @@ export default function IapSubscriptionBridge() {
     };
   }, [supabase, refreshTier, setTierFromSubscription]);
 
-  // Refresh tier when returning from App Store subscription management
+  // Reconnect StoreKit and refresh tier when returning from background / App Store UI
   useEffect(() => {
-    if (!user || !supabase) return undefined;
+    if (Platform.OS !== 'ios') return undefined;
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') refreshTier?.();
+      if (state !== 'active') return;
+      refreshIapConnectionOnResume().catch(() => {});
+      if (user && supabase) refreshTier?.();
     });
     return () => sub.remove();
   }, [user, supabase, refreshTier]);

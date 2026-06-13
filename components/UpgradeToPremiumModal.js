@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Modal,
   View,
@@ -9,12 +9,17 @@ import {
   Dimensions,
   ActivityIndicator,
   Alert,
+  AppState,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import colors from '../theme/colors';
 import { subscribeOrManage, restoreSubscription } from '../api/subscription';
 import { openManageSubscriptions } from '../lib/iap';
 import SubscriptionLegalLinks from './SubscriptionLegalLinks';
+import RestoreSubscriptionResultModal, {
+  getRestoreSubscriptionAlert,
+  getSubscribeFailureAlert,
+} from './RestoreSubscriptionResultModal';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -34,6 +39,43 @@ export default function UpgradeToPremiumModal({
   const sheetTranslateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const [restoreLoading, setRestoreLoading] = useState(false);
   const [subscribeLoading, setSubscribeLoading] = useState(false);
+  const [restoreAlert, setRestoreAlert] = useState(null);
+
+  const clearLoadingState = useCallback(() => {
+    setRestoreLoading(false);
+    setSubscribeLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (visible) {
+      clearLoadingState();
+    }
+  }, [visible, clearLoadingState]);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') clearLoadingState();
+    });
+    return () => sub.remove();
+  }, [clearLoadingState]);
+
+  const showRestoreAlertAfterClose = (alert) => {
+    if (!alert) return;
+    setTimeout(() => setRestoreAlert(alert), 350);
+  };
+
+  const handleAlreadyOwnedResult = (restoreResult) => {
+    refreshTier?.();
+    if (restoreResult?.tier === 'premium' || restoreResult?.restored) {
+      handleClose();
+      return;
+    }
+    const alert = getRestoreSubscriptionAlert(restoreResult);
+    if (alert) {
+      handleClose();
+      showRestoreAlertAfterClose(alert);
+    }
+  };
 
   useEffect(() => {
     if (visible) {
@@ -71,33 +113,29 @@ export default function UpgradeToPremiumModal({
   };
 
   const handleRestore = async () => {
-    if (!accessToken || restoreLoading) return;
+    if (!accessToken || restoreLoading || subscribeLoading) return;
     setRestoreLoading(true);
     try {
-      const { tier: newTier, restored } = await restoreSubscription(accessToken);
+      const result = await restoreSubscription(accessToken);
       refreshTier?.();
-      handleClose();
-      if (restored) {
-        Alert.alert('Subscription restored', 'Welcome back! Your Premium features are now active.');
-      } else if (newTier === 'premium') {
-        Alert.alert('Already active', 'Your subscription is already active.');
+      if (result?.tier === 'premium' || result?.restored) {
+        handleClose();
       } else {
-        Alert.alert('No subscription found', "We couldn't find an active subscription for this account.");
+        const alert = getRestoreSubscriptionAlert(result);
+        handleClose();
+        showRestoreAlertAfterClose(alert);
       }
-    } catch (e) {
-      Alert.alert('Restore failed', e.message || 'Could not restore subscription.');
     } finally {
       setRestoreLoading(false);
     }
   };
 
   const handleSubscribe = async () => {
-    if (!accessToken || !userId || subscribeLoading) return;
+    if (!accessToken || !userId || subscribeLoading || restoreLoading) return;
     setSubscribeLoading(true);
     try {
       const result = await subscribeOrManage(accessToken, tier, userId);
       if (result?.alreadySubscribed) {
-        setSubscribeLoading(false);
         Alert.alert(
           "You're already subscribed",
           'Would you like to manage your subscription?',
@@ -116,27 +154,44 @@ export default function UpgradeToPremiumModal({
             },
           ]
         );
+      } else if (result?.alreadyOwned) {
+        handleAlreadyOwnedResult(result.restoreResult);
       } else if (result?.unavailable) {
-        setSubscribeLoading(false);
         Alert.alert('Premium', result.message || 'Subscriptions are not available here.');
       } else if (result?.started && result.outcomePromise) {
         const out = await result.outcomePromise;
-        setSubscribeLoading(false);
         if (out.status === 'completed') {
           refreshTier?.();
           handleClose();
         } else if (out.status === 'failed') {
-          Alert.alert('Subscription', out.message || 'Could not complete purchase.');
+          refreshTier?.();
+          if (out.alreadyOwned && out.restoreResult) {
+            handleAlreadyOwnedResult(out.restoreResult);
+          } else {
+            const alert = out.restoreResult
+              ? getRestoreSubscriptionAlert(out.restoreResult)
+              : getSubscribeFailureAlert(out.message, { alreadyOwned: out.alreadyOwned });
+            if (alert) {
+              handleClose();
+              showRestoreAlertAfterClose(alert);
+            }
+          }
         }
       }
     } catch (e) {
-      setSubscribeLoading(false);
       Alert.alert('Error', e.message || 'Could not start checkout');
+    } finally {
+      setSubscribeLoading(false);
     }
   };
 
   return (
-    <Modal
+    <>
+      <RestoreSubscriptionResultModal
+        alert={restoreAlert}
+        onClose={() => setRestoreAlert(null)}
+      />
+      <Modal
       visible={visible}
       transparent
       animationType="none"
@@ -161,6 +216,9 @@ export default function UpgradeToPremiumModal({
             </View>
             <Text style={styles.title}>Upgrade to Premium</Text>
             <Text style={styles.message}>{message}</Text>
+            <Text style={styles.appleIdNote}>
+              App Store checkout uses your Apple ID. Your Cavaro email and password are separate.
+            </Text>
             <SubscriptionLegalLinks />
             <View style={styles.actions}>
               <Pressable
@@ -197,6 +255,7 @@ export default function UpgradeToPremiumModal({
         </Pressable>
       </View>
     </Modal>
+    </>
   );
 }
 
@@ -239,7 +298,15 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
+    marginBottom: 12,
+  },
+  appleIdNote: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 18,
     marginBottom: 24,
+    opacity: 0.85,
   },
   actions: {
     flexDirection: 'column',

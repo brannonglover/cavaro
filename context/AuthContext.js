@@ -51,6 +51,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [previewFreeTier, setPreviewFreeTier] = useState(false);
   const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
+  const [pendingPremiumSubscribe, setPendingPremiumSubscribe] = useState(false);
 
   useEffect(() => {
     if (!supabase) {
@@ -150,6 +151,9 @@ export function AuthProvider({ children }) {
     setTierFromSubscription: (newTier) => {
       if (newTier === 'premium') setTier('premium');
     },
+    pendingPremiumSubscribe,
+    setPendingPremiumSubscribe,
+    clearPendingPremiumSubscribe: () => setPendingPremiumSubscribe(false),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

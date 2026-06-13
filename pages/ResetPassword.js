@@ -6,13 +6,11 @@ import {
   TextInput,
   Pressable,
   SafeAreaView,
-  KeyboardAvoidingView,
-  Platform,
+  ScrollView,
   Alert,
   ActivityIndicator,
 } from 'react-native';
 import colors from '../theme/colors';
-import { KEYBOARD_ACCESSORY_ID } from '../components/KeyboardAccessory';
 
 export default function ResetPassword({ supabase, onComplete }) {
   const [password, setPassword] = useState('');
@@ -51,39 +49,53 @@ export default function ResetPassword({ supabase, onComplete }) {
   return (
     <View style={styles.screen}>
       <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView
-          style={styles.container}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={40}
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           <Text style={styles.title}>Set new password</Text>
           <Text style={styles.subtitle}>
             Choose a new password for your Cavaro account.
           </Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="New password"
-            placeholderTextColor={colors.placeholderText}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            editable={!loading}
-            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
-            returnKeyType="next"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Confirm new password"
-            placeholderTextColor={colors.placeholderText}
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-            editable={!loading}
-            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
-            returnKeyType="done"
-            onSubmitEditing={handleSubmit}
-          />
+          <View style={styles.inputWrap}>
+            <TextInput
+              style={styles.input}
+              placeholder="New password"
+              placeholderTextColor={colors.placeholderText}
+              value={password}
+              onChangeText={setPassword}
+              textContentType="newPassword"
+              autoComplete="password-new"
+              passwordRules="minlength: 6;"
+              autoCapitalize="none"
+              autoCorrect={false}
+              importantForAutofill="yes"
+              secureTextEntry
+              editable={!loading}
+              returnKeyType="next"
+            />
+          </View>
+          <View style={styles.inputWrap}>
+            <TextInput
+              style={styles.input}
+              placeholder="Confirm new password"
+              placeholderTextColor={colors.placeholderText}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              textContentType="newPassword"
+              autoComplete="password-new"
+              autoCapitalize="none"
+              autoCorrect={false}
+              importantForAutofill="yes"
+              secureTextEntry
+              editable={!loading}
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit}
+            />
+          </View>
 
           <Pressable
             style={[styles.button, loading && styles.buttonDisabled]}
@@ -96,7 +108,7 @@ export default function ResetPassword({ supabase, onComplete }) {
               <Text style={styles.buttonText}>Update password</Text>
             )}
           </Pressable>
-        </KeyboardAvoidingView>
+        </ScrollView>
       </SafeAreaView>
     </View>
   );
@@ -115,6 +127,14 @@ const styles = StyleSheet.create({
     padding: 24,
     justifyContent: 'center',
   },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    padding: 24,
+    justifyContent: 'center',
+  },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
@@ -126,15 +146,17 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: 24,
   },
-  input: {
+  inputWrap: {
     backgroundColor: colors.cardBg,
     borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: colors.textPrimary,
     borderWidth: 1,
     borderColor: colors.cardBorder,
     marginBottom: 16,
+  },
+  input: {
+    padding: 16,
+    fontSize: 16,
+    color: colors.textPrimary,
   },
   button: {
     backgroundColor: colors.primary,

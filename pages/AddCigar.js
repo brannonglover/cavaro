@@ -21,7 +21,6 @@ import { fetchCatalog, addCigarToCatalog } from '../api/catalog';
 import { uploadCigarImage } from '../api/upload';
 import { useAuth } from '../context/AuthContext';
 import colors from '../theme/colors';
-import { KEYBOARD_ACCESSORY_ID } from '../components/KeyboardAccessory';
 import { pickCigarImage, takeCigarPhoto } from '../utils/imagePicker';
 import DatePickerField, { getTodayDateString } from '../components/DatePickerField';
 import UpgradeToPremiumModal from '../components/UpgradeToPremiumModal';
@@ -388,6 +387,7 @@ export default function AddCigar() {
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        collapsable={false}
       >
         <View style={styles.header}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={12}>
@@ -405,9 +405,14 @@ export default function AddCigar() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          collapsable={false}
         >
           {!showCustom ? (
             <>
+              <Pressable style={styles.switchLinkTop} onPress={() => setShowCustom(true)}>
+                <Text style={styles.switchLinkText}>Add new</Text>
+              </Pressable>
+
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Select from catalog</Text>
                 <Text style={styles.sectionSubtitle}>Choose brand, name, and size from the database</Text>
@@ -473,7 +478,6 @@ export default function AddCigar() {
                   placeholder="e.g. Blue Label, Series JJ"
                   placeholderTextColor={colors.placeholderText}
                   autoCapitalize="words"
-                  inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
                 />
               </View>
 
@@ -509,7 +513,6 @@ export default function AddCigar() {
                   placeholder="1"
                   placeholderTextColor={colors.placeholderText}
                   keyboardType="number-pad"
-                  inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
                 />
               </View>
 
@@ -564,10 +567,6 @@ export default function AddCigar() {
               >
                 <Text style={[styles.primaryBtnText, !isCatalogValid && styles.primaryBtnTextDisabled]}>Add to Cavaro</Text>
               </Pressable>
-
-              <Pressable style={styles.switchLink} onPress={() => setShowCustom(true)}>
-                <Text style={styles.switchLinkText}>Can't find your cigar? Add custom</Text>
-              </Pressable>
             </>
           ) : (
             <>
@@ -585,7 +584,6 @@ export default function AddCigar() {
                   placeholder="e.g. Alec Bradley"
                   placeholderTextColor={colors.placeholderText}
                   autoCapitalize="words"
-                  inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
                   returnKeyType="done"
                 />
               </View>
@@ -599,7 +597,6 @@ export default function AddCigar() {
                   placeholder="e.g. Prensado"
                   placeholderTextColor={colors.placeholderText}
                   autoCapitalize="words"
-                  inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
                   returnKeyType="done"
                 />
               </View>
@@ -613,7 +610,6 @@ export default function AddCigar() {
                   placeholder="e.g. Blue Label, Series JJ"
                   placeholderTextColor={colors.placeholderText}
                   autoCapitalize="words"
-                  inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
                 />
               </View>
 
@@ -625,7 +621,6 @@ export default function AddCigar() {
                   onChangeText={setCustomSize}
                   placeholder="e.g. 6x52 or 7.5x50"
                   placeholderTextColor={colors.placeholderText}
-                  inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
                   returnKeyType="done"
                 />
                 {customSize && !isValidSizeFormat(customSize) && (
@@ -642,7 +637,6 @@ export default function AddCigar() {
                   placeholder="1"
                   placeholderTextColor={colors.placeholderText}
                   keyboardType="number-pad"
-                  inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
                 />
               </View>
 
@@ -664,7 +658,6 @@ export default function AddCigar() {
                   placeholderTextColor={colors.placeholderText}
                   multiline
                   numberOfLines={3}
-                  inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
                   returnKeyType="done"
                   blurOnSubmit={true}
                 />
@@ -678,7 +671,6 @@ export default function AddCigar() {
                   onChangeText={setCustomWrapper}
                   placeholder="e.g. Honduras"
                   placeholderTextColor={colors.placeholderText}
-                  inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
                   returnKeyType="done"
                 />
               </View>
@@ -691,7 +683,6 @@ export default function AddCigar() {
                   onChangeText={setCustomBinder}
                   placeholder="e.g. Nicaragua"
                   placeholderTextColor={colors.placeholderText}
-                  inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
                   returnKeyType="done"
                 />
               </View>
@@ -704,7 +695,6 @@ export default function AddCigar() {
                   onChangeText={setCustomFiller}
                   placeholder="e.g. Honduras, Nicaragua"
                   placeholderTextColor={colors.placeholderText}
-                  inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
                   returnKeyType="done"
                 />
               </View>
@@ -903,6 +893,11 @@ const styles = StyleSheet.create({
   },
   switchLink: {
     marginTop: 20,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  switchLinkTop: {
+    marginBottom: 8,
     paddingVertical: 12,
     alignItems: 'center',
   },

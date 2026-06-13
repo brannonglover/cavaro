@@ -3,6 +3,8 @@ const { createClient } = require('@supabase/supabase-js');
 const pool = require('../config/postgres');
 const {
   iapConfigured,
+  getIapConfigIssues,
+  formatAppleApiError,
   getTransactionFromApple,
   assertTransactionMatchesUser,
   syncSubscriptionTierFromApple,
@@ -25,9 +27,7 @@ router.get('/status', (_req, res) => {
   if (!supabaseUrl) missing.push('SUPABASE_URL');
   if (!supabaseServiceKey) missing.push('SUPABASE_SERVICE_ROLE_KEY');
   if (!process.env.DATABASE_URL) missing.push('DATABASE_URL');
-  if (!process.env.APP_STORE_PRIVATE_KEY) missing.push('APP_STORE_PRIVATE_KEY');
-  if (!process.env.APP_STORE_KEY_ID) missing.push('APP_STORE_KEY_ID');
-  if (!process.env.APP_STORE_ISSUER_ID) missing.push('APP_STORE_ISSUER_ID');
+  missing.push(...getIapConfigIssues());
   res.json({
     configured: missing.length === 0 && iapConfigured(),
     missing,
@@ -48,7 +48,9 @@ router.post('/apple/verify', async (req, res) => {
     return res.status(400).json({ error: 'Missing auth or transactionId' });
   }
   if (!iapConfigured()) {
-    return res.status(503).json({ error: 'Apple In-App Purchase is not configured on the server' });
+    const issues = getIapConfigIssues();
+    const detail = issues.length > 0 ? issues.join('; ') : 'Apple In-App Purchase is not configured on the server';
+    return res.status(503).json({ error: detail });
   }
 
   try {
@@ -92,7 +94,7 @@ router.post('/apple/verify', async (req, res) => {
     return res.json({ tier: 'premium' });
   } catch (err) {
     console.error('Apple verify error:', err);
-    return res.status(400).json({ error: err.message || 'Verification failed' });
+    return res.status(400).json({ error: formatAppleApiError(err) || 'Verification failed' });
   }
 });
 
@@ -151,6 +153,9 @@ router.post('/apple/restore', async (req, res) => {
         }
       } catch (e) {
         console.warn('Apple restore verify:', e.message);
+        if (/asymmetric key|ES256|invalid for ES256|truncated|must be the full/i.test(e.message || '')) {
+          return res.status(503).json({ error: formatAppleApiError(e) });
+        }
       }
     }
 
@@ -166,7 +171,7 @@ router.post('/apple/restore', async (req, res) => {
     });
   } catch (err) {
     console.error('Apple restore error:', err);
-    return res.status(500).json({ error: err.message || 'Restore failed' });
+    return res.status(500).json({ error: formatAppleApiError(err) || 'Restore failed' });
   }
 });
 

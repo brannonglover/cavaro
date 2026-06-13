@@ -6,13 +6,12 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainerWithAnalytics } from './components/NavigationAnalytics';
 import { ActionButtons } from './components/ActionButtons';
-import KeyboardAccessory from './components/KeyboardAccessory';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthStack from './navigation/AuthStack';
-import { ClickOutsideProvider } from 'react-native-click-outside';
 import { initDatabase } from './db';
 import IapSubscriptionBridge from './components/IapSubscriptionBridge';
 import ResetPassword from './pages/ResetPassword';
+import UpgradeToPremiumModal from './components/UpgradeToPremiumModal';
 import { AUTH_CALLBACK_APP_URL } from './constants/authUrls';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -25,6 +24,43 @@ SplashScreen.setOptions({ fade: true, duration: FADE_DURATION });
 const showAuthFlow = !!process.env.EXPO_PUBLIC_SUPABASE_URL;
 
 const SLOW_LOAD_THRESHOLD_MS = 1500;
+
+/** After premium signup, prompt IAP only once Cavaro account exists (Password AutoFill runs on Signup). */
+function PostSignupPremiumPrompt() {
+  const {
+    user,
+    supabase,
+    tier,
+    refreshTier,
+    pendingPremiumSubscribe,
+    clearPendingPremiumSubscribe,
+  } = useAuth();
+  const [accessToken, setAccessToken] = useState(null);
+
+  useEffect(() => {
+    if (!pendingPremiumSubscribe || !supabase) {
+      setAccessToken(null);
+      return;
+    }
+    supabase.auth.getSession().then(({ data }) => {
+      setAccessToken(data.session?.access_token ?? null);
+    });
+  }, [pendingPremiumSubscribe, supabase, user?.id]);
+
+  if (!pendingPremiumSubscribe || !user || !accessToken) return null;
+
+  return (
+    <UpgradeToPremiumModal
+      visible
+      message="Your Cavaro account is ready. Tap Subscribe to unlock Premium for $2.99/mo. The next step uses your Apple ID for App Store billing—not your Cavaro password."
+      onClose={clearPendingPremiumSubscribe}
+      accessToken={accessToken}
+      userId={user.id}
+      tier={tier}
+      refreshTier={refreshTier}
+    />
+  );
+}
 
 function AppContent() {
   const [isReady, setIsReady] = useState(false);
@@ -98,6 +134,7 @@ function AppContent() {
         <NavigationContainerWithAnalytics>
           <ActionButtons />
         </NavigationContainerWithAnalytics>
+        <PostSignupPremiumPrompt />
       </View>
     );
   };
@@ -195,13 +232,10 @@ function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar style="light" />
-      <KeyboardAccessory />
       <AuthProvider>
         <AuthDeepLinkHandler />
         <IapSubscriptionBridge />
-        <ClickOutsideProvider>
-          <AppContent />
-        </ClickOutsideProvider>
+        <AppContent />
       </AuthProvider>
     </GestureHandlerRootView>
   );

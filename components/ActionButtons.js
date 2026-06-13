@@ -83,7 +83,7 @@ export function ActionButtons() {
         tabBarIcon: ({ focused }) => (
           <View style={styles.tabIcon}>
             <MaterialCommunityIcons
-              name={focused ? 'star' : 'star-outline'}
+              name={focused ? 'heart' : 'heart-outline'}
               size={36}
               color={focused ? colors.primaryLight : colors.textSecondary}
             />

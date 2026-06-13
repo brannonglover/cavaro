@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Cavaro from '../pages/Cavaro';
 import AddCigar from '../pages/AddCigar';
 import EditCigar from '../pages/EditCigar';
+import Archive from '../pages/Archive';
 import colors from '../theme/colors';
 
 const Stack = createNativeStackNavigator();
@@ -15,6 +16,7 @@ export default function CavaroStack() {
       }}
     >
       <Stack.Screen name="CavaroList" component={Cavaro} />
+      <Stack.Screen name="Archive" component={Archive} />
       <Stack.Screen name="AddCigar" component={AddCigar} />
       <Stack.Screen name="EditCigar" component={EditCigar} />
     </Stack.Navigator>
