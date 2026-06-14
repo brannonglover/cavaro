@@ -18,6 +18,7 @@ import { parseStrengthProfile } from './StrengthProfileModal';
 import { useAuth } from '../context/AuthContext';
 import { restoreSubscription } from '../api/subscription';
 import { trackEvent } from '../lib/analytics';
+import { schedulePushUserCigars } from '../lib/userCigarsSync';
 
 function hasSmokeNotes(cigar) {
   const s = (cigar?.smoke_notes ?? '').trim();
@@ -411,6 +412,9 @@ export default function CigarList({ view, onEditCigar }) {
     try {
       const rows = await loadCigarsForView(view);
       setViewList(rows);
+      if (user && supabase) {
+        schedulePushUserCigars(supabase);
+      }
     } catch (error) {
       console.log(error);
     }

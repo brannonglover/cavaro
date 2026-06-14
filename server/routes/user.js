@@ -72,6 +72,7 @@ router.delete('/account', async (req, res) => {
     const userId = user.id;
 
     await pool.query('DELETE FROM cigar_reviews WHERE user_id = $1', [userId]);
+    await pool.query('DELETE FROM user_cigars WHERE user_id = $1', [userId]).catch(() => {});
     await pool.query('DELETE FROM user_profiles WHERE id = $1', [userId]);
 
     const { error: delErr } = await supabase.auth.admin.deleteUser(userId);

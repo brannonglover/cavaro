@@ -9,6 +9,7 @@ import { ActionButtons } from './components/ActionButtons';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthStack from './navigation/AuthStack';
 import { initDatabase } from './db';
+import { pushUserCigars } from './lib/userCigarsSync';
 import IapSubscriptionBridge from './components/IapSubscriptionBridge';
 import ResetPassword from './pages/ResetPassword';
 import UpgradeToPremiumModal from './components/UpgradeToPremiumModal';
@@ -77,6 +78,15 @@ function AppContent() {
       .then(() => {
         clearTimeout(timeout);
         setIsReady(true);
+        if (showAuthFlow && supabase) {
+          supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.access_token) {
+              pushUserCigars(session.access_token).catch((err) => {
+                console.warn('User cigars backfill push failed:', err.message || err);
+              });
+            }
+          });
+        }
       })
       .catch((err) => {
         clearTimeout(timeout);

@@ -8,6 +8,7 @@
     "dev": "nodemon index.js",
     "init-catalog": "node scripts/initCatalog.js",
     "init-user-profiles": "node scripts/init-user-profiles.js",
+    "init-user-cigars": "node scripts/init-user-cigars.js",
     "init-reviews": "node scripts/initReviews.js",
     "seed-reviews": "node scripts/seedReviews.js",
     "add-line-column": "node scripts/addLineColumn.js",

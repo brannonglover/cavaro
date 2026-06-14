@@ -9,6 +9,7 @@ const uploadRoutes = require('./routes/upload');
 const feedbackRoutes = require('./routes/feedback');
 const pairingRoutes = require('./routes/pairing');
 const userRoutes = require('./routes/user');
+const userCigarsRoutes = require('./routes/userCigars');
 const subscriptionRoutes = require('./routes/subscription');
 const port = process.env.PORT || 5001;
 
@@ -33,6 +34,8 @@ app.use('/api/feedback', feedbackRoutes);
 app.use('/api/pairing', pairingRoutes);
 // User tier (Supabase Auth + user_profiles)
 app.use('/api/user', userRoutes);
+// User favorites/dislikes sync
+app.use('/api/user/cigars', userCigarsRoutes);
 // Apple IAP (verify / restore)
 app.use('/api/subscription', subscriptionRoutes);
 
