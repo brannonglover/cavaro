@@ -82,6 +82,9 @@ export default function Home() {
           <p className="mt-2 text-xl text-humidor-muted sm:text-2xl">
             Your personal cigar companion
           </p>
+          <p className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-humidor-muted/90">
+            Know your collection. Understand your taste. Choose your next cigar with confidence.
+          </p>
         </div>
       </section>
 
@@ -93,18 +96,19 @@ export default function Home() {
           </h2>
           <div className="mt-4 space-y-3 text-lg leading-relaxed text-humidor-muted">
             <p>
-              Every cigar enthusiast deserves a place to track their collection, remember what they
-              loved, and discover the perfect drink to pair with their next smoke.
+              Cavaro is more than a humidor tracker. It&apos;s a premium companion that helps you
+              manage what&apos;s in your humidor, remember every cigar you&apos;ve smoked,
+              understand your palate, and choose better cigars over time.
             </p>
             <p>
-              Cavaro helps you catalog your cigars, log tasting notes, track strength profiles
-              across first, second, and final thirds—and with Premium, get AI-powered drink pairing
-              suggestions that elevate every session.
+              Whether you&apos;re cataloging current inventory, journaling tasting notes, cellaring
+              cigars for aging, or deciding what to smoke tonight — Cavaro learns from your
+              experience and grows with your collection.
             </p>
           </div>
 
           {/* Benefits */}
-          <div className="mt-8 grid gap-6 sm:grid-cols-3">
+          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <div className="flex flex-col items-center text-center">
               <div className="rounded-full bg-humidor-card p-4 ring-1 ring-humidor-border">
                 <svg
@@ -118,7 +122,31 @@ export default function Home() {
                   <rect x={4} y={16} width={24} height={10} rx={3} ry={3} />
                 </svg>
               </div>
-              <p className="mt-2 font-medium text-humidor-cream">Track your collection</p>
+              <p className="mt-2 font-medium text-humidor-cream">Humidor inventory</p>
+              <p className="mt-1 text-sm text-humidor-muted">
+                Track what you have on hand across multiple humidors
+              </p>
+            </div>
+            <div className="flex flex-col items-center text-center">
+              <div className="rounded-full bg-humidor-card p-4 ring-1 ring-humidor-border">
+                <svg
+                  className="h-8 w-8 text-humidor-primary"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                  />
+                </svg>
+              </div>
+              <p className="mt-2 font-medium text-humidor-cream">Smoking journal</p>
+              <p className="mt-1 text-sm text-humidor-muted">
+                Log ratings, flavors, and detailed tasting notes
+              </p>
             </div>
             <div className="flex flex-col items-center text-center">
               <div className="rounded-full bg-humidor-card p-4 ring-1 ring-humidor-border">
@@ -136,7 +164,52 @@ export default function Home() {
                   />
                 </svg>
               </div>
-              <p className="mt-2 font-medium text-humidor-cream">Favorites & notes</p>
+              <p className="mt-2 font-medium text-humidor-cream">Your palate</p>
+              <p className="mt-1 text-sm text-humidor-muted">
+                See what you love, what to revisit, and what to buy next
+              </p>
+            </div>
+            <div className="flex flex-col items-center text-center">
+              <div className="rounded-full bg-humidor-card p-4 ring-1 ring-humidor-border">
+                <svg
+                  className="h-8 w-8 text-humidor-primary"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <p className="mt-2 font-medium text-humidor-cream">Intentional cellaring</p>
+              <p className="mt-1 text-sm text-humidor-muted">
+                Age cigars on your timeline with ready-to-smoke alerts
+              </p>
+            </div>
+            <div className="flex flex-col items-center text-center">
+              <div className="rounded-full bg-humidor-card p-4 ring-1 ring-humidor-border">
+                <svg
+                  className="h-8 w-8 text-humidor-primary"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                  />
+                </svg>
+              </div>
+              <p className="mt-2 font-medium text-humidor-cream">Tonight&apos;s pick</p>
+              <p className="mt-1 text-sm text-humidor-muted">
+                Get personalized smoke recommendations from your humidor
+              </p>
             </div>
             <div className="flex flex-col items-center text-center">
               <div className="rounded-full bg-humidor-card p-4 ring-1 ring-humidor-border">
@@ -149,6 +222,9 @@ export default function Home() {
                 </svg>
               </div>
               <p className="mt-2 font-medium text-humidor-cream">Drink pairings</p>
+              <p className="mt-1 text-sm text-humidor-muted">
+                Elevate every session with AI-powered pairing suggestions
+              </p>
             </div>
           </div>
         </div>
@@ -166,8 +242,9 @@ export default function Home() {
               price="Try it free"
               features={[
                 `Add up to ${FREE_CIGAR_LIMIT} cigars`,
-                'Track favorites and dislikes',
-                'Tasting notes & strength profiles',
+                'Humidor inventory & collection stats',
+                'Smoking journal & taste profile',
+                'Basic tasting notes',
               ]}
               cta="Get started"
               href="#download"
@@ -177,9 +254,10 @@ export default function Home() {
               title="Premium"
               price="$2.99/mo"
               features={[
-                'Unlimited cigars',
-                'AI-powered drink pairing',
-                'All features unlocked',
+                'Unlimited cigars & favorites',
+                'Strength profile across thirds',
+                'Cigar photos',
+                'AI-powered drink pairings',
               ]}
               cta="Get the App"
               href="#download"
@@ -189,8 +267,8 @@ export default function Home() {
           </div>
 
           <p className="mt-12 text-center text-humidor-muted">
-            Download the app to sign up and get started. Premium subscribers get unlimited cigars and
-            AI-powered drink pairing suggestions.
+            Download the app to sign up and get started. Cavaro learns your palate as you journal —
+            the more you smoke and rate, the smarter your recommendations become.
           </p>
 
           <DownloadSection />

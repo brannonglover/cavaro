@@ -59,10 +59,11 @@ export default function TermsPage() {
               Acceptable Use
             </h2>
             <p className="leading-relaxed">
-              You agree to use Cavaro only for its intended purpose—tracking your personal cigar
-              collection, logging tasting notes, and discovering drink pairings. You may not use the
-              service for any unlawful purpose, attempt to interfere with the app&apos;s operation, or
-              access another user&apos;s account without permission.
+              You agree to use Cavaro only for its intended purpose—managing your personal cigar
+              collection, journaling smoking experiences, understanding your taste preferences, and
+              discovering drink pairings. You may not use the service for any unlawful purpose,
+              attempt to interfere with the app&apos;s operation, or access another user&apos;s account
+              without permission.
             </p>
           </div>
 

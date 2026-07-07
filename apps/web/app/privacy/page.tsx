@@ -25,10 +25,12 @@ export default function PrivacyPage() {
               About Cavaro
             </h2>
             <p className="leading-relaxed">
-              Cavaro is a personal cigar companion app designed to help you track your cigar
-              collection, log tasting notes, and discover drink pairings. The app is intended for
-              cigar enthusiasts who want to catalog their collection and get the most from every
-              smoke. To use Cavaro, you must create an account and register.
+              Cavaro is a premium cigar companion app designed to help you manage your humidor
+              inventory, journal smoking experiences, understand your palate, cellar cigars
+              intentionally, and choose what to smoke or buy next. Premium subscribers can also
+              access AI-powered drink pairing suggestions. The app is intended for cigar enthusiasts
+              who want to get the most from every smoke. To use Cavaro, you must create an account
+              and register.
             </p>
           </div>
 

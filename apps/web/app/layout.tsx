@@ -5,7 +5,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Cavaro — Your Personal Cigar Companion',
   description:
-    'Track your cigar collection, log tasting notes, and discover AI-powered drink pairings. Free and Premium tiers available.',
+    'Manage your humidor, journal your smokes, understand your palate, and choose your next cigar with confidence. Free and Premium tiers available.',
 };
 
 export default function RootLayout({
