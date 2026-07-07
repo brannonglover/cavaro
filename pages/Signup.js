@@ -33,6 +33,7 @@ function isDuplicateSignupResponse(data) {
 
 export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin, onGoToForgotPassword }) {
   const { setPendingPremiumSubscribe } = useAuth();
+  const [firstName, setFirstName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -42,6 +43,11 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin,
   const handleSignup = async () => {
     const e = email.trim();
     const p = password;
+    const name = firstName.trim();
+    if (!name) {
+      Alert.alert('Missing name', 'Please enter your first name.');
+      return;
+    }
     if (!e || !p) {
       Alert.alert('Missing fields', 'Please enter email and password.');
       return;
@@ -58,9 +64,13 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin,
     setAlreadyHasAccount(false);
     try {
       const { data, error } = await supabase.auth.signUp(
-        { email: e, password: p },
         {
-          emailRedirectTo: AUTH_CALLBACK_WEB_URL,
+          email: e,
+          password: p,
+          options: {
+            data: { first_name: name },
+            emailRedirectTo: AUTH_CALLBACK_WEB_URL,
+          },
         }
       );
       if (error) {
@@ -136,6 +146,21 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin,
               : 'Free tier: up to 5 cigars'}
           </Text>
 
+          <View style={styles.inputWrap}>
+            <TextInput
+              style={styles.input}
+              placeholder="First name"
+              placeholderTextColor={colors.placeholderText}
+              value={firstName}
+              onChangeText={setFirstName}
+              textContentType="givenName"
+              autoComplete="given-name"
+              autoCapitalize="words"
+              autoCorrect={false}
+              editable={!loading}
+              returnKeyType="next"
+            />
+          </View>
           <View style={styles.inputWrap}>
             <TextInput
               style={styles.input}

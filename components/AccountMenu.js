@@ -19,7 +19,7 @@ import { trackEvent } from '../lib/analytics';
 const DROPDOWN_WIDTH = 188;
 const DROPDOWN_PADDING = 8;
 
-export default function AccountMenu({ onSignOut, children }) {
+export default function AccountMenu({ onSignOut, children, triggerStyle }) {
   const { supabase } = useAuth();
   const [visible, setVisible] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -138,7 +138,7 @@ export default function AccountMenu({ onSignOut, children }) {
           <ActivityIndicator size="large" color={colors.textSecondary} />
         </View>
       </Modal>
-      <Pressable ref={triggerRef} onPress={open} style={styles.trigger}>
+      <Pressable ref={triggerRef} onPress={open} style={[styles.trigger, triggerStyle]}>
         {children}
       </Pressable>
       <Modal

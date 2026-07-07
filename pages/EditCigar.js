@@ -25,6 +25,8 @@ import CreatableSelectField from '../components/CreatableSelectField';
 import UpgradeToPremiumModal from '../components/UpgradeToPremiumModal';
 import { trackEvent } from '../lib/analytics';
 import { loadKnownBlendOptions } from '../utils/blendOptions';
+import { CellaringProgressCard } from '../components/ui';
+import { getCellaredItemsForCigar } from '../lib/cellaring';
 
 // Size format: #x## or #.#x## (e.g. 6x52, 7.5x50) - no slashes
 const SIZE_FORMAT = /^\d+(\.\d+)?x\d+(\.\d+)?$/;
@@ -51,6 +53,7 @@ export default function EditCigar() {
   const [dateAdded, setDateAdded] = useState(cigar?.date_added ?? '');
   const [upgradeModal, setUpgradeModal] = useState({ visible: false, message: '', accessToken: null, userId: null });
   const [blendOptions, setBlendOptions] = useState({ wrapper: [], binder: [], filler: [] });
+  const [cellaredItems, setCellaredItems] = useState([]);
 
   const scrollViewRef = useRef(null);
 
@@ -59,7 +62,14 @@ export default function EditCigar() {
   useFocusEffect(
     React.useCallback(() => {
       scrollViewRef.current?.scrollTo({ y: 0, animated: false });
-    }, [])
+      if (!cigar?.id) {
+        setCellaredItems([]);
+        return;
+      }
+      getCellaredItemsForCigar(cigar.id)
+        .then(setCellaredItems)
+        .catch(() => setCellaredItems([]));
+    }, [cigar?.id])
   );
 
   useEffect(() => {
@@ -350,6 +360,25 @@ export default function EditCigar() {
             ) : null}
           </View>
 
+          {cellaredItems.length > 0 ? (
+            <View style={styles.cellaringSection}>
+              <Text style={styles.sectionTitle}>Cellaring</Text>
+              <Text style={styles.sectionSubtitle}>Cigars intentionally set aside to age</Text>
+              {cellaredItems.map((item) => (
+                <CellaringProgressCard
+                  key={item.id}
+                  name={item.name}
+                  brand={item.brand}
+                  currentMonths={item.currentMonths}
+                  targetMonths={item.targetMonths}
+                  readyLabel={item.readyLabel}
+                  progress={item.progress}
+                  style={styles.cellaringCard}
+                />
+              ))}
+            </View>
+          ) : null}
+
           <Pressable
             style={[styles.primaryBtn, !isValid && styles.primaryBtnDisabled]}
             onPress={handleSave}
@@ -471,6 +500,12 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: 40,
+  },
+  cellaringSection: {
+    marginBottom: 24,
+  },
+  cellaringCard: {
+    marginTop: 12,
   },
   imagePickerBtn: {
     backgroundColor: colors.cardBg,

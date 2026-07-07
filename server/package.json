@@ -1,6 +1,6 @@
 {
   "name": "server",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -13,6 +13,7 @@
     "seed-reviews": "node scripts/seedReviews.js",
     "add-line-column": "node scripts/addLineColumn.js",
     "migrate-catalog": "node scripts/migrate-catalog.js",
+    "generate-catalog-images": "node scripts/generateCatalogImages.js",
     "add-apple-iap-column": "node scripts/add-apple-iap-column.js",
     "android": "expo run:android",
     "ios": "expo run:ios"

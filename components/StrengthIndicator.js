@@ -1,24 +1,9 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import colors from '../theme/colors';
+import { getOverallStrength } from '../lib/strength';
 
-/**
- * Computes overall strength (1-5) from strength_profile JSON.
- * Uses rounded average of thirds; 0 = no data.
- */
-export function getOverallStrength(strengthProfileJson) {
-  if (!strengthProfileJson?.trim()) return 0;
-  try {
-    const parsed = JSON.parse(strengthProfileJson);
-    const thirds = parsed.thirds ?? [];
-    const values = thirds.slice(0, 3).map((t) => t.strength ?? 0).filter((v) => v > 0);
-    if (values.length === 0) return 0;
-    const avg = values.reduce((a, b) => a + b, 0) / values.length;
-    return Math.round(avg);
-  } catch {
-    return 0;
-  }
-}
+export { getOverallStrength } from '../lib/strength';
 
 /**
  * Compact strength bar (1-5 dots) shown next to notes icon.

@@ -50,6 +50,7 @@ const FREE_CIGAR_LIMIT = 5;
 export default function AddCigar() {
   const navigation = useNavigation();
   const route = useRoute();
+  const targetHumidorId = route.params?.humidorId ?? 1;
   const { tier, supabase, refreshTier } = useAuth();
   const [showCustom, setShowCustom] = useState(false);
   const [cigarCount, setCigarCount] = useState(0);
@@ -304,7 +305,7 @@ export default function AddCigar() {
         }
       }
       await db.runAsync(
-        'INSERT INTO cigars (brand, name, line, description, wrapper, binder, filler, length, image, quantity, collection, date_added) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO cigars (brand, name, line, description, wrapper, binder, filler, length, image, quantity, collection, date_added, humidor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         cigarBrand.trim(),
         cigarName.trim(),
         cigarLine.trim() || null,
@@ -316,7 +317,8 @@ export default function AddCigar() {
         imageUrl,
         qty,
         COLLECTIONS.CAVARO,
-        dateToUse
+        dateToUse,
+        targetHumidorId
       );
       trackEvent('cigar_added', { source: 'catalog', quantity: qty });
       navigation.goBack();
@@ -360,7 +362,7 @@ export default function AddCigar() {
       const dateToUse = dateAdded?.trim() || new Date().toISOString().slice(0, 10);
 
       await db.runAsync(
-        'INSERT INTO cigars (brand, name, line, description, wrapper, binder, filler, length, image, quantity, collection, date_added) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO cigars (brand, name, line, description, wrapper, binder, filler, length, image, quantity, collection, date_added, humidor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         customBrand.trim(),
         customName.trim(),
         customLine.trim() || null,
@@ -372,7 +374,8 @@ export default function AddCigar() {
         imageUrl,
         qty,
         COLLECTIONS.CAVARO,
-        dateToUse
+        dateToUse,
+        targetHumidorId
       );
       trackEvent('cigar_added', { source: 'custom', quantity: qty });
 

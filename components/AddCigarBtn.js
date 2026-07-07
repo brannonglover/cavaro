@@ -1,15 +1,27 @@
-import { View, Pressable, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
-import colors from '../theme/colors';
+import { hapticMedium } from '../lib/haptics';
+import { colors, shadows, spacing } from '../theme';
+import PressableScale from './ui/PressableScale';
 
 function AddCigarBtn({ onPress }) {
+  const handlePress = () => {
+    hapticMedium();
+    onPress?.();
+  };
+
   return (
-    <Pressable style={[styles.btnContainer, styles.boxShadow]} onPress={onPress}>
+    <PressableScale
+      onPress={handlePress}
+      scaleTo={0.92}
+      style={[styles.btnContainer, styles.boxShadow]}
+      accessibilityLabel="Add cigar"
+    >
       <View style={styles.btnIconContainer}>
-        <AntDesign name="pluscircle" size={48} color={colors.accent} />
+        <AntDesign name="pluscircle" size={48} color={colors.gold} />
       </View>
-    </Pressable>
-  )
+    </PressableScale>
+  );
 }
 
 export default AddCigarBtn;
@@ -20,22 +32,16 @@ const styles = StyleSheet.create({
     height: 56,
     width: 56,
     position: 'absolute',
-    bottom: 15,
-    right: 16,
-    backgroundColor: colors.cardBg,
-    borderWidth: 2,
-    borderColor: colors.cardBorder,
-  },
-  boxShadow: {
-    shadowColor: colors.textPrimary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 4,
+    bottom: spacing.lg,
+    right: spacing.lg,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(143, 116, 64, 0.5)',
+    ...shadows.elevated,
   },
   btnIconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
-  }
+  },
 });

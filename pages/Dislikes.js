@@ -18,7 +18,7 @@ function Dislikes({ navigation }) {
         </View>
         <CigarList
           view={view}
-          onEditCigar={(cigar) => navigation.navigate('Cavaro', { screen: 'EditCigar', params: { cigar } })}
+          onEditCigar={(cigar) => navigation.navigate('Humidors', { screen: 'EditCigar', params: { cigar } })}
         />
       </SafeAreaView>
     </View>

@@ -5,7 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainerWithAnalytics } from './components/NavigationAnalytics';
-import { ActionButtons } from './components/ActionButtons';
+import MainTabs from './navigation/MainTabs';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthStack from './navigation/AuthStack';
 import { initDatabase } from './db';
@@ -14,6 +14,7 @@ import IapSubscriptionBridge from './components/IapSubscriptionBridge';
 import ResetPassword from './pages/ResetPassword';
 import UpgradeToPremiumModal from './components/UpgradeToPremiumModal';
 import { AUTH_CALLBACK_APP_URL } from './constants/authUrls';
+import { colors } from './theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -119,7 +120,7 @@ function AppContent() {
       return (
         <View style={styles.appRoot}>
           <NavigationContainerWithAnalytics>
-            <ActionButtons />
+            <MainTabs />
           </NavigationContainerWithAnalytics>
         </View>
       );
@@ -142,7 +143,7 @@ function AppContent() {
     return (
       <View style={styles.appRoot}>
         <NavigationContainerWithAnalytics>
-          <ActionButtons />
+          <MainTabs />
         </NavigationContainerWithAnalytics>
         <PostSignupPremiumPrompt />
       </View>
@@ -240,7 +241,7 @@ function AuthDeepLinkHandler() {
 
 function App() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style="light" />
       <AuthProvider>
         <AuthDeepLinkHandler />

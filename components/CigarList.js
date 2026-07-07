@@ -2,18 +2,23 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { StyleSheet, Text, View, FlatList, Pressable, Image, Animated, Alert } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import * as Haptics from 'expo-haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { db, COLLECTIONS, ARCHIVE_WHERE } from '../db';
+import { hapticMedium, hapticSuccess, hapticWarning } from '../lib/haptics';
+import { db, COLLECTIONS, ARCHIVE_WHERE, markCigarSmokedWithJournal } from '../db';
 import colors from '../theme/colors';
+import { colors as designColors } from '../theme';
 import ImageViewerModal from './ImageViewerModal';
 import AddToFavoritesModal from './AddToFavoritesModal';
 import PersonalNotesModal from './PersonalNotesModal';
-import SmokedOneModal from './SmokedOneModal';
+import MarkSmokedReviewModal from './MarkSmokedReviewModal';
 import StrengthProfileModal from './StrengthProfileModal';
 import ConfirmModal from './ConfirmModal';
 import UpgradeToPremiumModal from './UpgradeToPremiumModal';
+import MoveCigarModal from './MoveCigarModal';
+import StartCellaringModal from './StartCellaringModal';
+import HumidorInventoryCard from './humidors/HumidorInventoryCard';
 import StrengthIndicator, { getOverallStrength } from './StrengthIndicator';
+import { EmptyState } from './ui';
 import { parseStrengthProfile } from './StrengthProfileModal';
 import { useAuth } from '../context/AuthContext';
 import { restoreSubscription } from '../api/subscription';
@@ -169,12 +174,13 @@ function ExpandableFavoriteNotes({ isExpanded, cigar, onEdit, onOpenStrengthProf
   );
 }
 
-function ExpandableDetails({ isExpanded, cigar }) {
+function ExpandableDetails({ isExpanded, cigar, variant = 'default' }) {
+  const isInventory = variant === 'inventory';
   const [smokeHistory, setSmokeHistory] = useState([]);
   const opacity = useRef(new Animated.Value(0)).current;
   const maxHeight = useRef(new Animated.Value(0)).current;
   const marginTop = useRef(new Animated.Value(0)).current;
-  const marginBottom = useRef(new Animated.Value(-16)).current;
+  const marginBottom = useRef(new Animated.Value(isInventory ? 0 : -16)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -189,17 +195,17 @@ function ExpandableDetails({ isExpanded, cigar }) {
         useNativeDriver: false,
       }),
       Animated.timing(marginTop, {
-        toValue: isExpanded ? 16 : 0,
+        toValue: isExpanded ? (isInventory ? 0 : 16) : 0,
         duration: 180,
         useNativeDriver: false,
       }),
       Animated.timing(marginBottom, {
-        toValue: isExpanded ? 0 : -16,
+        toValue: isExpanded ? 0 : (isInventory ? 0 : -16),
         duration: 180,
         useNativeDriver: false,
       }),
     ]).start();
-  }, [isExpanded, opacity, maxHeight, marginTop, marginBottom]);
+  }, [isExpanded, isInventory, opacity, maxHeight, marginTop, marginBottom]);
 
   useEffect(() => {
     if (!isExpanded || !cigar?.id) return;
@@ -221,7 +227,7 @@ function ExpandableDetails({ isExpanded, cigar }) {
 
   return (
     <Animated.View style={[
-      styles.attributesShow,
+      isInventory ? styles.inventoryAttributesShow : styles.attributesShow,
       {
         opacity,
         maxHeight,
@@ -231,31 +237,33 @@ function ExpandableDetails({ isExpanded, cigar }) {
         minHeight: 0,
       }
     ]}>
-      <View>
-        <Text style={styles.cigarText}>{cigar.description ?? ''}</Text>
-      </View>
-      <View style={styles.cigarAttributes}>
-        <View style={styles.cigarMake}>
-          <Text style={styles.cigarText}>
-            <Text style={styles.boldText}>Wrapper:</Text> {cigar.wrapper ?? '—'}
-          </Text>
-          <Text style={styles.cigarText}>
-            <Text style={styles.boldText}>Binder:</Text> {cigar.binder ?? '—'}
-          </Text>
-          <Text style={styles.cigarText}>
-            <Text style={styles.boldText}>Filler:</Text> {cigar.filler ?? '—'}
-          </Text>
-          {addedDateFormatted && (
+      <View style={isInventory ? styles.inventoryDetailsBody : undefined}>
+        <View>
+          <Text style={styles.cigarText}>{cigar.description ?? ''}</Text>
+        </View>
+        <View style={styles.cigarAttributes}>
+          <View style={styles.cigarMake}>
             <Text style={styles.cigarText}>
-              <Text style={styles.boldText}>Added:</Text> {addedDateFormatted}
-              {formatAgingDuration(cigar.date_added) ? ` (aged ${formatAgingDuration(cigar.date_added)})` : ''}
+              <Text style={styles.boldText}>Wrapper:</Text> {cigar.wrapper ?? '—'}
             </Text>
-          )}
-          {lastSmokedDisplay && (
             <Text style={styles.cigarText}>
-              <Text style={styles.boldText}>Last Smoked:</Text> {lastSmokedDisplay}
+              <Text style={styles.boldText}>Binder:</Text> {cigar.binder ?? '—'}
             </Text>
-          )}
+            <Text style={styles.cigarText}>
+              <Text style={styles.boldText}>Filler:</Text> {cigar.filler ?? '—'}
+            </Text>
+            {addedDateFormatted && (
+              <Text style={styles.cigarText}>
+                <Text style={styles.boldText}>Added:</Text> {addedDateFormatted}
+                {formatAgingDuration(cigar.date_added) ? ` (aged ${formatAgingDuration(cigar.date_added)})` : ''}
+              </Text>
+            )}
+            {lastSmokedDisplay && (
+              <Text style={styles.cigarText}>
+                <Text style={styles.boldText}>Last Smoked:</Text> {lastSmokedDisplay}
+              </Text>
+            )}
+          </View>
         </View>
       </View>
     </Animated.View>
@@ -338,7 +346,18 @@ const LONG_PRESS_MS = 500;
 
 const FREE_FAVORITES_LIMIT = 5;
 
-export default function CigarList({ view, onEditCigar }) {
+export default function CigarList({
+  view,
+  onEditCigar,
+  inventoryMode = false,
+  humidorId = null,
+  inventorySegment,
+  onInventoryChange,
+  emptyActionLabel,
+  onEmptyAction,
+  listHeader,
+  bottomPadding = 0,
+}) {
   const { user, tier, supabase, refreshTier } = useAuth();
   const [show, setShow] = useState(false);
   const [cigarNum, setCigarNum] = useState(0);
@@ -349,6 +368,8 @@ export default function CigarList({ view, onEditCigar }) {
   const [addToFavoritesModalCigar, setAddToFavoritesModalCigar] = useState(null);
   const [personalNotesModalCigar, setPersonalNotesModalCigar] = useState(null);
   const [smokedOneModalCigar, setSmokedOneModalCigar] = useState(null);
+  const [moveCigarModalCigar, setMoveCigarModalCigar] = useState(null);
+  const [cellaringModalCigar, setCellaringModalCigar] = useState(null);
   const [strengthProfileModalCigar, setStrengthProfileModalCigar] = useState(null);
   const [confirmModal, setConfirmModal] = useState({ visible: false, title: '', message: '', buttons: [] });
   const [upgradeModal, setUpgradeModal] = useState({ visible: false, message: '', accessToken: null, userId: null });
@@ -400,7 +421,31 @@ export default function CigarList({ view, onEditCigar }) {
       );
     }
     if (viewName === COLLECTIONS.CAVARO) {
-      return db.getAllAsync(cigarQuery('collection = ? AND quantity > 0'), COLLECTIONS.CAVARO);
+      let where = 'collection = ? AND quantity > 0';
+      const params = [COLLECTIONS.CAVARO];
+
+      if (inventoryMode) {
+        if (humidorId != null) {
+          where += ' AND humidor_id = ?';
+          params.push(humidorId);
+        }
+        if (inventorySegment === 'favorites') {
+          where += ' AND is_favorite = 1';
+        }
+        if (inventorySegment === 'cellared') {
+          where += ' AND EXISTS (SELECT 1 FROM cellared_items ci WHERE ci.cigar_id = cigars.id)';
+        }
+      } else if (humidorId != null) {
+        where += ' AND humidor_id = ?';
+        params.push(humidorId);
+      }
+
+      let query = cigarQuery(where);
+      if (inventoryMode && inventorySegment === 'recent') {
+        query += ' ORDER BY COALESCE(cigars.date_added, cigars.id) DESC';
+      }
+
+      return db.getAllAsync(query, ...params);
     }
     if (viewName === COLLECTIONS.ARCHIVE) {
       return db.getAllAsync(cigarQuery(ARCHIVE_WHERE));
@@ -521,6 +566,7 @@ export default function CigarList({ view, onEditCigar }) {
         );
       }
       trackEvent('cigar_favorited');
+      hapticSuccess();
       setAddToFavoritesModalCigar(null);
       refreshList();
     } catch (error) {
@@ -544,27 +590,25 @@ export default function CigarList({ view, onEditCigar }) {
     }
   };
 
-  const handleSmokedOneSave = async (smokedDate) => {
+  const handleMarkSmokedSave = async (review) => {
     if (!smokedOneModalCigar) return;
     try {
-      const dateToUse = smokedDate?.trim() || new Date().toISOString().slice(0, 10);
-      const quantity = Math.max(0, parseInt(smokedOneModalCigar.quantity, 10) || 1);
-      const newQuantity = Math.max(0, quantity - 1);
-      await db.runAsync(
-        'INSERT INTO smoke_history (cigar_id, smoked_at) VALUES (?, ?)',
-        smokedOneModalCigar.id,
-        dateToUse
-      );
-      await db.runAsync(
-        'UPDATE cigars SET quantity = ? WHERE id = ?',
-        newQuantity,
-        smokedOneModalCigar.id
-      );
-      trackEvent('cigar_smoked');
+      await markCigarSmokedWithJournal({
+        cigarId: smokedOneModalCigar.id,
+        userId: user?.id,
+        entry: review,
+      });
+      trackEvent('cigar_smoked', {
+        rating: review.rating,
+        would_buy_again: review.wouldBuyAgain,
+      });
+      hapticSuccess();
       setSmokedOneModalCigar(null);
       refreshList();
+      onInventoryChange?.();
     } catch (error) {
       console.log(`Error marking smoked: ${error}`);
+      Alert.alert('Could not save', error.message || 'Please try again.');
     }
   };
 
@@ -642,7 +686,7 @@ export default function CigarList({ view, onEditCigar }) {
 
   const deleteCigar = async (id) => {
     try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+      hapticWarning();
       await db.runAsync('DELETE FROM cigars WHERE id = ?', id);
       refreshList();
     } catch (error) {
@@ -666,8 +710,12 @@ export default function CigarList({ view, onEditCigar }) {
       };
       load();
       return () => { cancelled = true; };
-    }, [view])
+    }, [view, humidorId, inventorySegment])
   );
+
+  useEffect(() => {
+    refreshList();
+  }, [humidorId, inventorySegment]);
 
   const toggleStack = (brand) => {
     setExpandedStacks((prev) => ({ ...prev, [brand]: !prev[brand] }));
@@ -679,7 +727,7 @@ export default function CigarList({ view, onEditCigar }) {
     if (!onEditCigar) return;
     longPressTimerRef.current = setTimeout(() => {
       longPressTimerRef.current = null;
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+      hapticMedium();
       onEditCigar(cigar);
     }, LONG_PRESS_MS);
   };
@@ -710,7 +758,44 @@ export default function CigarList({ view, onEditCigar }) {
     </View>
   );
 
-  const renderCigarCard = (cigar, index, detailsKey) => (
+  const renderCigarCard = (cigar, index, detailsKey) => {
+    if (inventoryMode && view === COLLECTIONS.CAVARO) {
+      const isExpanded = show && detailsKey === cigarNum;
+
+      return (
+        <View key={cigar.id} style={styles.inventoryItemWrapper}>
+          <Swipeable
+            renderRightActions={renderRightActions(cigar)}
+            friction={2}
+            rightThreshold={40}
+          >
+            <View style={styles.inventoryCardShell}>
+              <Pressable
+                onPress={() => toggleDetails(detailsKey)}
+                onPressIn={() => handlePressIn(cigar)}
+                onPressOut={handlePressOut}
+              >
+                <HumidorInventoryCard
+                  cigar={cigar}
+                  expanded={isExpanded}
+                  embedded
+                  onMarkSmoked={() => setSmokedOneModalCigar(cigar)}
+                  onMove={() => setMoveCigarModalCigar(cigar)}
+                  onStartCellaring={() => setCellaringModalCigar(cigar)}
+                />
+              </Pressable>
+              <ExpandableDetails
+                isExpanded={isExpanded}
+                cigar={cigar}
+                variant="inventory"
+              />
+            </View>
+          </Swipeable>
+        </View>
+      );
+    }
+
+    return (
     <View key={cigar.id} style={styles.listItemWrapper}>
       <Swipeable
         renderRightActions={renderRightActions(cigar)}
@@ -757,7 +842,7 @@ export default function CigarList({ view, onEditCigar }) {
             isExpanded={show && detailsKey === cigarNum}
             cigar={cigar}
           />
-          {(view === 'cavaro' || view === 'likes' || view === 'dislikes' || view === 'archive') && (
+          {(view === 'cavaro' || view === 'likes' || view === 'dislikes' || view === 'archive') && !inventoryMode && (
             <ExpandableFavoriteNotes
               isExpanded={expandedNotes === cigar.id}
               cigar={cigar}
@@ -771,7 +856,7 @@ export default function CigarList({ view, onEditCigar }) {
               }}
             />
           )}
-          {(view === 'cavaro' || view === 'likes' || view === 'archive') && (
+          {!inventoryMode && (view === 'cavaro' || view === 'likes' || view === 'archive') && (
             <View style={styles.actionIcons}>
               <View style={styles.notesIconBtn}>
                 <Pressable
@@ -927,7 +1012,8 @@ export default function CigarList({ view, onEditCigar }) {
       </Pressable>
       </Swipeable>
     </View>
-  );
+    );
+  };
 
   const renderItem = (item) => {
     if (isFavoritesWithStacks) {
@@ -978,6 +1064,18 @@ export default function CigarList({ view, onEditCigar }) {
   };
 
   const renderEmptyComponent = () => {
+    if (view === COLLECTIONS.CAVARO && inventoryMode) {
+      return (
+        <EmptyState
+          compact
+          icon="archive-outline"
+          title="Your humidor is waiting"
+          message="Add your first cigar and start building your inventory."
+          actionLabel={emptyActionLabel}
+          onAction={onEmptyAction}
+        />
+      );
+    }
     if (view === COLLECTIONS.CAVARO) {
       return (
         <View style={styles.emptyState}>
@@ -1005,7 +1103,10 @@ export default function CigarList({ view, onEditCigar }) {
         <FlatList
           ref={flatListRef}
           style={styles.listItems}
-          contentContainerStyle={displayData.length === 0 ? styles.emptyListContent : undefined}
+          contentContainerStyle={[
+            displayData.length === 0 && styles.emptyListContent,
+            bottomPadding > 0 && { paddingBottom: bottomPadding },
+          ]}
           data={displayData}
           keyExtractor={(item) =>
             isFavoritesWithStacks ? item.brand : String(item?.id ?? '')
@@ -1015,6 +1116,7 @@ export default function CigarList({ view, onEditCigar }) {
               {renderItem(item)}
             </View>
           )}
+          ListHeaderComponent={listHeader}
           ListEmptyComponent={renderEmptyComponent}
         />
       )}
@@ -1038,11 +1140,33 @@ export default function CigarList({ view, onEditCigar }) {
         onSave={handlePersonalNotesSave}
         onCancel={() => setPersonalNotesModalCigar(null)}
       />
-      <SmokedOneModal
+      <MarkSmokedReviewModal
         visible={!!smokedOneModalCigar}
         cigar={smokedOneModalCigar}
-        onSave={handleSmokedOneSave}
+        onSave={handleMarkSmokedSave}
         onCancel={() => setSmokedOneModalCigar(null)}
+      />
+      <MoveCigarModal
+        visible={!!moveCigarModalCigar}
+        cigar={moveCigarModalCigar}
+        currentHumidorId={moveCigarModalCigar?.humidor_id ?? humidorId}
+        onMoved={() => {
+          setMoveCigarModalCigar(null);
+          refreshList();
+          onInventoryChange?.();
+        }}
+        onCancel={() => setMoveCigarModalCigar(null)}
+      />
+      <StartCellaringModal
+        visible={!!cellaringModalCigar}
+        cigar={cellaringModalCigar}
+        humidorId={cellaringModalCigar?.humidor_id ?? humidorId}
+        onSaved={() => {
+          setCellaringModalCigar(null);
+          refreshList();
+          onInventoryChange?.();
+        }}
+        onCancel={() => setCellaringModalCigar(null)}
       />
       <StrengthProfileModal
         visible={!!strengthProfileModalCigar}
@@ -1093,6 +1217,17 @@ const styles = StyleSheet.create({
   },
   listItemWrapper: {
     marginBottom: 12,
+  },
+  inventoryItemWrapper: {
+    marginBottom: 12,
+  },
+  inventoryCardShell: {
+    marginHorizontal: 16,
+    backgroundColor: designColors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: designColors.border,
+    overflow: 'hidden',
   },
   cigar: {
     padding: 18,
@@ -1212,6 +1347,12 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
+  },
+  inventoryAttributesShow: {
+    paddingHorizontal: 16,
+  },
+  inventoryDetailsBody: {
+    paddingBottom: 16,
   },
   cigarAttributes: {
     flexDirection: 'row',

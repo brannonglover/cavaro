@@ -3,7 +3,7 @@ import Cavaro from '../pages/Cavaro';
 import AddCigar from '../pages/AddCigar';
 import EditCigar from '../pages/EditCigar';
 import Archive from '../pages/Archive';
-import colors from '../theme/colors';
+import { colors } from '../theme';
 
 const Stack = createNativeStackNavigator();
 
@@ -12,7 +12,7 @@ export default function CavaroStack() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: colors.screenBg },
+        contentStyle: { backgroundColor: colors.background },
       }}
     >
       <Stack.Screen name="CavaroList" component={Cavaro} />

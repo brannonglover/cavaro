@@ -3,9 +3,9 @@ import { StyleSheet, Animated, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import colors from '../theme/colors';
+import { colors } from '../theme';
 
-const TAB_ORDER = ['Favorites', 'Dislikes', 'Cavaro', 'Search', 'Pairing'];
+const TAB_ORDER = ['Home', 'Humidors', 'Collection', 'MyTaste', 'Journal'];
 const SWIPE_THRESHOLD = 50;
 const VELOCITY_THRESHOLD = 400;
 const SLIDE_DISTANCE = 24;
@@ -75,7 +75,7 @@ export function SwipeableTabWrapper({ children }) {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: colors.screenBg,
+    backgroundColor: colors.background,
     overflow: 'hidden',
   },
   container: {

@@ -30,6 +30,16 @@ async function sessionFromGetResult(supabase, result) {
   return data?.session ?? null;
 }
 
+/** getSession() can return stale user_metadata; getUser() loads fresh profile from Auth. */
+async function fetchFreshUser(supabase) {
+  const { data, error } = await supabase.auth.getUser();
+  if (error) {
+    await recoverFromInvalidRefresh(supabase, error);
+    return null;
+  }
+  return data?.user ?? null;
+}
+
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -64,7 +74,7 @@ export function AuthProvider({ children }) {
       .getSession()
       .then(async (result) => {
         const session = await sessionFromGetResult(supabase, result);
-        const u = session?.user ?? null;
+        const u = session ? await fetchFreshUser(supabase) : null;
         setUser(u);
         setUserId(u?.id ?? null);
         if (session?.access_token) {
@@ -118,6 +128,12 @@ export function AuthProvider({ children }) {
     if (!supabase || !user) return;
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
+        fetchFreshUser(supabase).then((u) => {
+          if (u) {
+            setUser(u);
+            setUserId(u.id);
+          }
+        });
         supabase.auth.getSession().then(async (result) => {
           const session = await sessionFromGetResult(supabase, result);
           if (session?.access_token) fetchTier(session.access_token).then(setTier);

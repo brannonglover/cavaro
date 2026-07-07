@@ -264,7 +264,7 @@ export default function Search({ navigation }) {
 
   const handleAddToCavaro = (cigar) => {
     trackEvent('add_from_search', { brand: cigar.brand, name: cigar.name });
-    navigation.navigate('Cavaro', {
+    navigation.navigate('Humidors', {
       screen: 'AddCigar',
       params: { prefillBrand: cigar.brand, prefillName: cigar.name, prefillLength: cigar.length },
     });

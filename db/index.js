@@ -162,6 +162,80 @@ export async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_smoke_history_cigar ON smoke_history(cigar_id)
     `);
 
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS humidors (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        humidity REAL,
+        temperature REAL,
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    `);
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS cellared_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cigar_id INTEGER NOT NULL,
+        humidor_id INTEGER,
+        quantity INTEGER NOT NULL DEFAULT 1,
+        started_at TEXT NOT NULL,
+        target_months INTEGER,
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (cigar_id) REFERENCES cigars(id),
+        FOREIGN KEY (humidor_id) REFERENCES humidors(id)
+      )
+    `);
+    await db.execAsync(`
+      CREATE INDEX IF NOT EXISTS idx_cellared_cigar ON cellared_items(cigar_id)
+    `);
+
+    const humidorIdCol = await db.getAllAsync('PRAGMA table_info(cigars)');
+    if (!humidorIdCol.some((c) => c.name === 'humidor_id')) {
+      await db.execAsync('ALTER TABLE cigars ADD COLUMN humidor_id INTEGER NOT NULL DEFAULT 1');
+    }
+
+    const humidorCount = await db.getFirstAsync('SELECT COUNT(*) as n FROM humidors');
+    if ((humidorCount?.n ?? 0) === 0) {
+      const now = new Date().toISOString();
+      await db.runAsync(
+        'INSERT INTO humidors (name, created_at, updated_at) VALUES (?, ?, ?)',
+        'Main Humidor',
+        now,
+        now
+      );
+    }
+
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS smoke_journal_entries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT,
+        cigar_id INTEGER NOT NULL,
+        smoked_date TEXT NOT NULL,
+        rating INTEGER,
+        would_buy_again INTEGER,
+        notes TEXT,
+        liked_flavors TEXT NOT NULL DEFAULT '[]',
+        disliked_flavors TEXT NOT NULL DEFAULT '[]',
+        strength_feedback TEXT,
+        draw TEXT,
+        burn TEXT,
+        finish TEXT,
+        smoked_from_humidor_item_id INTEGER,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (cigar_id) REFERENCES cigars(id)
+      )
+    `);
+    await db.execAsync(`
+      CREATE INDEX IF NOT EXISTS idx_journal_cigar ON smoke_journal_entries(cigar_id)
+    `);
+    await db.execAsync(`
+      CREATE INDEX IF NOT EXISTS idx_journal_smoked_date ON smoke_journal_entries(smoked_date)
+    `);
+
     // Check if old tables exist (migration from previous schema)
     const humidorTable = await db.getFirstAsync(
       "SELECT name FROM sqlite_master WHERE type='table' AND name='humidor'"
@@ -189,6 +263,9 @@ export async function initDatabase() {
       await db.execAsync('DROP TABLE dislikes');
     }
   });
+
+  const { migrateSmokeHistoryToJournal } = await import('./journal');
+  await migrateSmokeHistoryToJournal();
 }
 
 /**
@@ -224,10 +301,6 @@ export async function searchCigarsByTaste(keywords) {
   return rows ?? [];
 }
 
-/**
- * Top N cigars from user's reviews (favorites with notes).
- * Ranks by: (1) is_favorite, (2) number of review fields filled, (3) smoke count.
- */
 export async function getTopReviewedCigars(limit = 5) {
   const rows = await db.getAllAsync(`
     SELECT c.*,
@@ -251,12 +324,109 @@ export async function getTopReviewedCigars(limit = 5) {
   return rows ?? [];
 }
 
+export async function getHumidors() {
+  const rows = await db.getAllAsync(`
+    SELECT h.*,
+      COALESCE((
+        SELECT SUM(c.quantity)
+        FROM cigars c
+        WHERE c.humidor_id = h.id
+          AND c.collection = 'cavaro'
+          AND c.quantity > 0
+      ), 0) AS cigar_count
+    FROM humidors h
+    ORDER BY h.id
+  `);
+  return rows ?? [];
+}
+
+export async function createHumidor(name) {
+  const trimmed = name?.trim();
+  if (!trimmed) throw new Error('Humidor name is required');
+  const now = new Date().toISOString();
+  const result = await db.runAsync(
+    'INSERT INTO humidors (name, created_at, updated_at) VALUES (?, ?, ?)',
+    trimmed,
+    now,
+    now
+  );
+  return result.lastInsertRowId;
+}
+
+export async function moveCigarToHumidor(cigarId, targetHumidorId) {
+  await db.runAsync(
+    'UPDATE cigars SET humidor_id = ? WHERE id = ?',
+    targetHumidorId,
+    cigarId
+  );
+}
+
+export async function startCellaring({
+  cigarId,
+  humidorId,
+  quantity = 1,
+  targetMonths,
+  notes,
+}) {
+  const today = new Date().toISOString().slice(0, 10);
+  await db.withTransactionAsync(async () => {
+    const cigar = await db.getFirstAsync(
+      'SELECT quantity, humidor_id FROM cigars WHERE id = ?',
+      cigarId
+    );
+    const available = Math.max(0, parseInt(cigar?.quantity, 10) || 0);
+    const cellarQty = Math.min(Math.max(1, quantity), available);
+    if (cellarQty < 1) {
+      throw new Error('No inventory available to cellar');
+    }
+
+    await db.runAsync(
+      `INSERT INTO cellared_items (
+        cigar_id, humidor_id, quantity, started_at, target_months, notes, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      cigarId,
+      humidorId ?? cigar?.humidor_id ?? 1,
+      cellarQty,
+      today,
+      targetMonths ?? null,
+      notes?.trim() || null,
+      today,
+      today
+    );
+    await db.runAsync(
+      'UPDATE cigars SET quantity = ? WHERE id = ?',
+      available - cellarQty,
+      cigarId
+    );
+  });
+}
+
 /**
  * Removes local collection and smoke history (e.g. after account deletion).
  */
 export async function wipeLocalUserData() {
   await db.withTransactionAsync(async () => {
+    await db.execAsync('DELETE FROM smoke_journal_entries');
     await db.execAsync('DELETE FROM smoke_history');
+    await db.execAsync('DELETE FROM cellared_items');
     await db.execAsync('DELETE FROM cigars');
+    await db.execAsync('DELETE FROM humidors');
+    const now = new Date().toISOString();
+    await db.runAsync(
+      'INSERT INTO humidors (name, created_at, updated_at) VALUES (?, ?, ?)',
+      'Main Humidor',
+      now,
+      now
+    );
   });
 }
+
+export {
+  createJournalEntry,
+  getJournalEntry,
+  getJournalEntries,
+  updateJournalEntry,
+  deleteJournalEntry,
+  migrateSmokeHistoryToJournal,
+  markCigarSmokedWithJournal,
+} from './journal';
