@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { BlogPostingJsonLd } from '../components/BlogPostingJsonLd';
+import { HowToJsonLd } from '../components/HowToJsonLd';
 import { SiteFooter } from '../components/SiteFooter';
 import { postContent } from '../post-content';
 import { blogPosts, getBlogPost } from '../posts';
@@ -55,6 +56,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   return (
     <main className="min-h-screen">
       {post.schema && <BlogPostingJsonLd schema={post.schema} />}
+      {post.howToSchema && <HowToJsonLd schema={post.howToSchema} />}
       <section className="relative overflow-hidden px-6 pt-10 pb-8 sm:pt-14">
         <div className="absolute inset-0 bg-gradient-to-b from-humidor-primary/5 to-transparent" />
         <div className="relative mx-auto max-w-3xl">

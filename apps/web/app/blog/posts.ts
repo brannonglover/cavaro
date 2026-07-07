@@ -20,6 +20,32 @@ export type BlogPostingSchema = {
   };
 };
 
+export type HowToSchema = {
+  '@context': string;
+  '@type': string;
+  name: string;
+  description: string;
+  totalTime: string;
+  estimatedCost: {
+    '@type': string;
+    value: string;
+    currency: string;
+  };
+  step: Array<{
+    '@type': string;
+    name: string;
+    text: string;
+  }>;
+  tool: Array<{
+    '@type': string;
+    name: string;
+  }>;
+  supply: Array<{
+    '@type': string;
+    name: string;
+  }>;
+};
+
 export type BlogPost = {
   slug: string;
   title: string;
@@ -28,9 +54,109 @@ export type BlogPost = {
   heroImage: string;
   heroImageAlt: string;
   schema?: BlogPostingSchema;
+  howToSchema?: HowToSchema;
 };
 
 export const blogPosts: BlogPost[] = [
+  {
+    slug: 'cigar-101-flavor-profiles',
+    title: "Cigar 101: A Beginner's Guide to Mastering Flavor Profiles",
+    excerpt:
+      "Learn how taste and aroma combine to create a cigar's flavor profile, explore core flavor families, and use the rule of thirds to track your session.",
+    publishedAt: '2026-07-07',
+    heroImage: 'https://cdn.marblism.com/351JRolKoTg.webp',
+    heroImageAlt:
+      'Minimalist vector of a cigar with a symmetrical wisp of smoke on an ebony background',
+    schema: {
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: "Cigar 101: A Beginner's Guide to Mastering Flavor Profiles",
+      description:
+        "A beginner's guide to understanding the taste and aroma of premium cigars, including flavor families and the three thirds of a smoke.",
+      datePublished: '2026-07-07',
+      articleBody:
+        'Introduction to tasting cigars beyond smoking. Taste vs. aroma and how the palate develops. Core flavor families: Earthy/Woody, Spicy, Sweet, and Nutty. The rule of thirds across first, second, and final thirds. The retrohale technique for unlocking aroma. Mapping flavor with a flavor wheel. Using Cavaro to log sessions and track pairings. Conclusion and call to action.',
+      image: [
+        'https://cdn.marblism.com/351JRolKoTg.webp',
+        'https://cdn.marblism.com/Xxy74RkRUdv.webp',
+        'https://cdn.marblism.com/c2yDY435D2R.webp',
+        'https://cdn.marblism.com/62VwShcWO2T.webp',
+        'https://cdn.marblism.com/FTgiVEgYviM.webp',
+      ],
+      author: {
+        '@type': 'Organization',
+        name: 'Cavaro',
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'Cavaro',
+        logo: {
+          '@type': 'ImageObject',
+          url: 'https://cavaroapp.com/logo.png',
+        },
+      },
+    },
+    howToSchema: {
+      '@context': 'https://schema.org',
+      '@type': 'HowTo',
+      name: 'How to Identify Cigar Flavor Profiles',
+      description:
+        "A beginner's guide to understanding the taste and aroma of premium cigars, including flavor families and the three thirds of a smoke.",
+      totalTime: 'PT45M',
+      estimatedCost: {
+        '@type': 'MonetaryAmount',
+        value: '10-30',
+        currency: 'USD',
+      },
+      step: [
+        {
+          '@type': 'HowToStep',
+          name: 'Understand Taste vs. Aroma',
+          text: 'Recognize that the tongue only detects basic tastes; complex flavors like chocolate or cedar are detected through aroma in the nasal passages.',
+        },
+        {
+          '@type': 'HowToStep',
+          name: 'Identify Flavor Families',
+          text: 'Categorize flavors into broad groups: Earthy/Woody, Spicy, Sweet, and Nutty.',
+        },
+        {
+          '@type': 'HowToStep',
+          name: 'Smoke in Thirds',
+          text: 'Observe how the flavor changes from the first third (delicate) to the second third (balanced) and the final third (intense).',
+        },
+        {
+          '@type': 'HowToStep',
+          name: 'Perform a Retrohale',
+          text: 'Exhale a small portion of the smoke through your nose to activate the olfactory receptors and detect subtle notes.',
+        },
+        {
+          '@type': 'HowToStep',
+          name: 'Log Your Session',
+          text: 'Use an app like Cavaro to record tasting notes, strength profiles, and pairings for future reference.',
+        },
+      ],
+      tool: [
+        {
+          '@type': 'HowToTool',
+          name: 'Cavaro App',
+        },
+      ],
+      supply: [
+        {
+          '@type': 'HowToSupply',
+          name: 'Premium Cigar',
+        },
+        {
+          '@type': 'HowToSupply',
+          name: 'Cigar Cutter',
+        },
+        {
+          '@type': 'HowToSupply',
+          name: 'Lighter or Matches',
+        },
+      ],
+    },
+  },
   {
     slug: '7-mistakes-cigar-tasting-notes',
     title: "7 Mistakes You're Making With Your Cigar Tasting Notes (And How to Fix Them)",
