@@ -280,6 +280,10 @@ export default function Home() {
         <div className="mx-auto max-w-4xl text-center text-sm text-humidor-subtle">
           <p>Cavaro — Your personal cigar companion</p>
           <p className="mt-1">
+            <Link href="/blog" className="text-humidor-primary hover:underline">
+              Blog
+            </Link>
+            {' · '}
             <Link href="/contact" className="text-humidor-primary hover:underline">
               Contact us
             </Link>
