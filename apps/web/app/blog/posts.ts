@@ -64,9 +64,9 @@ export const blogPosts: BlogPost[] = [
     excerpt:
       "Learn how taste and aroma combine to create a cigar's flavor profile, explore core flavor families, and use the rule of thirds to track your session.",
     publishedAt: '2026-07-07',
-    heroImage: 'https://cdn.marblism.com/351JRolKoTg.webp',
+    heroImage: 'https://cdn.marblism.com/zHXmCctzUBk.webp',
     heroImageAlt:
-      'Minimalist vector of a cigar with a symmetrical wisp of smoke on an ebony background',
+      'Minimalist vector of a cigar with smoke positioned over the ash area on an ebony background',
     schema: {
       '@context': 'https://schema.org',
       '@type': 'BlogPosting',
@@ -77,11 +77,11 @@ export const blogPosts: BlogPost[] = [
       articleBody:
         'Introduction to tasting cigars beyond smoking. Taste vs. aroma and how the palate develops. Core flavor families: Earthy/Woody, Spicy, Sweet, and Nutty. The rule of thirds across first, second, and final thirds. The retrohale technique for unlocking aroma. Mapping flavor with a flavor wheel. Using Cavaro to log sessions and track pairings. Conclusion and call to action.',
       image: [
-        'https://cdn.marblism.com/351JRolKoTg.webp',
+        'https://cdn.marblism.com/zHXmCctzUBk.webp',
         'https://cdn.marblism.com/Xxy74RkRUdv.webp',
         'https://cdn.marblism.com/c2yDY435D2R.webp',
         'https://cdn.marblism.com/62VwShcWO2T.webp',
-        'https://cdn.marblism.com/FTgiVEgYviM.webp',
+        'https://cdn.marblism.com/uXJK_SuXw5f.png',
       ],
       author: {
         '@type': 'Organization',

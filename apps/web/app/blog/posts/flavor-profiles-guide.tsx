@@ -6,8 +6,8 @@ export function FlavorProfilesGuidePost() {
     <BlogArticle>
       <p>
         <img
-          src="https://cdn.marblism.com/351JRolKoTg.webp"
-          alt="Minimalist vector of a cigar with a symmetrical wisp of smoke on an ebony background"
+          src="https://cdn.marblism.com/zHXmCctzUBk.webp"
+          alt="Minimalist vector of a cigar with smoke positioned over the ash area on an ebony background"
         />
       </p>
 
@@ -181,14 +181,14 @@ export function FlavorProfilesGuidePost() {
 
       <p>
         <img
-          src="https://cdn.marblism.com/FTgiVEgYviM.webp"
-          alt="Minimalist vector of the Cavaro app UI on a smartphone"
+          src="https://cdn.marblism.com/uXJK_SuXw5f.png"
+          alt="Cavaro My Taste Profile"
         />
       </p>
 
       <p>
         For those who want to take their hobby to the next level, our{' '}
-        <Link href="/#download">Premium tier</Link> ($2.99/mo) offers:
+        <strong>Premium tier</strong> ($2.99/mo) offers:
       </p>
 
       <ul>
