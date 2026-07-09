@@ -3,30 +3,91 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { borderRadius, colors, spacing, typography } from '../../theme';
 import PremiumCard from './PremiumCard';
 
+const COLLECTION_ACCENTS = {
+  gold: {
+    bar: colors.gold,
+    icon: colors.gold,
+    value: colors.goldBright,
+    glow: 'rgba(200, 164, 93, 0.16)',
+  },
+  amber: {
+    bar: colors.goldBright,
+    icon: colors.goldBright,
+    value: colors.goldBright,
+    glow: 'rgba(215, 186, 115, 0.14)',
+  },
+  sage: {
+    bar: colors.success,
+    icon: colors.success,
+    value: colors.success,
+    glow: 'rgba(126, 159, 109, 0.16)',
+  },
+  tobacco: {
+    bar: colors.goldMuted,
+    icon: colors.goldMuted,
+    value: colors.gold,
+    glow: 'rgba(143, 116, 64, 0.2)',
+  },
+};
+
 export default function StatCard({
   label,
   value,
   icon,
   layout = 'default',
+  accent = 'gold',
   highlight = true,
   compact = false,
   style,
 }) {
   const isGlance = layout === 'glance';
+  const isCollection = layout === 'collection';
+  const accentTokens = COLLECTION_ACCENTS[accent] ?? COLLECTION_ACCENTS.gold;
 
   return (
     <PremiumCard
-      variant={isGlance ? 'default' : highlight ? 'warm' : 'subtle'}
+      variant={
+        isCollection ? 'elevated' : isGlance ? 'default' : highlight ? 'warm' : 'subtle'
+      }
       style={[
         styles.card,
-        highlight && !isGlance && styles.cardHighlight,
+        highlight && !isGlance && !isCollection && styles.cardHighlight,
         isGlance && styles.cardGlance,
+        isCollection && styles.cardCollection,
         style,
       ]}
-      padding={isGlance ? 0 : compact ? spacing.md : undefined}
-      contentStyle={isGlance ? styles.glanceContent : undefined}
+      padding={isGlance || isCollection ? 0 : compact ? spacing.md : undefined}
+      contentStyle={isGlance ? styles.glanceContent : isCollection ? styles.collectionContent : undefined}
     >
-      {isGlance ? (
+      {isCollection ? (
+        <View style={styles.collectionInner}>
+          {icon ? (
+            <View style={styles.collectionWatermark} pointerEvents="none">
+              <MaterialCommunityIcons name={icon} size={44} color={accentTokens.glow} />
+            </View>
+          ) : null}
+          <View style={styles.collectionBody}>
+            {icon ? (
+              <View style={[styles.collectionIconWrap, { backgroundColor: accentTokens.glow }]}>
+                <MaterialCommunityIcons name={icon} size={16} color={accentTokens.icon} />
+              </View>
+            ) : null}
+            <View style={styles.collectionText}>
+              <Text
+                style={[styles.collectionValue, { color: accentTokens.value }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+              >
+                {value}
+              </Text>
+              <Text style={styles.collectionLabel} numberOfLines={1}>
+                {label}
+              </Text>
+            </View>
+          </View>
+        </View>
+      ) : isGlance ? (
         <View style={styles.glanceInner}>
           {icon ? (
             <MaterialCommunityIcons name={icon} size={20} color={colors.gold} />
@@ -81,8 +142,60 @@ const styles = StyleSheet.create({
     minWidth: 0,
     minHeight: 108,
   },
+  cardCollection: {
+    flex: 0,
+    flexGrow: 1,
+    minWidth: 0,
+    overflow: 'hidden',
+  },
   cardHighlight: {
     borderColor: 'rgba(143, 116, 64, 0.45)',
+  },
+  collectionContent: {
+    flexGrow: 0,
+  },
+  collectionInner: {
+    position: 'relative',
+  },
+  collectionWatermark: {
+    position: 'absolute',
+    right: -4,
+    top: 10,
+    opacity: 0.85,
+  },
+  collectionBody: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  collectionIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: borderRadius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  collectionText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  collectionValue: {
+    ...typography.sectionTitle,
+    fontSize: 22,
+    lineHeight: 26,
+    fontWeight: '700',
+  },
+  collectionLabel: {
+    fontSize: 9,
+    lineHeight: 12,
+    fontWeight: '600',
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
+    color: colors.textMuted,
+    marginTop: 2,
   },
   glanceContent: {
     alignItems: 'center',

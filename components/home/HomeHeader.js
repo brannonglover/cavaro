@@ -1,56 +1,61 @@
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AccountMenu from '../AccountMenu';
 import { useAuth } from '../../context/AuthContext';
-import { colors, spacing } from '../../theme';
+import { colors, spacing, typography } from '../../theme';
 
 const logo = require('../../assets/logo-wd.png');
 
 const SIDE_SLOT_WIDTH = 44;
 
-export default function HomeHeader({ onAddCigar, style }) {
+export default function HomeHeader({ greeting, onAddCigar, style }) {
   const { user, supabase } = useAuth();
 
   return (
-    <View style={[styles.header, style]}>
-      <View style={styles.sideSlot}>
-        {user ? (
-          <AccountMenu
-            onSignOut={() => supabase?.auth.signOut()}
-            triggerStyle={styles.menuTrigger}
+    <View style={[styles.wrap, style]}>
+      <View style={styles.header}>
+        <View style={styles.sideSlot}>
+          {user ? (
+            <AccountMenu
+              onSignOut={() => supabase?.auth.signOut()}
+              triggerStyle={styles.menuTrigger}
+            >
+              <MaterialCommunityIcons name="menu" size={26} color={colors.textMuted} />
+            </AccountMenu>
+          ) : null}
+        </View>
+
+        <Image
+          source={logo}
+          style={styles.logo}
+          resizeMode="contain"
+          accessibilityLabel="Cavaro"
+        />
+
+        <View style={styles.sideSlot}>
+          <Pressable
+            onPress={onAddCigar}
+            style={styles.addTrigger}
+            accessibilityLabel="Add cigar"
+            hitSlop={8}
           >
-            <MaterialCommunityIcons name="menu" size={26} color={colors.textMuted} />
-          </AccountMenu>
-        ) : null}
+            <MaterialCommunityIcons name="plus" size={30} color={colors.gold} />
+          </Pressable>
+        </View>
       </View>
-
-      <Image
-        source={logo}
-        style={styles.logo}
-        resizeMode="contain"
-        accessibilityLabel="Cavaro"
-      />
-
-      <View style={styles.sideSlot}>
-        <Pressable
-          onPress={onAddCigar}
-          style={styles.addTrigger}
-          accessibilityLabel="Add cigar"
-          hitSlop={8}
-        >
-          <MaterialCommunityIcons name="plus" size={30} color={colors.gold} />
-        </Pressable>
-      </View>
+      {greeting ? <Text style={styles.greeting}>{greeting}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrap: {
+    marginBottom: spacing.lg,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     alignSelf: 'stretch',
-    marginBottom: spacing.lg,
   },
   sideSlot: {
     width: SIDE_SLOT_WIDTH,
@@ -72,5 +77,11 @@ const styles = StyleSheet.create({
   logo: {
     flex: 1,
     height: 88,
+  },
+  greeting: {
+    ...typography.sectionTitle,
+    color: colors.goldBright,
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
 });

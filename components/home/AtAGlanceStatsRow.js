@@ -6,11 +6,11 @@ function formatCount(value) {
   return Number(value ?? 0).toLocaleString();
 }
 
-const GLANCE_STATS = [
-  { key: 'inventory', label: 'In Humidor', icon: 'archive-outline', prop: 'inventoryCount' },
-  { key: 'smoked', label: 'Smoked', icon: 'cigar', prop: 'smokedCount' },
-  { key: 'cellared', label: 'Cellared', icon: 'barrel', prop: 'cellaredCount' },
-  { key: 'brands', label: 'Brands', icon: 'flag-outline', prop: 'brandCount' },
+const HOME_STATS = [
+  { key: 'inventory', label: 'In Humidor', icon: 'fridge-outline', prop: 'inventoryCount', accent: 'gold' },
+  { key: 'smoked', label: 'Smoked', icon: 'cigar', prop: 'smokedCount', accent: 'amber' },
+  { key: 'cellared', label: 'Cellared', icon: 'barrel', prop: 'cellaredCount', accent: 'tobacco' },
+  { key: 'brands', label: 'Brands', icon: 'tag-multiple-outline', prop: 'brandCount', accent: 'sage' },
 ];
 
 export default function AtAGlanceStatsRow({
@@ -23,13 +23,14 @@ export default function AtAGlanceStatsRow({
   const counts = { inventoryCount, cellaredCount, smokedCount, brandCount };
 
   return (
-    <View style={[styles.row, style]}>
-      {GLANCE_STATS.map(({ key, label, icon, prop }) => (
+    <View style={[styles.grid, style]}>
+      {HOME_STATS.map(({ key, label, icon, prop, accent }) => (
         <StatCard
           key={key}
-          layout="glance"
+          layout="collection"
           highlight={false}
           icon={icon}
+          accent={accent}
           label={label}
           value={formatCount(counts[prop])}
           style={styles.stat}
@@ -40,13 +41,15 @@ export default function AtAGlanceStatsRow({
 }
 
 const styles = StyleSheet.create({
-  row: {
+  grid: {
     flexDirection: 'row',
-    gap: spacing.xs,
-    marginBottom: spacing.xl,
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
   },
   stat: {
-    flex: 1,
-    minWidth: 0,
+    width: '48%',
+    flexGrow: 1,
+    flexShrink: 1,
   },
 });

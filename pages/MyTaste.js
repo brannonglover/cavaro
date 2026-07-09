@@ -1,50 +1,23 @@
 import React, { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import {
+  MatchInsightCard,
+  PalateSummaryCard,
+  TasteAccentCard,
+  TastePreferenceCard,
+} from '../components/taste';
 import {
   CigarCard,
   EmptyState,
   FadeInView,
   MatchBadge,
-  PremiumCard,
   ScreenContainer,
   SectionHeader,
 } from '../components/ui';
 import { getMyTasteInsights } from '../lib/myTasteInsights';
-import { colors, spacing, typography } from '../theme';
-
-function BulletList({ items, emptyLabel }) {
-  if (!items?.length) {
-    return <Text style={styles.emptySectionText}>{emptyLabel}</Text>;
-  }
-
-  return items.map((item) => (
-    <View key={item} style={styles.bulletRow}>
-      <Text style={styles.bulletDot}>•</Text>
-      <Text style={styles.bulletText}>{item}</Text>
-    </View>
-  ));
-}
-
-function InsightCard({ cigar, level, reason, score }) {
-  return (
-    <PremiumCard variant="subtle" style={styles.insightCard}>
-      <View style={styles.insightHeader}>
-        <Text style={styles.insightName} numberOfLines={1}>
-          {cigar.name || 'Unknown'}
-        </Text>
-        <MatchBadge level={level} />
-      </View>
-      <Text style={styles.insightMeta} numberOfLines={1}>
-        {[cigar.brand, cigar.line].filter(Boolean).join(' · ') || '—'}
-      </Text>
-      <Text style={styles.insightReason}>{reason}</Text>
-      {typeof score === 'number' ? (
-        <Text style={styles.insightScore}>Match score {score}</Text>
-      ) : null}
-    </PremiumCard>
-  );
-}
+import { borderRadius, colors, spacing, typography } from '../theme';
 
 export default function MyTaste() {
   const navigation = useNavigation();
@@ -102,55 +75,57 @@ export default function MyTaste() {
 
       <FadeInView delay={60}>
         <SectionHeader title="Your Palate" subtitle="Taste summary" />
-        <PremiumCard variant="warm" style={styles.sectionCard}>
-          <Text style={styles.palateText}>
-            {insights.tasteSummary || 'Keep logging ratings and flavors to refine your palate.'}
-          </Text>
-        </PremiumCard>
+        <PalateSummaryCard profile={insights.profile} style={styles.sectionCard} />
       </FadeInView>
 
-      <SectionHeader title="What You Love" />
-      <PremiumCard variant="subtle" style={styles.sectionCard}>
-        <BulletList
+      <FadeInView delay={120}>
+        <SectionHeader title="What You Love" />
+        <TastePreferenceCard
+          variant="love"
           items={insights.whatYouLove}
           emptyLabel="Rate more cigars to discover what you love."
+          style={styles.sectionCard}
         />
-      </PremiumCard>
+      </FadeInView>
 
-      <SectionHeader title="Usually Not Your Preference" />
-      <PremiumCard variant="subtle" style={styles.sectionCard}>
-        <BulletList
+      <FadeInView delay={180}>
+        <SectionHeader title="Usually Not Your Preference" />
+        <TastePreferenceCard
+          variant="dislike"
           items={insights.notYourPreference}
           emptyLabel="No clear dislikes yet — that is a good sign."
+          style={styles.sectionCard}
         />
-      </PremiumCard>
+      </FadeInView>
 
       {insights.worthRevisiting.length > 0 ? (
-        <>
+        <FadeInView delay={240}>
           <SectionHeader title="Worth Revisiting" subtitle="Needs another chance" />
           {insights.worthRevisiting.map((item) => (
-            <InsightCard
+            <MatchInsightCard
               key={`revisit-${item.cigar.id}`}
               cigar={item.cigar}
               level={item.level}
               reason={item.reason}
+              style={styles.insightCard}
             />
           ))}
-        </>
+        </FadeInView>
       ) : null}
 
       {insights.unlikelyMatches.length > 0 ? (
-        <>
+        <FadeInView delay={300}>
           <SectionHeader title="Unlikely Matches" subtitle="Probably not your profile" />
           {insights.unlikelyMatches.map((item) => (
-            <InsightCard
+            <MatchInsightCard
               key={`unlikely-${item.cigar.id}`}
               cigar={item.cigar}
               level={item.level}
               reason={item.reason}
+              style={styles.insightCard}
             />
           ))}
-        </>
+        </FadeInView>
       ) : null}
 
       {insights.buyNext.length > 0 ? (
@@ -174,11 +149,21 @@ export default function MyTaste() {
       ) : (
         <>
           <SectionHeader title="Buy Next" />
-          <PremiumCard variant="subtle" style={styles.sectionCard}>
-            <Text style={styles.emptySectionText}>
-              Log more journal entries with ratings and flavors to unlock catalog recommendations.
-            </Text>
-          </PremiumCard>
+          <TasteAccentCard
+            variant="subtle"
+            watermarkIcon="cart-outline"
+            style={styles.sectionCard}
+            bodyStyle={styles.buyNextEmptyBody}
+          >
+            <View style={styles.buyNextEmptyRow}>
+              <View style={styles.buyNextEmptyIcon}>
+                <MaterialCommunityIcons name="shopping-outline" size={16} color={colors.gold} />
+              </View>
+              <Text style={styles.buyNextEmptyText}>
+                Log more journal entries with ratings and flavors to unlock catalog recommendations.
+              </Text>
+            </View>
+          </TasteAccentCard>
         </>
       )}
     </ScreenContainer>
@@ -212,56 +197,30 @@ const styles = StyleSheet.create({
   sectionCard: {
     marginBottom: spacing.xl,
   },
-  palateText: {
-    ...typography.sectionTitle,
-    color: colors.gold,
-  },
-  bulletRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: spacing.sm,
-  },
-  bulletDot: {
-    ...typography.body,
-    color: colors.gold,
-    width: 16,
-  },
-  bulletText: {
-    ...typography.body,
-    color: colors.text,
-    flex: 1,
-  },
-  emptySectionText: {
-    ...typography.body,
-    color: colors.textMuted,
-  },
   insightCard: {
     marginBottom: spacing.md,
   },
-  insightHeader: {
+  buyNextEmptyBody: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  buyNextEmptyRow: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  buyNextEmptyIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: borderRadius.sm,
+    backgroundColor: 'rgba(200, 164, 93, 0.16)',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
+    justifyContent: 'center',
+    flexShrink: 0,
   },
-  insightName: {
-    ...typography.sectionTitle,
-    color: colors.text,
-    flex: 1,
-  },
-  insightMeta: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-  },
-  insightReason: {
+  buyNextEmptyText: {
     ...typography.body,
-    color: colors.text,
-    marginTop: spacing.sm,
-  },
-  insightScore: {
-    ...typography.caption,
-    color: colors.textSubtle,
-    marginTop: spacing.xs,
+    color: colors.textMuted,
+    flex: 1,
   },
 });

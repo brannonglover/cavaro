@@ -1,6 +1,7 @@
-import { StyleSheet, View } from 'react-native';
-import { CavaroButton, CavaroText, CigarImage, PremiumCard } from '../ui';
-import { colors, spacing } from '../../theme';
+import { StyleSheet, Text, View } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { CavaroButton, CigarImage, PremiumCard } from '../ui';
+import { borderRadius, colors, spacing, typography } from '../../theme';
 
 export default function SmokeRecommendationCard({
   name,
@@ -24,27 +25,31 @@ export default function SmokeRecommendationCard({
           style={styles.image}
           imageStyle={styles.image}
         />
+        <View style={styles.mediaOverlay} />
       </View>
 
       <View style={styles.content}>
-        <CavaroText variant="label" style={styles.sectionLabel}>
-          Smoke Recommendation
-        </CavaroText>
+        <View style={styles.labelRow}>
+          <View style={styles.labelIcon}>
+            <MaterialCommunityIcons name="cigar" size={16} color={colors.gold} />
+          </View>
+          <Text style={styles.sectionLabel}>Smoke Recommendation</Text>
+        </View>
 
-        <CavaroText variant="title" numberOfLines={2}>
+        <Text style={styles.title} numberOfLines={2}>
           {displayName}
-        </CavaroText>
+        </Text>
 
         {meta ? (
-          <CavaroText variant="body" numberOfLines={1} style={styles.brand}>
+          <Text style={styles.brand} numberOfLines={1}>
             {meta}
-          </CavaroText>
+          </Text>
         ) : null}
 
         {reason ? (
-          <CavaroText variant="body" tone="muted" numberOfLines={2} style={styles.reason}>
+          <Text style={styles.reason} numberOfLines={2}>
             {reason}
-          </CavaroText>
+          </Text>
         ) : null}
 
         {onViewDetails ? (
@@ -55,6 +60,10 @@ export default function SmokeRecommendationCard({
             style={styles.action}
           />
         ) : null}
+
+        <View style={styles.watermark} pointerEvents="none">
+          <MaterialCommunityIcons name="star-four-points-outline" size={56} color="rgba(200, 164, 93, 0.1)" />
+        </View>
       </View>
     </PremiumCard>
   );
@@ -62,27 +71,59 @@ export default function SmokeRecommendationCard({
 
 const styles = StyleSheet.create({
   card: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
+    overflow: 'hidden',
   },
   media: {
-    height: 180,
+    height: 168,
     backgroundColor: colors.surface,
   },
   image: {
     ...StyleSheet.absoluteFillObject,
   },
+  mediaOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(13, 11, 9, 0.2)',
+  },
   content: {
-    padding: spacing.lg,
-    gap: spacing.xs,
+    padding: spacing.md,
+    backgroundColor: colors.surfaceWarm,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  labelIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: borderRadius.sm,
+    backgroundColor: 'rgba(200, 164, 93, 0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sectionLabel: {
+    ...typography.label,
     color: colors.goldMuted,
-    marginBottom: spacing.xs,
+  },
+  title: {
+    ...typography.title,
+    fontSize: 22,
+    lineHeight: 28,
+    color: colors.text,
   },
   brand: {
+    ...typography.body,
+    color: colors.goldBright,
     marginTop: spacing.xs,
+    fontWeight: '500',
   },
   reason: {
+    ...typography.body,
+    color: colors.textMuted,
     marginTop: spacing.sm,
     lineHeight: 22,
   },
@@ -90,5 +131,10 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginTop: spacing.sm,
     marginLeft: -spacing.sm,
+  },
+  watermark: {
+    position: 'absolute',
+    right: -4,
+    bottom: -6,
   },
 });

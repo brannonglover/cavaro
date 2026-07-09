@@ -11,12 +11,26 @@ import {
   SectionHeader,
   StatCard,
 } from '../components/ui';
+import { FavoriteBrandsCard } from '../components/collection';
 import { getCollectionStats } from '../lib/collectionStats';
 import { borderRadius, colors, spacing, typography } from '../theme';
 
 function formatCount(value) {
   return Number(value ?? 0).toLocaleString();
 }
+
+const COLLECTION_STATS = [
+  { key: 'smoked', label: 'Cigars Smoked', prop: 'totalSmoked', icon: 'cigar', accent: 'gold' },
+  {
+    key: 'unique',
+    label: 'Unique Cigars',
+    prop: 'uniqueCigars',
+    icon: 'layers-triple-outline',
+    accent: 'amber',
+  },
+  { key: 'brands', label: 'Brands', prop: 'brandsTried', icon: 'tag-multiple-outline', accent: 'sage' },
+  { key: 'countries', label: 'Countries', prop: 'countriesTried', icon: 'earth', accent: 'tobacco' },
+];
 
 function WrapperBreakdownRow({ wrapper, count, total }) {
   const share = total > 0 ? count / total : 0;
@@ -81,7 +95,7 @@ export default function Collection() {
     );
   }
 
-  const favoriteBrandLabels = stats.favoriteBrands.map((row) => row.brand).filter(Boolean);
+  const favoriteBrands = stats.favoriteBrands.filter((row) => row?.brand);
   const wrapperTotal = stats.wrapperBreakdown.reduce(
     (sum, row) => sum + (row.cnt ?? 0),
     0
@@ -96,19 +110,25 @@ export default function Collection() {
 
       <FadeInView delay={60}>
         <View style={styles.statsGrid}>
-          <StatCard label="Cigars Smoked" value={formatCount(stats.totalSmoked)} style={styles.statCard} />
-          <StatCard label="Unique Cigars" value={formatCount(stats.uniqueCigars)} style={styles.statCard} />
-          <StatCard label="Brands" value={formatCount(stats.brandsTried)} style={styles.statCard} />
-          <StatCard label="Countries" value={formatCount(stats.countriesTried)} style={styles.statCard} />
+          {COLLECTION_STATS.map(({ key, label, prop, icon, accent }) => (
+            <StatCard
+              key={key}
+              layout="collection"
+              highlight={false}
+              label={label}
+              value={formatCount(stats[prop])}
+              icon={icon}
+              accent={accent}
+              style={styles.statCard}
+            />
+          ))}
         </View>
       </FadeInView>
 
-      {favoriteBrandLabels.length > 0 ? (
+      {favoriteBrands.length > 0 ? (
         <FadeInView delay={120}>
           <SectionHeader title="Favorite Brands" subtitle="Most smoked brands" />
-          <PremiumCard variant="subtle" style={styles.sectionCard}>
-            <Text style={styles.favoriteBrandsText}>{favoriteBrandLabels.join('  ·  ')}</Text>
-          </PremiumCard>
+          <FavoriteBrandsCard brands={favoriteBrands} style={styles.sectionCard} />
         </FadeInView>
       ) : null}
 
@@ -223,19 +243,16 @@ const styles = StyleSheet.create({
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.md,
-    marginBottom: spacing.xl,
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
   },
   statCard: {
-    width: '47%',
+    width: '48%',
     flexGrow: 1,
+    flexShrink: 1,
   },
   sectionCard: {
     marginBottom: spacing.xl,
-  },
-  favoriteBrandsText: {
-    ...typography.sectionTitle,
-    color: colors.gold,
   },
   chipRow: {
     flexDirection: 'row',

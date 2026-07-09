@@ -5,7 +5,7 @@ import { colors, typography, spacing } from '../theme';
 import { SwipeableTabWrapper } from '../components/SwipeableTabWrapper';
 import { cavaroTabBarStyle } from './CavaroTabBar';
 import CavaroStack from './CavaroStack';
-import Home from '../pages/Home';
+import HomeStack from './HomeStack';
 import Collection from '../pages/Collection';
 import MyTaste from '../pages/MyTaste';
 import Journal from '../pages/Journal';
@@ -74,7 +74,7 @@ export default function MainTabs() {
     >
       <Tab.Screen
         name="Home"
-        component={withSwipe(Home)}
+        component={withSwipe(HomeStack)}
         options={{
           tabBarLabel: 'Home',
           tabBarIcon: tabIcon('Home'),

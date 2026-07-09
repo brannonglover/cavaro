@@ -1,12 +1,17 @@
 import React, { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { HomeHeader, SmokeRecommendationCard, AtAGlanceStatsRow } from '../components/home';
+import {
+  AtAGlanceStatsRow,
+  CellarEmptyCard,
+  HomeHeader,
+  HumidorSnapshotCard,
+  SmokeRecommendationCard,
+} from '../components/home';
 import {
   CellaringProgressCard,
   EmptyState,
   FadeInView,
-  PremiumCard,
   ScreenContainer,
   SectionHeader,
 } from '../components/ui';
@@ -34,8 +39,22 @@ export default function Home() {
   );
 
   const openHumidors = () => navigation.navigate('Humidors');
-  const openMyTaste = () => navigation.navigate('MyTaste');
   const addFirstCigar = () => navigation.navigate('Humidors', { screen: 'AddCigar' });
+  const openRecommendationDetail = () => {
+    const rec = dashboard?.smokeRecommendation;
+    if (!rec?.cigar) return;
+    navigation.navigate('CigarDetail', {
+      cigar: rec.cigar,
+      recommendation: {
+        reason: rec.reason,
+        level: rec.level,
+        score: rec.score,
+        reasons: rec.reasons,
+      },
+      imageUrl: rec.resolvedImage,
+      displayWrapper: rec.displayWrapper,
+    });
+  };
 
   if (!dashboard) {
     return (
@@ -50,7 +69,7 @@ export default function Home() {
   if (dashboard.isEmpty) {
     return (
       <ScreenContainer scroll contentContainerStyle={styles.scrollContent}>
-        <HomeHeader onAddCigar={addFirstCigar} />
+        <HomeHeader greeting={dashboard.greeting} onAddCigar={addFirstCigar} />
         <EmptyState
           icon="smoking"
           title="Welcome to Cavaro"
@@ -65,7 +84,7 @@ export default function Home() {
   return (
     <ScreenContainer scroll contentContainerStyle={styles.scrollContent}>
       <FadeInView delay={0}>
-        <HomeHeader onAddCigar={addFirstCigar} />
+        <HomeHeader greeting={dashboard.greeting} onAddCigar={addFirstCigar} />
       </FadeInView>
 
       {dashboard.smokeRecommendation ? (
@@ -76,7 +95,7 @@ export default function Home() {
             wrapper={dashboard.smokeRecommendation.displayWrapper}
             reason={dashboard.smokeRecommendation.reason}
             imageUrl={dashboard.smokeRecommendation.resolvedImage}
-            onViewDetails={openMyTaste}
+            onViewDetails={openRecommendationDetail}
           />
         </FadeInView>
       ) : null}
@@ -113,17 +132,7 @@ export default function Home() {
             />
           ))
         ) : (
-          <PremiumCard variant="subtle" style={styles.sectionCard}>
-            <EmptyState
-              compact
-              icon="timer-sand"
-              title="Nothing Cellaring Yet"
-              message="Start cellaring from a cigar in your humidor inventory."
-              actionLabel="Go to Humidors"
-              onAction={openHumidors}
-              style={styles.sectionEmpty}
-            />
-          </PremiumCard>
+          <CellarEmptyCard onAction={openHumidors} style={styles.sectionCard} />
         )}
       </FadeInView>
 
@@ -131,14 +140,15 @@ export default function Home() {
         <FadeInView delay={180}>
           <SectionHeader title="Humidor Snapshot" />
           {dashboard.humidors.map((humidor) => (
-            <PremiumCard key={humidor.id} variant="subtle" style={styles.snapshotCard} onPress={openHumidors}>
-              <Text style={styles.snapshotName}>{humidor.name}</Text>
-              <Text style={styles.snapshotMeta}>
-                {humidor.cigar_count ?? 0} cigars
-                {humidor.humidity != null ? `  ·  ${humidor.humidity}% RH` : ''}
-                {humidor.temperature != null ? `  ·  ${humidor.temperature}°F` : ''}
-              </Text>
-            </PremiumCard>
+            <HumidorSnapshotCard
+              key={humidor.id}
+              name={humidor.name}
+              cigarCount={humidor.cigar_count}
+              humidity={humidor.humidity}
+              temperature={humidor.temperature}
+              onPress={openHumidors}
+              style={styles.snapshotCard}
+            />
           ))}
         </FadeInView>
       ) : null}
@@ -163,24 +173,10 @@ const styles = StyleSheet.create({
   sectionCard: {
     marginBottom: spacing.xl,
   },
-  sectionEmpty: {
-    minHeight: 0,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.md,
-  },
   cellarCard: {
     marginBottom: spacing.md,
   },
   snapshotCard: {
     marginBottom: spacing.md,
-  },
-  snapshotName: {
-    ...typography.sectionTitle,
-    color: colors.text,
-  },
-  snapshotMeta: {
-    ...typography.body,
-    color: colors.gold,
-    marginTop: spacing.xs,
   },
 });

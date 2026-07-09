@@ -1,3 +1,4 @@
+export { default as AccentCard } from './AccentCard';
 export { default as ScreenContainer } from './ScreenContainer';
 export { default as CavaroText, CAVARO_TEXT_VARIANTS } from './CavaroText';
 export { default as PremiumCard } from './PremiumCard';
