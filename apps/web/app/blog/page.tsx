@@ -25,29 +25,31 @@ export default function BlogPage() {
       </section>
 
       <section className="px-6 pb-24">
-        <div className="mx-auto grid max-w-4xl gap-8">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {blogPosts.map((post) => (
             <article
               key={post.slug}
-              className="overflow-hidden rounded-xl border border-humidor-border bg-humidor-card transition-colors hover:border-humidor-primary/50"
+              className="flex overflow-hidden rounded-xl border border-humidor-border bg-humidor-card transition-colors hover:border-humidor-primary/50"
             >
-              <Link href={`/blog/${post.slug}`} className="block">
+              <Link href={`/blog/${post.slug}`} className="flex flex-1 flex-col">
                 <img
                   src={post.heroImage}
                   alt={post.heroImageAlt}
-                  className="aspect-[2/1] w-full object-cover"
+                  className="aspect-[4/3] w-full object-cover"
                 />
-                <div className="p-6 sm:p-8">
+                <div className="flex flex-1 flex-col p-4 sm:p-5">
                   <time
                     dateTime={post.publishedAt}
-                    className="text-sm font-medium text-humidor-primary"
+                    className="text-xs font-medium text-humidor-primary sm:text-sm"
                   >
                     {formatDate(post.publishedAt)}
                   </time>
-                  <h2 className="mt-2 font-sans text-2xl font-semibold text-humidor-cream">
+                  <h2 className="mt-2 line-clamp-3 font-sans text-lg font-semibold leading-snug text-humidor-cream">
                     {post.title}
                   </h2>
-                  <p className="mt-3 leading-relaxed text-humidor-muted">{post.excerpt}</p>
+                  <p className="mt-2 line-clamp-3 flex-1 text-sm leading-relaxed text-humidor-muted">
+                    {post.excerpt}
+                  </p>
                   <p className="mt-4 text-sm font-medium text-humidor-primary">Read article →</p>
                 </div>
               </Link>
