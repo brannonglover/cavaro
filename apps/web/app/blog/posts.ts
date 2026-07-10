@@ -5,10 +5,11 @@ export type BlogPostingSchema = {
   description: string;
   datePublished: string;
   articleBody: string;
-  image: string[];
+  image: string | string[];
   author: {
     '@type': string;
     name: string;
+    url?: string;
   };
   publisher: {
     '@type': string;
@@ -58,6 +59,40 @@ export type BlogPost = {
 };
 
 export const blogPosts: BlogPost[] = [
+  {
+    slug: 'why-everyone-is-talking-about-lanceros',
+    title: 'Why Everyone Is Talking About Lanceros (And You Should Too)',
+    excerpt:
+      "Discover why the Lancero vitola is the connoisseur's choice for concentrated flavor and how the Cavaro app helps you track these unique cigars.",
+    publishedAt: '2026-07-10',
+    heroImage: 'https://cdn.marblism.com/PR8j983N5ek.webp',
+    heroImageAlt:
+      'A minimalist vector illustration of a long, slender lancero cigar with a single trail of smoke rising from the ash.',
+    schema: {
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: 'Why Everyone Is Talking About Lanceros (And You Should Too)',
+      description:
+        "Discover why the Lancero vitola is the connoisseur's choice for concentrated flavor and how the Cavaro app helps you track these unique cigars.",
+      datePublished: '2026-07-10',
+      articleBody:
+        "You've likely seen them in the corner of your local humidor... The Lancero—a traditional Cuban vitola... understanding the Lancero isn't just about trying a new size; it's about unlocking a level of flavor precision... Use Cavaro to track your journey through this challenging but rewarding vitola...",
+      image: 'https://cdn.marblism.com/PR8j983N5ek.webp',
+      author: {
+        '@type': 'Organization',
+        name: 'Cavaro',
+        url: 'https://cavaroapp.com',
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'Cavaro',
+        logo: {
+          '@type': 'ImageObject',
+          url: 'https://cavaroapp.com/logo.png',
+        },
+      },
+    },
+  },
   {
     slug: 'cigar-101-flavor-profiles',
     title: "Cigar 101: A Beginner's Guide to Mastering Flavor Profiles",
