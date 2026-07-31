@@ -33,11 +33,13 @@ export default function NewsPage() {
             >
               <Link href={`/news/${post.slug}`} className="flex flex-col sm:flex-row">
                 {post.heroImage && (
-                  <img
-                    src={post.heroImage}
-                    alt={post.heroImageAlt ?? ''}
-                    className="aspect-[16/9] w-full object-cover sm:aspect-auto sm:w-48 sm:shrink-0"
-                  />
+                  <div className="flex aspect-[16/9] w-full items-center justify-center bg-humidor-bg/60 p-6 sm:aspect-auto sm:w-48 sm:shrink-0 sm:p-4">
+                    <img
+                      src={post.heroImage}
+                      alt={post.heroImageAlt ?? ''}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
                 )}
                 <div className="flex flex-1 flex-col p-5 sm:p-6">
                   <time

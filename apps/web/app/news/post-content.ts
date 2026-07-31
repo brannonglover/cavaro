@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react';
-import { WelcomeToCavaroNewsPost } from './posts/welcome-to-cavaro-news';
+import { LaFlorDominicanaCatalogPost } from './posts/la-flor-dominicana-now-in-cavaro';
 
 export const newsContent: Record<string, ComponentType> = {
-  'welcome-to-cavaro-news': WelcomeToCavaroNewsPost,
+  'la-flor-dominicana-now-in-cavaro': LaFlorDominicanaCatalogPost,
 };

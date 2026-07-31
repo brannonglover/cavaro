@@ -15,11 +15,13 @@ export type NewsPost = {
  */
 export const newsPosts: NewsPost[] = [
   {
-    slug: 'welcome-to-cavaro-news',
-    title: 'Welcome to Cavaro News',
+    slug: 'la-flor-dominicana-now-in-cavaro',
+    title: 'La Flor Dominicana Joins the Cavaro Catalog',
     excerpt:
-      'Product updates, feature launches, and announcements from the Cavaro team — right here.',
+      'Bold blends collectors love are now easier to find, track, and journal — LFD cigars are live in Cavaro.',
     publishedAt: '2026-07-31',
+    heroImage: '/news/lfd-logo.png',
+    heroImageAlt: 'La Flor Dominicana logo',
   },
 ];
 

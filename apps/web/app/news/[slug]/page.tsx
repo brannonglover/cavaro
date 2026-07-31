@@ -77,13 +77,21 @@ export default async function NewsPostPage({ params }: NewsPostPageProps) {
       </section>
 
       {post.heroImage && (
-        <section className="px-6 pb-8">
-          <div className="mx-auto max-w-3xl">
-            <img
-              src={post.heroImage}
-              alt={post.heroImageAlt ?? ''}
-              className="w-full rounded-xl border border-humidor-border"
-            />
+        <section className="relative px-6 pb-8">
+          <div className="relative mx-auto max-w-3xl overflow-hidden rounded-xl border border-humidor-primary/25 bg-humidor-card">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_80%_at_50%_40%,rgba(196,165,116,0.22),transparent_70%)]" />
+            <div className="pointer-events-none absolute -left-16 top-1/2 h-40 w-40 -translate-y-1/2 rounded-full bg-humidor-primary/10 blur-3xl" />
+            <div className="pointer-events-none absolute -right-16 top-1/2 h-40 w-40 -translate-y-1/2 rounded-full bg-humidor-primary/10 blur-3xl" />
+            <div className="relative flex flex-col items-center px-8 py-12 sm:px-14 sm:py-16">
+              <p className="mb-6 text-xs font-medium uppercase tracking-[0.2em] text-humidor-primary">
+                Now in Cavaro
+              </p>
+              <img
+                src={post.heroImage}
+                alt={post.heroImageAlt ?? ''}
+                className="h-auto w-full max-w-md object-contain drop-shadow-[0_0_28px_rgba(196,165,116,0.35)]"
+              />
+            </div>
           </div>
         </section>
       )}
