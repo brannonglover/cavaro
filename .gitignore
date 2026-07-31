@@ -33,5 +33,8 @@ yarn-error.*
 .env
 .env*.local
 
+# local working downloads / extracts
+tmp/
+
 # typescript
 *.tsbuildinfo

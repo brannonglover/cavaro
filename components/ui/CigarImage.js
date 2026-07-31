@@ -66,15 +66,17 @@ export default function CigarImage({
   variant = 'thumbnail',
   style,
   imageStyle,
-  resizeMode = 'cover',
+  resizeMode,
   fallbackIcon = 'smoking',
 }) {
+  const resolvedResizeMode = resizeMode ?? 'cover';
+
   if (imageUrl) {
     return (
       <Image
         source={{ uri: imageUrl }}
         style={[styles.image, getFillStyle(variant), style, imageStyle]}
-        resizeMode={resizeMode}
+        resizeMode={resolvedResizeMode}
       />
     );
   }

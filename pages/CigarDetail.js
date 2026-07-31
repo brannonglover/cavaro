@@ -4,11 +4,13 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   AccentCard,
+  CavaroButton,
   CigarImage,
   MatchBadge,
   PremiumCard,
   ScreenContainer,
 } from '../components/ui';
+import ImageViewerModal from '../components/ImageViewerModal';
 import { getCatalogDetailsForCigar } from '../lib/cigarImage';
 import { borderRadius, colors, spacing, typography } from '../theme';
 
@@ -39,6 +41,7 @@ export default function CigarDetail() {
   const route = useRoute();
   const { cigar, recommendation, imageUrl, displayWrapper } = route.params ?? {};
   const [details, setDetails] = useState(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   useEffect(() => {
     if (!cigar) return;
@@ -83,16 +86,27 @@ export default function CigarDetail() {
       </View>
 
       <PremiumCard variant="elevated" padding={0} style={styles.heroCard}>
-        <View style={styles.heroMedia}>
+        <Pressable
+          style={styles.heroMedia}
+          onPress={() => imageUrl && setViewerOpen(true)}
+          disabled={!imageUrl}
+        >
           <CigarImage
             imageUrl={imageUrl}
             wrapper={wrapper}
             variant="hero"
             style={styles.heroImage}
             imageStyle={styles.heroImage}
+            resizeMode="contain"
           />
-          <View style={styles.heroOverlay} />
-        </View>
+          <View style={styles.heroOverlay} pointerEvents="none" />
+          {imageUrl ? (
+            <View style={styles.heroHint} pointerEvents="none">
+              <MaterialCommunityIcons name="fullscreen" size={16} color={colors.goldMuted} />
+              <Text style={styles.heroHintText}>Tap to view</Text>
+            </View>
+          ) : null}
+        </Pressable>
         <View style={styles.heroBody}>
           <Text style={styles.name}>{name}</Text>
           {meta ? <Text style={styles.meta}>{meta}</Text> : null}
@@ -167,6 +181,35 @@ export default function CigarDetail() {
           ) : null}
         </PremiumCard>
       ) : null}
+
+      <PremiumCard variant="warm" style={styles.sectionCard}>
+        <View style={styles.pairingHeader}>
+          <View style={styles.pairingIcon}>
+            <MaterialCommunityIcons name="glass-cocktail" size={18} color={colors.gold} />
+          </View>
+          <View style={styles.pairingCopy}>
+            <Text style={styles.sectionLabel}>Drink Pairing</Text>
+            <Text style={styles.pairingBlurb}>
+              Get AI drink suggestions that complement this cigar.
+            </Text>
+          </View>
+        </View>
+        <CavaroButton
+          label="Get drink pairing"
+          icon="glass-cocktail"
+          onPress={() => {
+            const pairingQuery = [brand, name].filter(Boolean).join(' ').trim() || name;
+            navigation.navigate('Pairing', { cigar: pairingQuery });
+          }}
+          style={styles.pairingBtn}
+        />
+      </PremiumCard>
+
+      <ImageViewerModal
+        visible={viewerOpen}
+        imageUri={imageUrl}
+        onClose={() => setViewerOpen(false)}
+      />
     </ScreenContainer>
   );
 }
@@ -208,15 +251,33 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   heroMedia: {
-    height: 220,
+    height: 320,
     backgroundColor: colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   heroImage: {
     ...StyleSheet.absoluteFillObject,
   },
   heroOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(13, 11, 9, 0.18)',
+    backgroundColor: 'rgba(13, 11, 9, 0.08)',
+  },
+  heroHint: {
+    position: 'absolute',
+    right: spacing.md,
+    bottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: 'rgba(13, 11, 9, 0.55)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
+  },
+  heroHintText: {
+    ...typography.caption,
+    color: colors.goldMuted,
   },
   heroBody: {
     padding: spacing.md,
@@ -307,5 +368,30 @@ const styles = StyleSheet.create({
   },
   blendLabel: {
     color: colors.textMuted,
+  },
+  pairingHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  pairingIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: borderRadius.sm,
+    backgroundColor: 'rgba(200, 164, 93, 0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pairingCopy: {
+    flex: 1,
+  },
+  pairingBlurb: {
+    ...typography.body,
+    color: colors.textMuted,
+    lineHeight: 22,
+  },
+  pairingBtn: {
+    alignSelf: 'stretch',
   },
 });

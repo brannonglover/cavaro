@@ -1,7 +1,9 @@
 import { Modal, View, Image, Pressable, Text, StyleSheet } from 'react-native';
-import colors from '../theme/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '../theme';
 
 export default function ImageViewerModal({ visible, imageUri, onClose }) {
+  const insets = useSafeAreaInsets();
   if (!imageUri) return null;
 
   return (
@@ -11,14 +13,14 @@ export default function ImageViewerModal({ visible, imageUri, onClose }) {
       animationType="fade"
       onRequestClose={onClose}
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable onPress={onClose} style={styles.closeBtn}>
+      <View style={[styles.overlay, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={12}>
           <Text style={styles.closeText}>✕ Close</Text>
         </Pressable>
         <Pressable style={styles.imageWrap} onPress={onClose}>
           <Image source={{ uri: imageUri }} style={styles.image} resizeMode="contain" />
         </Pressable>
-      </Pressable>
+      </View>
     </Modal>
   );
 }
@@ -26,7 +28,7 @@ export default function ImageViewerModal({ visible, imageUri, onClose }) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.9)',
+    backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -37,19 +39,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   closeBtn: {
-    position: 'absolute',
-    top: 60,
-    right: 24,
+    alignSelf: 'flex-end',
     zIndex: 10,
-    padding: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
   },
   closeText: {
     fontSize: 17,
-    color: colors.cardBg,
+    color: colors.gold,
     fontWeight: '600',
   },
   image: {
     width: '100%',
-    height: '80%',
+    height: '100%',
   },
 });
