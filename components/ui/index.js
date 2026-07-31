@@ -14,3 +14,5 @@ export { default as CellaringProgressCard } from './CellaringProgressCard';
 export { default as PressableScale } from './PressableScale';
 export { default as FadeInView } from './FadeInView';
 export { default as CigarImage } from './CigarImage';
+export { default as SegmentMeter } from './SegmentMeter';
+export { default as DrinkPairingCard, getDrinkIcon } from './DrinkPairingCard';

@@ -4,6 +4,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import {
   AtAGlanceStatsRow,
   CellarEmptyCard,
+  DrinkPairingShortcutCard,
   HomeHeader,
   HumidorSnapshotCard,
   SmokeRecommendationCard,
@@ -40,6 +41,7 @@ export default function Home() {
 
   const openHumidors = () => navigation.navigate('Humidors');
   const addFirstCigar = () => navigation.navigate('Humidors', { screen: 'AddCigar' });
+  const openPairing = () => navigation.navigate('Pairing');
   const openRecommendationDetail = () => {
     const rec = dashboard?.smokeRecommendation;
     if (!rec?.cigar) return;
@@ -77,6 +79,7 @@ export default function Home() {
           actionLabel="Add First Cigar"
           onAction={addFirstCigar}
         />
+        <DrinkPairingShortcutCard onPress={openPairing} style={styles.sectionCard} />
       </ScreenContainer>
     );
   }
@@ -99,6 +102,10 @@ export default function Home() {
           />
         </FadeInView>
       ) : null}
+
+      <FadeInView delay={50}>
+        <DrinkPairingShortcutCard onPress={openPairing} />
+      </FadeInView>
 
       <FadeInView delay={60}>
         <AtAGlanceStatsRow

@@ -9,11 +9,52 @@ const supabase = supabaseUrl && supabaseServiceKey
   ? createClient(supabaseUrl, supabaseServiceKey)
   : null;
 
+const ALLOWED_DRINK_TYPES = new Set([
+  'cocktail',
+  'whiskey',
+  'bourbon',
+  'rum',
+  'wine',
+  'beer',
+  'coffee',
+  'tea',
+  'spirit',
+  'other',
+]);
+
+function clamp(value, min, max, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, Math.round(n)));
+}
+
+function normalizePairing(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const name = typeof raw.name === 'string' ? raw.name.trim() : '';
+  if (!name) return null;
+
+  const drinkTypeRaw = typeof raw.drinkType === 'string'
+    ? raw.drinkType.trim().toLowerCase()
+    : 'other';
+
+  return {
+    name,
+    description: typeof raw.description === 'string'
+      ? raw.description.trim()
+      : '',
+    strengthMatch: clamp(raw.strengthMatch, 1, 5, 3),
+    flavorHarmony: clamp(raw.flavorHarmony, 1, 5, 3),
+    experienceScore: clamp(raw.experienceScore, 0, 100, 80),
+    details: typeof raw.details === 'string' ? raw.details.trim() : '',
+    drinkType: ALLOWED_DRINK_TYPES.has(drinkTypeRaw) ? drinkTypeRaw : 'other',
+  };
+}
+
 /**
  * POST /api/pairing
  * Body: { cigar: string }
  * Headers: Authorization: Bearer <token> (required when Supabase configured - premium tier only)
- * Proxies to OpenAI API for drink pairing suggestions.
+ * Proxies to OpenAI API for structured drink pairing suggestions.
  */
 router.post('/', async (req, res) => {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -52,7 +93,24 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Please enter a cigar name.' });
   }
 
-  const systemPrompt = `You are a cigar and beverage pairing expert. Given a cigar name, suggest 2-4 drink pairings that complement it well. Include brief reasoning for each pairing (why the flavors work together). Keep responses concise and practical, suitable for a mobile app. Format as a short list with bullet points or numbered items.`;
+  const systemPrompt = `You are a cigar and beverage pairing expert. Given a cigar name, suggest 2-3 drink pairings that complement it well.
+
+Respond ONLY with valid JSON in this exact shape:
+{
+  "pairings": [
+    {
+      "name": "Drink name",
+      "description": "One short sentence on why it pairs well.",
+      "strengthMatch": 1-5,
+      "flavorHarmony": 1-5,
+      "experienceScore": 0-100,
+      "details": "Longer rationale with serving notes.",
+      "drinkType": "cocktail|whiskey|bourbon|rum|wine|beer|coffee|tea|spirit|other"
+    }
+  ]
+}
+
+Keep descriptions concise for a mobile app. Scores should reflect fit with the cigar.`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -67,7 +125,8 @@ router.post('/', async (req, res) => {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `What drinks pair well with this cigar: ${cigar}?` },
         ],
-        max_tokens: 400,
+        response_format: { type: 'json_object' },
+        max_tokens: 800,
       }),
     });
 
@@ -78,8 +137,28 @@ router.post('/', async (req, res) => {
       return res.status(response.status).json({ error: errMsg });
     }
 
-    const content = data.choices?.[0]?.message?.content?.trim() || 'No response received.';
-    return res.json({ pairing: content });
+    const content = data.choices?.[0]?.message?.content?.trim();
+    if (!content) {
+      return res.status(502).json({ error: 'No response received.' });
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      return res.status(502).json({ error: 'Invalid pairing response format.' });
+    }
+
+    const pairings = (Array.isArray(parsed?.pairings) ? parsed.pairings : [])
+      .map(normalizePairing)
+      .filter(Boolean)
+      .slice(0, 3);
+
+    if (pairings.length === 0) {
+      return res.status(502).json({ error: 'No pairing suggestions returned.' });
+    }
+
+    return res.json({ pairings });
   } catch (err) {
     console.error('Pairing API error:', err);
     return res.status(500).json({

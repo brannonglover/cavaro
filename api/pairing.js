@@ -15,5 +15,5 @@ export async function getDrinkPairing(cigar, accessToken) {
   if (!res.ok) {
     throw new Error(data.error || 'Failed to get pairing suggestions');
   }
-  return data.pairing;
+  return Array.isArray(data.pairings) ? data.pairings : [];
 }
