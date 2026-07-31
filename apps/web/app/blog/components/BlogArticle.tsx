@@ -17,6 +17,9 @@ export function BlogArticle({ children }: { children: ReactNode }) {
         '[&_li]:pl-1',
         '[&_hr]:my-10 [&_hr]:border-humidor-border',
         '[&_img]:my-8 [&_img]:w-full [&_img]:rounded-xl [&_img]:border [&_img]:border-humidor-border',
+        '[&_table]:my-8 [&_table]:w-full [&_table]:border-collapse [&_table]:text-base',
+        '[&_th]:border [&_th]:border-humidor-border [&_th]:bg-humidor-primary/10 [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-semibold [&_th]:text-humidor-cream',
+        '[&_td]:border [&_td]:border-humidor-border [&_td]:px-3 [&_td]:py-2 [&_td]:align-top',
       ].join(' ')}
     >
       {children}

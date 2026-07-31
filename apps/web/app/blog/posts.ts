@@ -26,8 +26,8 @@ export type HowToSchema = {
   '@type': string;
   name: string;
   description: string;
-  totalTime: string;
-  estimatedCost: {
+  totalTime?: string;
+  estimatedCost?: {
     '@type': string;
     value: string;
     currency: string;
@@ -37,11 +37,11 @@ export type HowToSchema = {
     name: string;
     text: string;
   }>;
-  tool: Array<{
+  tool?: Array<{
     '@type': string;
     name: string;
   }>;
-  supply: Array<{
+  supply?: Array<{
     '@type': string;
     name: string;
   }>;
@@ -59,6 +59,70 @@ export type BlogPost = {
 };
 
 export const blogPosts: BlogPost[] = [
+  {
+    slug: 'cigar-cutting-101-straight-v-cut-or-punch',
+    title: 'Cigar Cutting 101: Straight, V-Cut, or Punch?',
+    excerpt:
+      'A comprehensive guide for cigar enthusiasts on mastering straight cuts, V-cuts, and punch cuts, matching cuts to vitolas, and tracking your collection.',
+    publishedAt: '2026-07-31',
+    heroImage: 'https://cdn.marblism.com/G9XNO1HFFL-.webp',
+    heroImageAlt:
+      'Minimalist vector illustration of a premium cigar with smoke positioned directly over the ash area on a dark ebony and gold background',
+    schema: {
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: 'Cigar Cutting 101: Straight, V-Cut, or Punch?',
+      description:
+        'A comprehensive guide for cigar enthusiasts on mastering straight cuts, V-cuts, and punch cuts, matching cuts to vitolas, and tracking your collection.',
+      datePublished: '2026-07-31',
+      articleBody:
+        'Every great smoking session begins with the cut. Master the three primary cuts: straight (guillotine) for open unrestricted draw and figurados; V-cut for concentrated flavor and box-pressed cigars; punch for cooler, controlled smoke on robust parejos. Match cut to vitola using the aficionado matrix covering robustos, coronas, lanceros, box-pressed, and torpedoes. Track cutting tools and preferences with Cavaro.',
+      image: [
+        'https://cdn.marblism.com/G9XNO1HFFL-.webp',
+        'https://cdn.marblism.com/P4HVFbYwoIu.webp',
+        'https://cdn.marblism.com/hqyfPfTdFDy.webp',
+        'https://cdn.marblism.com/VehN4mpe0wN.webp',
+        'https://cdn.marblism.com/KG3kCapZSg-.png',
+      ],
+      author: {
+        '@type': 'Organization',
+        name: 'Cavaro',
+        url: 'https://cavaroapp.com',
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'Cavaro',
+        logo: {
+          '@type': 'ImageObject',
+          url: 'https://cavaroapp.com/logo.png',
+        },
+      },
+    },
+    howToSchema: {
+      '@context': 'https://schema.org',
+      '@type': 'HowTo',
+      name: 'Cigar Cutting 101: Straight, V-Cut, or Punch?',
+      description:
+        'A comprehensive guide for cigar enthusiasts on mastering straight cuts, V-cuts, and punch cuts, matching cuts to vitolas, and tracking your collection.',
+      step: [
+        {
+          '@type': 'HowToStep',
+          name: 'The Straight Cut',
+          text: 'Use a sharp double-blade guillotine to remove the full cap across the diameter for an open, unrestricted draw.',
+        },
+        {
+          '@type': 'HowToStep',
+          name: 'The V-Cut',
+          text: 'Carve a V-shaped trench into the cap to concentrate flavors and provide a rich, bold smoke, ideal for box-pressed cigars.',
+        },
+        {
+          '@type': 'HowToStep',
+          name: 'The Punch Cut',
+          text: 'Create a clean circular hole in the center of the cap for a cooler, slower burn on robust parejos.',
+        },
+      ],
+    },
+  },
   {
     slug: 'why-everyone-is-talking-about-lanceros',
     title: 'Why Everyone Is Talking About Lanceros (And You Should Too)',
