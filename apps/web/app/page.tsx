@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { GetStartedButton } from './components/GetStartedButton';
 import { DownloadSection } from './components/DownloadSection';
+import { LatestNews } from './components/LatestNews';
 
 const FREE_CIGAR_LIMIT = 5;
 
@@ -230,6 +231,8 @@ export default function Home() {
         </div>
       </section>
 
+      <LatestNews />
+
       {/* Tiers */}
       <section className="px-6 pb-24">
         <div className="mx-auto max-w-4xl">
@@ -280,6 +283,10 @@ export default function Home() {
         <div className="mx-auto max-w-4xl text-center text-sm text-humidor-subtle">
           <p>Cavaro — Your personal cigar companion</p>
           <p className="mt-1">
+            <Link href="/news" className="text-humidor-primary hover:underline">
+              News
+            </Link>
+            {' · '}
             <Link href="/blog" className="text-humidor-primary hover:underline">
               Blog
             </Link>
