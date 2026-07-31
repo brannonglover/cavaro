@@ -60,7 +60,7 @@ export default function Journal() {
     }, [loadEntries])
   );
 
-  const openHumidors = () => navigation.navigate('Humidors');
+  const openHumidors = () => navigation.navigate('Humidors', { screen: 'CavaroList' });
 
   if (entries === null) {
     return (

@@ -21,14 +21,23 @@ const TAB_ICONS = {
 };
 
 function withSwipe(Screen) {
-  return function SwipeableScreen(props) {
+  function SwipeableScreen(props) {
     return (
       <SwipeableTabWrapper>
         <Screen {...props} />
       </SwipeableTabWrapper>
     );
-  };
+  }
+  SwipeableScreen.displayName = `Swipeable(${Screen.displayName || Screen.name || 'Screen'})`;
+  return SwipeableScreen;
 }
+
+// Stable identities — creating these inside render remounts nested navigators.
+const SwipeableHomeStack = withSwipe(HomeStack);
+const SwipeableCavaroStack = withSwipe(CavaroStack);
+const SwipeableCollection = withSwipe(Collection);
+const SwipeableMyTaste = withSwipe(MyTaste);
+const SwipeableJournal = withSwipe(Journal);
 
 function tabIcon(name) {
   return ({ focused, color }) => {
@@ -74,7 +83,7 @@ export default function MainTabs() {
     >
       <Tab.Screen
         name="Home"
-        component={withSwipe(HomeStack)}
+        component={SwipeableHomeStack}
         options={{
           tabBarLabel: 'Home',
           tabBarIcon: tabIcon('Home'),
@@ -82,15 +91,23 @@ export default function MainTabs() {
       />
       <Tab.Screen
         name="Humidors"
-        component={withSwipe(CavaroStack)}
+        component={SwipeableCavaroStack}
+        listeners={({ navigation }) => ({
+          // Home / Search deep-link into AddCigar and leave that nested route
+          // sticky on this tab — always land on the inventory list on tab press.
+          tabPress: () => {
+            navigation.navigate('Humidors', { screen: 'CavaroList' });
+          },
+        })}
         options={{
           tabBarLabel: 'Humidors',
           tabBarIcon: tabIcon('Humidors'),
+          popToTopOnBlur: true,
         }}
       />
       <Tab.Screen
         name="Collection"
-        component={withSwipe(Collection)}
+        component={SwipeableCollection}
         options={{
           tabBarLabel: 'Collection',
           tabBarIcon: tabIcon('Collection'),
@@ -98,7 +115,7 @@ export default function MainTabs() {
       />
       <Tab.Screen
         name="MyTaste"
-        component={withSwipe(MyTaste)}
+        component={SwipeableMyTaste}
         options={{
           tabBarLabel: 'My Taste',
           tabBarIcon: tabIcon('MyTaste'),
@@ -106,7 +123,7 @@ export default function MainTabs() {
       />
       <Tab.Screen
         name="Journal"
-        component={withSwipe(Journal)}
+        component={SwipeableJournal}
         options={{
           tabBarLabel: 'Journal',
           tabBarIcon: tabIcon('Journal'),

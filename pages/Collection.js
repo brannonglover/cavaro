@@ -89,7 +89,7 @@ export default function Collection() {
           title="Your Collection Story Starts Here"
           message="As you smoke and rate cigars, Cavaro will build your lifetime collection profile."
           actionLabel="Go to Humidors"
-          onAction={() => navigation.navigate('Humidors')}
+          onAction={() => navigation.navigate('Humidors', { screen: 'CavaroList' })}
         />
       </ScreenContainer>
     );

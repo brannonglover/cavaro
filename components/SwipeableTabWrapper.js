@@ -45,10 +45,20 @@ export function SwipeableTabWrapper({ children }) {
 
           if (isSwipeLeft && currentIndex < TAB_ORDER.length - 1) {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            navigation.navigate(TAB_ORDER[currentIndex + 1]);
+            const nextTab = TAB_ORDER[currentIndex + 1];
+            if (nextTab === 'Humidors') {
+              navigation.navigate('Humidors', { screen: 'CavaroList' });
+            } else {
+              navigation.navigate(nextTab);
+            }
           } else if (isSwipeRight && currentIndex > 0) {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            navigation.navigate(TAB_ORDER[currentIndex - 1]);
+            const prevTab = TAB_ORDER[currentIndex - 1];
+            if (prevTab === 'Humidors') {
+              navigation.navigate('Humidors', { screen: 'CavaroList' });
+            } else {
+              navigation.navigate(prevTab);
+            }
           }
         }),
     [navigation]

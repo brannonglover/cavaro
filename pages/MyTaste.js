@@ -58,7 +58,7 @@ export default function MyTaste() {
           title="Cavaro Is Learning Your Palate"
           message="Log a few smoking experiences and your taste profile will begin to appear."
           actionLabel="Go to Humidors"
-          onAction={() => navigation.navigate('Humidors')}
+          onAction={() => navigation.navigate('Humidors', { screen: 'CavaroList' })}
         />
       </ScreenContainer>
     );

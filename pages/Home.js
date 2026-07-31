@@ -39,7 +39,7 @@ export default function Home() {
     }, [loadDashboard])
   );
 
-  const openHumidors = () => navigation.navigate('Humidors');
+  const openHumidors = () => navigation.navigate('Humidors', { screen: 'CavaroList' });
   const addFirstCigar = () => navigation.navigate('Humidors', { screen: 'AddCigar' });
   const openPairing = () => navigation.navigate('Pairing');
   const openRecommendationDetail = () => {
