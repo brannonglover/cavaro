@@ -147,17 +147,30 @@ export default function AddCigar() {
       let rows;
       try {
         rows = await fetchCatalog();
-        // Cache in local SQLite for offline use
-        await db.withTransactionAsync(async () => {
-          await db.execAsync('DELETE FROM cigar_catalog');
-          for (const c of rows) {
-            await db.runAsync(
-              `INSERT OR IGNORE INTO cigar_catalog (brand, name, line, description, wrapper, binder, filler, length, image)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-              c.brand, c.name, c.line || '', c.description || '', c.wrapper || '', c.binder || '', c.filler || '', c.length, c.image || ''
-            );
-          }
-        });
+        // Cache in local SQLite for offline use (don't fail the screen if cache write fails)
+        try {
+          await db.withTransactionAsync(async () => {
+            await db.execAsync('DELETE FROM cigar_catalog');
+            for (const c of rows) {
+              await db.runAsync(
+                `INSERT INTO cigar_catalog (brand, name, line, description, wrapper, binder, filler, length, image, size_name)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                c.brand,
+                c.name,
+                c.line || '',
+                c.description || '',
+                c.wrapper || '',
+                c.binder || '',
+                c.filler || '',
+                c.length,
+                c.image || '',
+                c.size_name || ''
+              );
+            }
+          });
+        } catch (cacheErr) {
+          console.warn('Catalog cache write failed:', cacheErr.message);
+        }
       } catch (apiErr) {
         console.warn('API catalog unavailable, using local cache:', apiErr.message);
         rows = await db.getAllAsync('SELECT * FROM cigar_catalog ORDER BY brand, name, length');
@@ -191,20 +204,107 @@ export default function AddCigar() {
       setCigarBinder(match.binder || '');
       setCigarFiller(match.filler || '');
       setCigarImage(match.image || '');
-      const byBrand = data.filter((c) => c.brand === match.brand);
-      setCigarNameArr([...new Set(byBrand.map((c) => c.name))].map((n) => ({ label: n, value: n })));
-      const byBrandName = data.filter((c) => c.brand === match.brand && c.name === match.name);
-      setCigarSizeArr(byBrandName.map((c) => ({ label: c.length, value: c.length })));
     }
   }, [prefill, data, route.params]);
 
-  function fillCigarName(brand) {
-    const byBrand = data.filter((c) => c.brand === brand);
-    const uniqueNames = [...new Set(byBrand.map((c) => c.name))];
+  // Keep name options in sync with the selected brand (DropDownPicker onChangeValue is unreliable).
+  useEffect(() => {
+    if (!cigarBrand) {
+      setCigarNameArr([]);
+      return;
+    }
+    const byBrand = data.filter((c) => c.brand === cigarBrand);
+    const uniqueNames = [...new Set(byBrand.map((c) => c.name).filter(Boolean))].sort((a, b) =>
+      a.localeCompare(b)
+    );
     setCigarNameArr(uniqueNames.map((n) => ({ label: n, value: n })));
-    setCigarName('');
-    setCigarSize('');
-    setCigarSizeArr([]);
+  }, [cigarBrand, data]);
+
+  // Keep size options + blend details in sync with brand + name.
+  useEffect(() => {
+    if (!cigarBrand || !cigarName) {
+      setCigarSizeArr([]);
+      return;
+    }
+    const byBrandAndName = data.filter((c) => c.brand === cigarBrand && c.name === cigarName);
+    const sizeOptions = byBrandAndName
+      .map((c) => {
+        const sizeName = (c.size_name || '').trim();
+        const length = (c.length || '').trim();
+        return {
+          label: sizeName ? `${sizeName} - ${length}` : length,
+          // Encode size_name so duplicate lengths (Toro vs Torpedo) stay selectable.
+          value: sizeName ? `${sizeName}::${length}` : length,
+          sortKey: sizeName || length,
+        };
+      })
+      .sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+    // Dedupe by value while preserving order
+    const seen = new Set();
+    setCigarSizeArr(
+      sizeOptions
+        .filter((opt) => {
+          if (!opt.value || seen.has(opt.value)) return false;
+          seen.add(opt.value);
+          return true;
+        })
+        .map(({ label, value }) => ({ label, value }))
+    );
+    if (byBrandAndName.length > 0) {
+      const first = byBrandAndName[0];
+      setCigarLine(first.line || '');
+      setCigarDescription(first.description || '');
+      setCigarWrapper(first.wrapper || '');
+      setCigarBinder(first.binder || '');
+      setCigarFiller(first.filler || '');
+    }
+  }, [cigarBrand, cigarName, data]);
+
+  function resolveCatalogSelection() {
+    const sizeName = cigarSize.includes('::') ? cigarSize.split('::')[0] : '';
+    const length = cigarSize.includes('::') ? cigarSize.split('::').slice(1).join('::') : cigarSize;
+    const match = data.find(
+      (c) =>
+        c.brand === cigarBrand &&
+        c.name === cigarName &&
+        c.length === length &&
+        (sizeName ? (c.size_name || '') === sizeName : true)
+    );
+    return {
+      length,
+      sizeName: sizeName || match?.size_name || '',
+      match,
+    };
+  }
+
+  function handleBrandSetValue(callback) {
+    setCigarBrand((prev) => {
+      const next = typeof callback === 'function' ? callback(prev) : callback;
+      const normalized = next ?? '';
+      if (normalized !== prev) {
+        setCigarName('');
+        setCigarSize('');
+        setCigarSizeArr([]);
+        setCigarLine('');
+        setCigarDescription('');
+        setCigarWrapper('');
+        setCigarBinder('');
+        setCigarFiller('');
+        setCigarImage('');
+      }
+      return normalized;
+    });
+  }
+
+  function handleNameSetValue(callback) {
+    setCigarName((prev) => {
+      const next = typeof callback === 'function' ? callback(prev) : callback;
+      const normalized = next ?? '';
+      if (normalized !== prev) {
+        setCigarSize('');
+      }
+      return normalized;
+    });
   }
 
   async function handleAddImage(setImage) {
@@ -268,21 +368,6 @@ export default function AddCigar() {
     }
   }
 
-  function fillCigarSize(name) {
-    const byBrandAndName = data.filter((c) => c.brand === cigarBrand && c.name === name);
-    const sizes = byBrandAndName.map((c) => ({ label: c.length, value: c.length }));
-    setCigarSizeArr(sizes);
-    setCigarSize('');
-    if (byBrandAndName.length > 0) {
-      const first = byBrandAndName[0];
-      setCigarLine(first.line || '');
-      setCigarDescription(first.description || '');
-      setCigarWrapper(first.wrapper || '');
-      setCigarBinder(first.binder || '');
-      setCigarFiller(first.filler || '');
-    }
-  }
-
   async function addFromCatalog() {
     if (!cigarBrand?.trim() || !cigarName?.trim() || !cigarSize?.trim()) return;
     if (enforceLimit && cigarCount >= FREE_CIGAR_LIMIT) {
@@ -295,6 +380,7 @@ export default function AddCigar() {
     }
     const qty = Math.max(1, parseInt(cigarQuantity, 10) || 1);
     const dateToUse = dateAdded?.trim() || new Date().toISOString().slice(0, 10);
+    const { length: resolvedLength, match } = resolveCatalogSelection();
     try {
       let imageUrl = '';
       if (cigarImage) {
@@ -303,6 +389,9 @@ export default function AddCigar() {
         } catch (e) {
           console.warn('Image upload failed, saving without image:', e.message);
         }
+      }
+      if (!imageUrl && match?.image) {
+        imageUrl = match.image;
       }
       await db.runAsync(
         'INSERT INTO cigars (brand, name, line, description, wrapper, binder, filler, length, image, quantity, collection, date_added, humidor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -313,7 +402,7 @@ export default function AddCigar() {
         cigarWrapper,
         cigarBinder,
         cigarFiller,
-        cigarSize.trim(),
+        resolvedLength.trim(),
         imageUrl,
         qty,
         COLLECTIONS.CAVARO,
@@ -450,14 +539,21 @@ export default function AddCigar() {
                 <Text style={styles.sectionSubtitle}>Choose brand, name, and size from the database</Text>
               </View>
 
-              <View style={styles.field}>
+              <View style={[styles.field, brandOpen && styles.fieldElevated]}>
                 <Text style={styles.label}>Brand</Text>
                 <DropDownPicker
                   open={brandOpen}
-                  value={cigarBrand}
+                  value={cigarBrand || null}
                   items={brandArr}
-                  setOpen={setBrandOpen}
-                  setValue={setCigarBrand}
+                  setOpen={(open) => {
+                    setBrandOpen(open);
+                    if (open) {
+                      setNameOpen(false);
+                      setSizeOpen(false);
+                    }
+                  }}
+                  setValue={handleBrandSetValue}
+                  setItems={setBrandArr}
                   placeholder="Select brand"
                   placeholderStyle={{ color: colors.placeholderText }}
                   ArrowDownIconComponent={DropdownArrowDown}
@@ -470,34 +566,44 @@ export default function AddCigar() {
                   listItemLabelStyle={styles.dropdownListItemLabel}
                   zIndex={3000}
                   zIndexInverse={1000}
-                  onChangeValue={(value) => {
-                    fillCigarName(value);
-                    setCigarBrand(value);
-                  }}
                 />
               </View>
 
-              <View style={styles.field}>
+              <View style={[styles.field, nameOpen && styles.fieldElevated]}>
                 <Text style={styles.label}>Cigar name</Text>
                 <DropDownPicker
+                  key={`name-${cigarBrand || 'none'}`}
                   open={nameOpen}
-                  value={cigarName}
+                  value={cigarName || null}
                   items={cigarNameArr}
-                  setOpen={setNameOpen}
-                  setValue={setCigarName}
-                  placeholder="Select cigar"
+                  setOpen={(open) => {
+                    setNameOpen(open);
+                    if (open) {
+                      setBrandOpen(false);
+                      setSizeOpen(false);
+                    }
+                  }}
+                  setValue={handleNameSetValue}
+                  setItems={setCigarNameArr}
+                  placeholder={
+                    !cigarBrand
+                      ? 'Select a brand first'
+                      : cigarNameArr.length
+                        ? 'Select cigar'
+                        : 'No cigars for this brand'
+                  }
                   placeholderStyle={{ color: colors.placeholderText }}
                   ArrowDownIconComponent={DropdownArrowDown}
                   ArrowUpIconComponent={DropdownArrowUp}
                   theme="DARK"
                   listMode="SCROLLVIEW"
+                  disabled={!cigarBrand || cigarNameArr.length === 0}
                   style={styles.dropdown}
-                  dropDownContainerStyle={styles.dropdownContainer}
+                  dropDownContainerStyle={[styles.dropdownContainer, styles.dropdownContainerTall]}
                   listItemContainerStyle={styles.dropdownListItem}
                   listItemLabelStyle={styles.dropdownListItemLabel}
                   zIndex={2000}
                   zIndexInverse={2000}
-                  onChangeValue={(value) => fillCigarSize(value)}
                 />
               </View>
 
@@ -513,26 +619,35 @@ export default function AddCigar() {
                 />
               </View>
 
-              <View style={styles.field}>
+              <View style={[styles.field, sizeOpen && styles.fieldElevated]}>
                 <Text style={styles.label}>Size</Text>
                 <DropDownPicker
+                  key={`size-${cigarBrand || 'none'}-${cigarName || 'none'}`}
                   open={sizeOpen}
-                  value={cigarSize}
+                  value={cigarSize || null}
                   items={cigarSizeArr}
-                  setOpen={setSizeOpen}
+                  setOpen={(open) => {
+                    setSizeOpen(open);
+                    if (open) {
+                      setBrandOpen(false);
+                      setNameOpen(false);
+                    }
+                  }}
                   setValue={setCigarSize}
-                  placeholder="Select size"
+                  setItems={setCigarSizeArr}
+                  placeholder={cigarName ? 'Select size' : 'Select a cigar first'}
                   placeholderStyle={{ color: colors.placeholderText }}
                   ArrowDownIconComponent={DropdownArrowDown}
                   ArrowUpIconComponent={DropdownArrowUp}
                   theme="DARK"
                   listMode="SCROLLVIEW"
+                  disabled={!cigarName || cigarSizeArr.length === 0}
                   style={styles.dropdown}
                   dropDownContainerStyle={styles.dropdownContainer}
                   listItemContainerStyle={styles.dropdownListItem}
                   listItemLabelStyle={styles.dropdownListItemLabel}
                   zIndex={1000}
-                  zIndexInverse={1000}
+                  zIndexInverse={3000}
                 />
               </View>
 
@@ -823,6 +938,10 @@ const styles = StyleSheet.create({
   field: {
     marginBottom: 20,
   },
+  fieldElevated: {
+    zIndex: 5000,
+    elevation: 5,
+  },
   label: {
     fontSize: 15,
     fontWeight: '500',
@@ -855,6 +974,9 @@ const styles = StyleSheet.create({
     borderColor: colors.cardBorder,
     borderRadius: 12,
     borderWidth: 1,
+  },
+  dropdownContainerTall: {
+    maxHeight: 280,
   },
   dropdownListItem: {
     backgroundColor: colors.cardBg,

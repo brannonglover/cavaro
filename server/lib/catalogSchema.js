@@ -19,6 +19,7 @@ async function ensureCatalogSchema(pool) {
     )
   `);
   await pool.query('ALTER TABLE cigar_catalog ADD COLUMN IF NOT EXISTS line TEXT');
+  await pool.query('ALTER TABLE cigar_catalog ADD COLUMN IF NOT EXISTS size_name TEXT');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_catalog_brand ON cigar_catalog(brand)');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_catalog_brand_name ON cigar_catalog(brand, name)');
   try {
@@ -28,6 +29,14 @@ async function ensureCatalogSchema(pool) {
     `);
   } catch (err) {
     console.warn('cigar_catalog unique index:', err.message);
+  }
+  try {
+    await pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_catalog_brand_name_size_length
+      ON cigar_catalog (brand, name, COALESCE(size_name, ''), length)
+    `);
+  } catch (err) {
+    console.warn('cigar_catalog size unique index:', err.message);
   }
   try {
     await pool.query('ALTER TABLE cigar_catalog DISABLE ROW LEVEL SECURITY');

@@ -39,13 +39,15 @@ export async function initDatabase() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         brand TEXT NOT NULL,
         name TEXT NOT NULL,
+        line TEXT,
         description TEXT,
         wrapper TEXT,
         binder TEXT,
         filler TEXT,
         length TEXT NOT NULL,
         image TEXT,
-        UNIQUE(brand, name, length)
+        size_name TEXT DEFAULT '',
+        UNIQUE(brand, name, length, size_name)
       )
     `);
     await db.execAsync(`
@@ -57,6 +59,45 @@ export async function initDatabase() {
     const catalogInfo = await db.getAllAsync('PRAGMA table_info(cigar_catalog)');
     if (!catalogInfo.some((c) => c.name === 'line')) {
       await db.execAsync('ALTER TABLE cigar_catalog ADD COLUMN line TEXT');
+    }
+    const catalogSql = (
+      await db.getFirstAsync("SELECT sql FROM sqlite_master WHERE type='table' AND name='cigar_catalog'")
+    )?.sql || '';
+    const needsSizeNameRebuild =
+      !catalogInfo.some((c) => c.name === 'size_name') ||
+      !catalogSql.includes('size_name') ||
+      (catalogSql.includes('UNIQUE(brand, name, length)') &&
+        !catalogSql.includes('UNIQUE(brand, name, length, size_name)'));
+    if (needsSizeNameRebuild) {
+      // Rebuild so UNIQUE includes size_name (same length, different vitolas).
+      if (!catalogInfo.some((c) => c.name === 'size_name')) {
+        await db.execAsync('ALTER TABLE cigar_catalog ADD COLUMN size_name TEXT');
+      }
+      await db.execAsync(`
+        CREATE TABLE cigar_catalog_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          brand TEXT NOT NULL,
+          name TEXT NOT NULL,
+          line TEXT,
+          description TEXT,
+          wrapper TEXT,
+          binder TEXT,
+          filler TEXT,
+          length TEXT NOT NULL,
+          image TEXT,
+          size_name TEXT DEFAULT '',
+          UNIQUE(brand, name, length, size_name)
+        )
+      `);
+      await db.execAsync(`
+        INSERT INTO cigar_catalog_new (brand, name, line, description, wrapper, binder, filler, length, image, size_name)
+        SELECT brand, name, line, description, wrapper, binder, filler, length, image, COALESCE(size_name, '')
+        FROM cigar_catalog
+      `);
+      await db.execAsync('DROP TABLE cigar_catalog');
+      await db.execAsync('ALTER TABLE cigar_catalog_new RENAME TO cigar_catalog');
+      await db.execAsync('CREATE INDEX IF NOT EXISTS idx_catalog_brand ON cigar_catalog(brand)');
+      await db.execAsync('CREATE INDEX IF NOT EXISTS idx_catalog_brand_name ON cigar_catalog(brand, name)');
     }
 
     // Create user cigars table

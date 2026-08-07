@@ -1,6 +1,6 @@
 {
   "name": "server",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -18,7 +18,9 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "import-lfd-catalog": "node scripts/importLfdCatalog.js",
-    "recolor-lfd-images": "node scripts/recolorLfdCatalogImages.js"
+    "recolor-lfd-images": "node scripts/recolorLfdCatalogImages.js",
+    "parse-rocky-patel-catalog": "python3 scripts/parseRockyPatelCatalog.py",
+    "import-rocky-patel-catalog": "node scripts/importRockyPatelCatalog.js"
   },
   "author": "",
   "license": "ISC",
