@@ -15,6 +15,15 @@ export type NewsPost = {
  */
 export const newsPosts: NewsPost[] = [
   {
+    slug: 'rocky-patel-now-in-cavaro',
+    title: 'Rocky Patel Joins the Cavaro Catalog',
+    excerpt:
+      'One of premium cigar’s most recognized names is now easier to find, track, and journal — Rocky Patel is live in Cavaro.',
+    publishedAt: '2026-08-07',
+    heroImage: '/news/rocky-patel-logo.png',
+    heroImageAlt: 'Rocky Patel logo',
+  },
+  {
     slug: 'la-flor-dominicana-now-in-cavaro',
     title: 'La Flor Dominicana Joins the Cavaro Catalog',
     excerpt:
