@@ -102,13 +102,22 @@ router.put('/', async (req, res) => {
   }
 
   const cigars = payload.map(normalizeCigar).filter(isSyncableCigar);
+  // Deduplicate by unique key — local snapshots can contain repeats.
+  const uniqueCigars = [];
+  const seen = new Set();
+  for (const cigar of cigars) {
+    const key = `${cigar.brand}::${cigar.name}::${cigar.length}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    uniqueCigars.push(cigar);
+  }
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
     await client.query('DELETE FROM user_cigars WHERE user_id = $1', [userId]);
 
-    for (const cigar of cigars) {
+    for (const cigar of uniqueCigars) {
       await client.query(
         `INSERT INTO user_cigars (
           user_id, brand, name, length, line, description, wrapper, binder, filler, image,
@@ -145,7 +154,7 @@ router.put('/', async (req, res) => {
     }
 
     await client.query('COMMIT');
-    return res.json({ ok: true, count: cigars.length });
+    return res.json({ ok: true, count: uniqueCigars.length });
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('User cigars PUT error:', err);

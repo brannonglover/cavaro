@@ -151,7 +151,12 @@ export default function AddCigar() {
         try {
           await db.withTransactionAsync(async () => {
             await db.execAsync('DELETE FROM cigar_catalog');
+            const seen = new Set();
             for (const c of rows) {
+              const sizeName = c.size_name || '';
+              const key = `${c.brand}::${c.name}::${c.length}::${sizeName}`;
+              if (seen.has(key)) continue;
+              seen.add(key);
               await db.runAsync(
                 `INSERT INTO cigar_catalog (brand, name, line, description, wrapper, binder, filler, length, image, size_name)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -164,7 +169,7 @@ export default function AddCigar() {
                 c.filler || '',
                 c.length,
                 c.image || '',
-                c.size_name || ''
+                sizeName
               );
             }
           });
