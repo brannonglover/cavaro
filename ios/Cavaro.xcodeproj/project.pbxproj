@@ -396,7 +396,7 @@
 				CODE_SIGN_ENTITLEMENTS = Cavaro/Cavaro.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20260423154307;
+				CURRENT_PROJECT_VERSION = 20260808102739;
 				DEVELOPMENT_TEAM = 8NQ9435B38;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -410,7 +410,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.3.0;
+				MARKETING_VERSION = 2.3.1;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -441,7 +441,7 @@
 				CODE_SIGN_ENTITLEMENTS = Cavaro/Cavaro.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 20260423154307;
+				CURRENT_PROJECT_VERSION = 20260808102739;
 				DEVELOPMENT_TEAM = 8NQ9435B38;
 				INFOPLIST_FILE = Cavaro/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
@@ -450,7 +450,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.3.0;
+				MARKETING_VERSION = 2.3.1;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",

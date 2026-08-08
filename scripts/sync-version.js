@@ -33,9 +33,13 @@ function replaceAllOrThrow(contents, pattern, replaceWith, label) {
   return contents.replace(pattern, replaceWith);
 }
 
-const serverPkg = JSON.parse(fs.readFileSync(serverPkgPath, "utf8"));
-serverPkg.version = version;
-writeJson(serverPkgPath, serverPkg);
+if (fs.existsSync(serverPkgPath)) {
+  const serverPkg = JSON.parse(fs.readFileSync(serverPkgPath, "utf8"));
+  serverPkg.version = version;
+  writeJson(serverPkgPath, serverPkg);
+} else {
+  console.log("server/package.json not found (excluded via .easignore on build worker), skipping");
+}
 
 let iosProject = fs.readFileSync(iosProjectPath, "utf8");
 iosProject = replaceAllOrThrow(
