@@ -169,95 +169,88 @@ async function main() {
 
   // Upload one unique local file once, reuse URL for multiple names that map to it.
   const uploadedByPath = new Map();
-  // One image URL per brand+name (shared across lengths), matching existing catalog behavior.
+  // One image URL per brand+name (shared across sizes), matching Rocky Patel pattern.
   const imageByName = new Map();
 
+  if (!DRY_RUN) {
+    // Preserve existing image URLs before clearing old rows.
+    const existingImages = await pool.query(
+      `SELECT name, image FROM cigar_catalog
+       WHERE brand = 'La Flor Dominicana' AND COALESCE(image, '') <> ''`
+    );
+    for (const row of existingImages.rows) {
+      if (row.image && !imageByName.has(row.name)) {
+        imageByName.set(row.name, row.image);
+      }
+    }
+
+    const del = await pool.query(`DELETE FROM cigar_catalog WHERE brand = 'La Flor Dominicana'`);
+    console.log(`Cleared ${del.rowCount} existing La Flor Dominicana rows`);
+  }
+
   let uploaded = 0;
-  let upserted = 0;
+  let inserted = 0;
+  let withImage = 0;
 
   for (const product of catalog) {
-    const nameKey = `${product.brand}::${product.name}`;
-    if (!imageByName.has(nameKey)) {
+    if (!imageByName.has(product.name)) {
       const chosen = pickImageForProduct(product, singlesByLine);
       if (chosen) {
         if (DRY_RUN) {
-          imageByName.set(nameKey, `[local] ${chosen.file}`);
+          imageByName.set(product.name, `[local] ${chosen.file}`);
         } else if (uploadedByPath.has(chosen.path)) {
-          imageByName.set(nameKey, uploadedByPath.get(chosen.path));
+          imageByName.set(product.name, uploadedByPath.get(chosen.path));
         } else {
           const storagePath = `catalog/${slugify(`lfd_${product.line}_${path.parse(chosen.file).name}`)}_${Date.now()}.jpg`;
           const url = await uploadLocalImage(chosen.path, storagePath);
           uploadedByPath.set(chosen.path, url);
-          imageByName.set(nameKey, url);
+          imageByName.set(product.name, url);
           uploaded += 1;
           console.log(`  ↑ ${product.line} / ${chosen.file}`);
         }
       } else {
-        imageByName.set(nameKey, '');
+        imageByName.set(product.name, '');
       }
     }
 
-    const image = imageByName.get(nameKey) || '';
+    const image = imageByName.get(product.name) || '';
+    if (image) withImage += 1;
 
     if (DRY_RUN) {
       console.log(
-        `[DRY] ${product.brand} | ${product.line || '-'} | ${product.name} | ${product.length} | img=${image ? 'yes' : 'no'}`
+        `[DRY] ${product.brand} | ${product.name} | ${product.size_name || '-'} | ${product.length} | img=${image ? 'yes' : 'no'}`
       );
       continue;
     }
 
-    const existing = await pool.query(
-      `SELECT id, image FROM cigar_catalog
-       WHERE brand = $1 AND name = $2 AND length = $3
-       LIMIT 1`,
-      [product.brand, product.name, product.length]
+    await pool.query(
+      `INSERT INTO cigar_catalog (brand, name, line, description, wrapper, binder, filler, length, size_name, image)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [
+        product.brand,
+        product.name,
+        product.line || null,
+        product.description || '',
+        product.wrapper || '',
+        product.binder || '',
+        product.filler || '',
+        product.length,
+        product.size_name || null,
+        image,
+      ]
     );
-
-    if (existing.rows.length) {
-      await pool.query(
-        `UPDATE cigar_catalog SET
-           line = COALESCE($1, line),
-           description = COALESCE(NULLIF($2, ''), description),
-           wrapper = COALESCE(NULLIF($3, ''), wrapper),
-           binder = COALESCE(NULLIF($4, ''), binder),
-           filler = COALESCE(NULLIF($5, ''), filler),
-           image = CASE WHEN $6 <> '' THEN $6 ELSE image END
-         WHERE id = $7`,
-        [
-          product.line || null,
-          product.description || '',
-          product.wrapper || '',
-          product.binder || '',
-          product.filler || '',
-          image,
-          existing.rows[0].id,
-        ]
-      );
-    } else {
-      await pool.query(
-        `INSERT INTO cigar_catalog (brand, name, line, description, wrapper, binder, filler, length, image)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-        [
-          product.brand,
-          product.name,
-          product.line || null,
-          product.description || '',
-          product.wrapper || '',
-          product.binder || '',
-          product.filler || '',
-          product.length,
-          image,
-        ]
-      );
-    }
-    upserted += 1;
+    inserted += 1;
   }
 
   if (DRY_RUN) {
-    const withImg = [...imageByName.values()].filter(Boolean).length;
-    console.log(`\nDry run complete. Distinct names: ${imageByName.size}, with images: ${withImg}`);
+    const names = new Set(catalog.map((p) => p.name));
+    console.log(
+      `\nDry run complete. Rows: ${catalog.length}, distinct names: ${names.size}, with images: ${withImage}`
+    );
   } else {
-    console.log(`\nDone. Uploaded ${uploaded} images, upserted ${upserted} catalog rows.`);
+    console.log(
+      `\nDone. Uploaded ${uploaded} images, inserted ${inserted} catalog rows (${withImage} with images).`
+    );
   }
 
   await pool.end();

@@ -1,498 +1,543 @@
 [
   {
     "brand": "La Flor Dominicana",
-    "name": "Air Bender Chisel",
+    "name": "Air Bender",
     "line": "Air Bender",
     "description": "",
     "wrapper": "",
     "binder": "",
     "filler": "",
     "length": "6 1/2x54",
-    "image": ""
+    "image": "",
+    "size_name": "Chisel"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Air Bender Chisel Maduro",
+    "name": "Air Bender Maduro",
     "line": "Air Bender",
     "description": "",
     "wrapper": "Maduro",
     "binder": "",
     "filler": "",
     "length": "6 1/2x54",
-    "image": ""
+    "image": "",
+    "size_name": "Chisel"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Air Bender Matatan",
+    "name": "Air Bender",
     "line": "Air Bender",
     "description": "",
     "wrapper": "",
     "binder": "",
     "filler": "",
     "length": "5x50",
-    "image": ""
+    "image": "",
+    "size_name": "Matatan"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Air Bender Matatan Maduro",
+    "name": "Air Bender Maduro",
     "line": "Air Bender",
     "description": "",
     "wrapper": "Maduro",
     "binder": "",
     "filler": "",
     "length": "5x50",
-    "image": ""
+    "image": "",
+    "size_name": "Matatan"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Air Bender Valiente",
+    "name": "Air Bender",
     "line": "Air Bender",
     "description": "",
     "wrapper": "",
     "binder": "",
     "filler": "",
     "length": "6 1/4x60",
-    "image": ""
+    "image": "",
+    "size_name": "Valiente"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Air Bender Valiente Maduro",
+    "name": "Air Bender Maduro",
     "line": "Air Bender",
     "description": "",
     "wrapper": "Maduro",
     "binder": "",
     "filler": "",
     "length": "6 1/4x60",
-    "image": ""
+    "image": "",
+    "size_name": "Valiente"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Double Press",
+    "name": "Air Bender",
     "line": "Air Bender",
     "description": "",
     "wrapper": "",
     "binder": "",
     "filler": "",
     "length": "6x52",
-    "image": ""
+    "image": "",
+    "size_name": "Double Press"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Cameroon Cabinet Chisels",
+    "name": "Cameroon Cabinet",
     "line": "Cameroon Cabinet",
     "description": "",
     "wrapper": "Cameroon",
     "binder": "",
     "filler": "",
     "length": "6x54",
-    "image": ""
+    "image": "",
+    "size_name": "Chisels"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Cameroon Cabinet Number 3",
+    "name": "Cameroon Cabinet",
     "line": "Cameroon Cabinet",
     "description": "",
     "wrapper": "Cameroon",
     "binder": "",
     "filler": "",
     "length": "4 3/4x40",
-    "image": ""
+    "image": "",
+    "size_name": "No. 3"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Cameroon Cabinet Number 4",
+    "name": "Cameroon Cabinet",
     "line": "Cameroon Cabinet",
     "description": "",
     "wrapper": "Cameroon",
     "binder": "",
     "filler": "",
     "length": "6 1/4x54",
-    "image": ""
+    "image": "",
+    "size_name": "No. 4"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Colorado Oscuro No. 2",
+    "name": "Colorado Oscuro",
     "line": "Colorado Oscuro",
     "description": "",
     "wrapper": "Oscuro",
     "binder": "",
     "filler": "",
     "length": "4 1/4x48",
-    "image": ""
+    "image": "",
+    "size_name": "No. 2"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Colorado Oscuro No. 3",
+    "name": "Colorado Oscuro",
     "line": "Colorado Oscuro",
     "description": "",
     "wrapper": "Oscuro",
     "binder": "",
     "filler": "",
     "length": "5x50",
-    "image": ""
+    "image": "",
+    "size_name": "No. 3"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Colorado Oscuro No. 4",
+    "name": "Colorado Oscuro",
     "line": "Colorado Oscuro",
     "description": "",
     "wrapper": "Oscuro",
     "binder": "",
     "filler": "",
     "length": "5 1/4x54",
-    "image": ""
+    "image": "",
+    "size_name": "No. 4"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Colorado Oscuro No. 5",
+    "name": "Colorado Oscuro",
     "line": "Colorado Oscuro",
     "description": "",
     "wrapper": "Oscuro",
     "binder": "",
     "filler": "",
     "length": "5 3/4x60",
-    "image": ""
+    "image": "",
+    "size_name": "No. 5"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Double Claro No. 42",
+    "name": "Double Claro",
     "line": "Double Claro",
     "description": "",
     "wrapper": "",
     "binder": "",
     "filler": "",
     "length": "5 1/2x42",
-    "image": ""
+    "image": "",
+    "size_name": "No. 42"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Double Claro No. 48",
+    "name": "Double Claro",
     "line": "Double Claro",
     "description": "",
     "wrapper": "",
     "binder": "",
     "filler": "",
     "length": "6 1/2x48",
-    "image": ""
+    "image": "",
+    "size_name": "No. 48"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Double Claro No. 50",
+    "name": "Double Claro",
     "line": "Double Claro",
     "description": "",
     "wrapper": "",
     "binder": "",
     "filler": "",
     "length": "5x50",
-    "image": ""
+    "image": "",
+    "size_name": "No. 50"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Double Ligero Chisel Maduro",
+    "name": "Double Ligero Maduro",
     "line": "Double Ligero",
     "description": "",
     "wrapper": "Maduro",
     "binder": "",
     "filler": "",
     "length": "6x54",
-    "image": ""
+    "image": "",
+    "size_name": "Chisel"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Double Ligero Chisel Natural",
+    "name": "Double Ligero Natural",
     "line": "Double Ligero",
     "description": "",
     "wrapper": "Natural",
     "binder": "",
     "filler": "",
     "length": "6x54",
-    "image": ""
+    "image": "",
+    "size_name": "Chisel"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Double Ligero Chiselito Maduro",
+    "name": "Double Ligero Maduro",
     "line": "Double Ligero",
     "description": "",
     "wrapper": "Maduro",
     "binder": "",
     "filler": "",
     "length": "5x44",
-    "image": ""
+    "image": "",
+    "size_name": "Chiselito"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Double Ligero Chiselito Natural",
+    "name": "Double Ligero Natural",
     "line": "Double Ligero",
     "description": "",
     "wrapper": "Natural",
     "binder": "",
     "filler": "",
     "length": "5x44",
-    "image": ""
+    "image": "",
+    "size_name": "Chiselito"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "DL-600 Habano Maduro",
+    "name": "Double Ligero Maduro",
     "line": "Double Ligero",
     "description": "",
     "wrapper": "Maduro",
     "binder": "",
     "filler": "",
     "length": "5 1/4x52",
-    "image": ""
+    "image": "",
+    "size_name": "DL-600"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "DL-600 Natural",
+    "name": "Double Ligero Natural",
     "line": "Double Ligero",
     "description": "",
     "wrapper": "Natural",
     "binder": "",
     "filler": "",
     "length": "5 1/4x52",
-    "image": ""
+    "image": "",
+    "size_name": "DL-600"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "DL-654 Habano Maduro",
+    "name": "Double Ligero Maduro",
     "line": "Double Ligero",
     "description": "",
     "wrapper": "Maduro",
     "binder": "",
     "filler": "",
     "length": "6x54",
-    "image": ""
+    "image": "",
+    "size_name": "DL-654"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "DL-654 Natural",
+    "name": "Double Ligero Natural",
     "line": "Double Ligero",
     "description": "",
     "wrapper": "Natural",
     "binder": "",
     "filler": "",
     "length": "6x54",
-    "image": ""
+    "image": "",
+    "size_name": "DL-654"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "DL-660 Habano Maduro",
+    "name": "Double Ligero Maduro",
     "line": "Double Ligero",
     "description": "",
     "wrapper": "Maduro",
     "binder": "",
     "filler": "",
     "length": "4 5/8x60",
-    "image": ""
+    "image": "",
+    "size_name": "DL-660"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "DL-660 Natural",
+    "name": "Double Ligero Natural",
     "line": "Double Ligero",
     "description": "",
     "wrapper": "Natural",
     "binder": "",
     "filler": "",
     "length": "4 5/8x60",
-    "image": ""
+    "image": "",
+    "size_name": "DL-660"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "DL-700 Maduro",
+    "name": "Double Ligero Maduro",
     "line": "Double Ligero",
     "description": "",
     "wrapper": "Maduro",
     "binder": "",
     "filler": "",
     "length": "6 1/2x60",
-    "image": ""
+    "image": "",
+    "size_name": "DL-700"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "DL-700 Natural",
+    "name": "Double Ligero Natural",
     "line": "Double Ligero",
     "description": "",
     "wrapper": "Natural",
     "binder": "",
     "filler": "",
     "length": "6 1/2x60",
-    "image": ""
+    "image": "",
+    "size_name": "DL-700"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "DL-CHURCHILL Oscuro Nat Especial",
+    "name": "Double Ligero Oscuro",
     "line": "Double Ligero",
     "description": "",
     "wrapper": "Oscuro",
     "binder": "",
     "filler": "",
     "length": "7x48",
-    "image": ""
+    "image": "",
+    "size_name": "DL-Churchill"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "DL-DIGGER Maduro",
+    "name": "Double Ligero Maduro",
     "line": "Double Ligero",
     "description": "",
     "wrapper": "Maduro",
     "binder": "",
     "filler": "",
     "length": "8 1/2x60",
-    "image": ""
+    "image": "",
+    "size_name": "Digger"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "DL-DIGGER Natural",
+    "name": "Double Ligero Natural",
     "line": "Double Ligero",
     "description": "",
     "wrapper": "Natural",
     "binder": "",
     "filler": "",
     "length": "8 1/2x60",
-    "image": ""
+    "image": "",
+    "size_name": "Digger"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "707-' Ligero Natural",
+    "name": "Ligero",
     "line": "Ligero",
     "description": "",
     "wrapper": "Natural",
     "binder": "",
     "filler": "",
     "length": "7x70",
-    "image": ""
+    "image": "",
+    "size_name": "707"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "El Caraj\u00f3n Natural",
+    "name": "Ligero",
     "line": "Ligero",
     "description": "",
     "wrapper": "Natural",
     "binder": "",
     "filler": "",
     "length": "4x34",
-    "image": ""
+    "image": "",
+    "size_name": "El Carajón"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "L-300 Natural",
+    "name": "Ligero",
     "line": "Ligero",
     "description": "",
     "wrapper": "Natural",
     "binder": "",
     "filler": "",
     "length": "5 3/4x50",
-    "image": ""
+    "image": "",
+    "size_name": "L-300"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "L-400 Natural",
+    "name": "Ligero",
     "line": "Ligero",
     "description": "",
     "wrapper": "Natural",
     "binder": "",
     "filler": "",
     "length": "5 3/4x54",
-    "image": ""
+    "image": "",
+    "size_name": "L-400"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "L-500 Natural",
+    "name": "Ligero",
     "line": "Ligero",
     "description": "",
     "wrapper": "Natural",
     "binder": "",
     "filler": "",
     "length": "5 3/4x60",
-    "image": ""
+    "image": "",
+    "size_name": "L-500"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "L'Gran\u00fa Natural",
+    "name": "Ligero",
     "line": "Ligero",
     "description": "",
     "wrapper": "Natural",
     "binder": "",
     "filler": "",
     "length": "6x64",
-    "image": ""
+    "image": "",
+    "size_name": "L'Granú"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "TCFKA-M Natural",
+    "name": "Ligero",
     "line": "Ligero",
     "description": "",
     "wrapper": "Natural",
     "binder": "",
     "filler": "",
     "length": "7x55",
-    "image": ""
+    "image": "",
+    "size_name": "TCFKA-M"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "El Caraj\u00f3n Oscuro Natural",
+    "name": "Ligero Cabinet",
     "line": "Ligero Cabinet",
     "description": "",
     "wrapper": "Oscuro Natural",
     "binder": "",
     "filler": "",
     "length": "4x34",
-    "image": ""
+    "image": "",
+    "size_name": "El Carajón"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "L-300 Oscuro Natural",
+    "name": "Ligero Cabinet",
     "line": "Ligero Cabinet",
     "description": "",
     "wrapper": "Oscuro Natural",
     "binder": "",
     "filler": "",
     "length": "5 3/4x50",
-    "image": ""
+    "image": "",
+    "size_name": "L-300"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "L-400 Oscuro Natural",
+    "name": "Ligero Cabinet",
     "line": "Ligero Cabinet",
     "description": "",
     "wrapper": "Oscuro Natural",
     "binder": "",
     "filler": "",
     "length": "5 3/4x54",
-    "image": ""
+    "image": "",
+    "size_name": "L-400"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "L-500 Oscuro Natural",
+    "name": "Ligero Cabinet",
     "line": "Ligero Cabinet",
     "description": "",
     "wrapper": "Oscuro Natural",
     "binder": "",
     "filler": "",
     "length": "5 3/4x60",
-    "image": ""
+    "image": "",
+    "size_name": "L-500"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Torpedito Oscuro Natural",
+    "name": "Ligero Cabinet",
     "line": "Ligero Cabinet",
     "description": "",
     "wrapper": "Oscuro Natural",
     "binder": "",
     "filler": "",
     "length": "4 3/4x50",
-    "image": ""
+    "image": "",
+    "size_name": "Torpedito"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "TCFKA-M Oscuro Natural",
+    "name": "Ligero Cabinet",
     "line": "Ligero Cabinet",
     "description": "",
     "wrapper": "Oscuro Natural",
     "binder": "",
     "filler": "",
     "length": "7x55",
-    "image": ""
+    "image": "",
+    "size_name": "TCFKA-M"
   },
   {
     "brand": "La Flor Dominicana",
@@ -503,7 +548,8 @@
     "binder": "",
     "filler": "",
     "length": "6 1/2x52-64",
-    "image": ""
+    "image": "",
+    "size_name": ""
   },
   {
     "brand": "La Flor Dominicana",
@@ -514,7 +560,8 @@
     "binder": "",
     "filler": "",
     "length": "6 1/2x58",
-    "image": ""
+    "image": "",
+    "size_name": ""
   },
   {
     "brand": "La Flor Dominicana",
@@ -525,7 +572,8 @@
     "binder": "",
     "filler": "",
     "length": "6 1/2x58",
-    "image": ""
+    "image": "",
+    "size_name": ""
   },
   {
     "brand": "La Flor Dominicana",
@@ -536,7 +584,8 @@
     "binder": "",
     "filler": "",
     "length": "7 1/2x38",
-    "image": ""
+    "image": "",
+    "size_name": ""
   },
   {
     "brand": "La Flor Dominicana",
@@ -547,7 +596,8 @@
     "binder": "",
     "filler": "",
     "length": "7 1/2x38",
-    "image": ""
+    "image": "",
+    "size_name": ""
   },
   {
     "brand": "La Flor Dominicana",
@@ -558,29 +608,32 @@
     "binder": "",
     "filler": "",
     "length": "6 1/2x50",
-    "image": ""
+    "image": "",
+    "size_name": ""
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "La Nox Bundle",
+    "name": "La Nox",
     "line": "Limited Production",
     "description": "",
     "wrapper": "",
     "binder": "",
     "filler": "",
     "length": "6 1/2x50",
-    "image": ""
+    "image": "",
+    "size_name": "Bundle"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "La Nox Petite",
+    "name": "La Nox",
     "line": "Limited Production",
     "description": "",
     "wrapper": "",
     "binder": "",
     "filler": "",
     "length": "5x40",
-    "image": ""
+    "image": "",
+    "size_name": "Petite"
   },
   {
     "brand": "La Flor Dominicana",
@@ -591,7 +644,8 @@
     "binder": "",
     "filler": "",
     "length": "7x48",
-    "image": ""
+    "image": "",
+    "size_name": ""
   },
   {
     "brand": "La Flor Dominicana",
@@ -602,7 +656,8 @@
     "binder": "",
     "filler": "",
     "length": "7 1/2x38",
-    "image": ""
+    "image": "",
+    "size_name": ""
   },
   {
     "brand": "La Flor Dominicana",
@@ -613,7 +668,8 @@
     "binder": "",
     "filler": "",
     "length": "7x52",
-    "image": ""
+    "image": "",
+    "size_name": ""
   },
   {
     "brand": "La Flor Dominicana",
@@ -624,7 +680,8 @@
     "binder": "",
     "filler": "",
     "length": "6 1/2x58",
-    "image": ""
+    "image": "",
+    "size_name": ""
   },
   {
     "brand": "La Flor Dominicana",
@@ -635,7 +692,8 @@
     "binder": "",
     "filler": "",
     "length": "9x47",
-    "image": ""
+    "image": "",
+    "size_name": ""
   },
   {
     "brand": "La Flor Dominicana",
@@ -646,29 +704,32 @@
     "binder": "",
     "filler": "",
     "length": "7 1/2x38",
-    "image": ""
+    "image": "",
+    "size_name": ""
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Maduro Cabinet No. 5",
+    "name": "Maduro Cabinet",
     "line": "Limited Production",
     "description": "",
     "wrapper": "Maduro",
     "binder": "",
     "filler": "",
     "length": "6 1/4x52",
-    "image": ""
+    "image": "",
+    "size_name": "No. 5"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Maduro Cabinet No. 6",
+    "name": "Maduro Cabinet",
     "line": "Limited Production",
     "description": "",
     "wrapper": "Maduro",
     "binder": "",
     "filler": "",
     "length": "5 3/4x54",
-    "image": ""
+    "image": "",
+    "size_name": "No. 6"
   },
   {
     "brand": "La Flor Dominicana",
@@ -679,18 +740,20 @@
     "binder": "",
     "filler": "",
     "length": "5 1/2x34/38",
-    "image": ""
+    "image": "",
+    "size_name": ""
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Salomon \u00danico",
+    "name": "Salomon Único",
     "line": "Limited Production",
     "description": "",
     "wrapper": "",
     "binder": "",
     "filler": "",
     "length": "7x64",
-    "image": ""
+    "image": "",
+    "size_name": ""
   },
   {
     "brand": "La Flor Dominicana",
@@ -701,215 +764,235 @@
     "binder": "",
     "filler": "",
     "length": "6 1/2x50",
-    "image": ""
+    "image": "",
+    "size_name": ""
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Oro Chisel",
+    "name": "Oro",
     "line": "Oro",
     "description": "",
     "wrapper": "",
     "binder": "",
     "filler": "",
     "length": "6x54",
-    "image": ""
+    "image": "",
+    "size_name": "Chisel"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Oro Natural No. 5",
+    "name": "Oro Natural",
     "line": "Oro",
     "description": "",
     "wrapper": "Natural",
     "binder": "",
     "filler": "",
     "length": "6x48",
-    "image": ""
+    "image": "",
+    "size_name": "No. 5"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Oro Natural No. 6",
+    "name": "Oro Natural",
     "line": "Oro",
     "description": "",
     "wrapper": "Natural",
     "binder": "",
     "filler": "",
     "length": "6x54",
-    "image": ""
+    "image": "",
+    "size_name": "No. 6"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Oro Maduro No. 6",
+    "name": "Oro Maduro",
     "line": "Oro",
     "description": "",
     "wrapper": "Maduro",
     "binder": "",
     "filler": "",
     "length": "6x54",
-    "image": ""
+    "image": "",
+    "size_name": "No. 6"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Oro Natural No. 7",
+    "name": "Oro Natural",
     "line": "Oro",
     "description": "",
     "wrapper": "Natural",
     "binder": "",
     "filler": "",
     "length": "7 1/2x52",
-    "image": ""
+    "image": "",
+    "size_name": "No. 7"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Oro Natural No. 8",
+    "name": "Oro Natural",
     "line": "Oro",
     "description": "",
     "wrapper": "Natural",
     "binder": "",
     "filler": "",
     "length": "7x60",
-    "image": ""
+    "image": "",
+    "size_name": "No. 8"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Oro Chisel Tubo",
+    "name": "Oro",
     "line": "Oro",
     "description": "",
     "wrapper": "",
     "binder": "",
     "filler": "",
     "length": "6x54",
-    "image": ""
+    "image": "",
+    "size_name": "Chisel Tubo"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Oro Tubo Natural No. 6",
+    "name": "Oro Natural",
     "line": "Oro",
     "description": "",
     "wrapper": "Natural",
     "binder": "",
     "filler": "",
     "length": "6x54",
-    "image": ""
+    "image": "",
+    "size_name": "Tubo No. 6"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Oro Tubo Maduro No. 6",
+    "name": "Oro Maduro",
     "line": "Oro",
     "description": "",
     "wrapper": "Maduro",
     "binder": "",
     "filler": "",
     "length": "6x54",
-    "image": ""
+    "image": "",
+    "size_name": "Tubo No. 6"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "El Jocko Maduro",
+    "name": "Reserva Especial",
     "line": "Reserva Especial",
     "description": "",
     "wrapper": "Maduro",
     "binder": "",
     "filler": "",
     "length": "4 1/2x32-54",
-    "image": ""
+    "image": "",
+    "size_name": "El Jocko Maduro"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "El Jocko Natural",
+    "name": "Reserva Especial",
     "line": "Reserva Especial",
     "description": "",
     "wrapper": "Natural",
     "binder": "",
     "filler": "",
     "length": "4 1/2x32-54",
-    "image": ""
+    "image": "",
+    "size_name": "El Jocko Natural"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Reserva Especial Gran Robusto",
+    "name": "Reserva Especial",
     "line": "Reserva Especial",
     "description": "",
     "wrapper": "",
     "binder": "",
     "filler": "",
     "length": "5 1/2x60",
-    "image": ""
+    "image": "",
+    "size_name": "Gran Robusto"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Reserva Especial Robusto",
+    "name": "Reserva Especial",
     "line": "Reserva Especial",
     "description": "",
     "wrapper": "",
     "binder": "",
     "filler": "",
     "length": "5x48",
-    "image": ""
+    "image": "",
+    "size_name": "Robusto"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Reserva Especial Toro",
+    "name": "Reserva Especial",
     "line": "Reserva Especial",
     "description": "",
     "wrapper": "",
     "binder": "",
     "filler": "",
     "length": "6x54",
-    "image": ""
+    "image": "",
+    "size_name": "Toro"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Suave Gobernador",
+    "name": "Suave",
     "line": "Suave",
     "description": "",
     "wrapper": "",
     "binder": "",
     "filler": "",
     "length": "6 1/4x60",
-    "image": ""
+    "image": "",
+    "size_name": "Gobernador"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Grand Maduro No. 5",
+    "name": "Suave",
     "line": "Suave",
     "description": "",
     "wrapper": "Maduro",
     "binder": "",
     "filler": "",
     "length": "6 1/4x52",
-    "image": ""
+    "image": "",
+    "size_name": "Grand Maduro No. 5"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Grand Maduro No. 6",
+    "name": "Suave",
     "line": "Suave",
     "description": "",
     "wrapper": "Maduro",
     "binder": "",
     "filler": "",
     "length": "5 3/4x54",
-    "image": ""
+    "image": "",
+    "size_name": "Grand Maduro No. 6"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Suave Maceo",
+    "name": "Suave",
     "line": "Suave",
     "description": "",
     "wrapper": "",
     "binder": "",
     "filler": "",
     "length": "5x48",
-    "image": ""
+    "image": "",
+    "size_name": "Maceo"
   },
   {
     "brand": "La Flor Dominicana",
-    "name": "Suave Maximo",
+    "name": "Suave",
     "line": "Suave",
     "description": "",
     "wrapper": "",
     "binder": "",
     "filler": "",
     "length": "6x54",
-    "image": ""
+    "image": "",
+    "size_name": "Maximo"
   }
 ]
