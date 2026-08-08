@@ -1,7 +1,25 @@
-node_modules
-.vscode
-.expo
+# Dependencies (EAS installs these on the build worker)
+node_modules/
+server/node_modules/
 
-server/node_modules
+# Local tooling / IDE
+.vscode/
+.cursor/
+.expo/
+.claude/
 
+# Secrets
 .env
+.env*.local
+
+# Backend API — not needed for the mobile app build
+server/
+
+# Local working downloads / extracts (LFD/RP image pipelines, etc.)
+tmp/
+**/*.zip
+
+# Misc bulk / non-app
+certs/
+*.log
+.DS_Store
