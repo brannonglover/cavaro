@@ -303,6 +303,10 @@ export default function Home() {
               Terms of Use
             </Link>
             {' · '}
+            <Link href="/delete-account" className="text-humidor-primary hover:underline">
+              Delete account
+            </Link>
+            {' · '}
             © {new Date().getFullYear()}
           </p>
         </div>

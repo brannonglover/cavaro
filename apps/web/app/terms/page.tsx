@@ -182,6 +182,10 @@ export default function TermsPage() {
               Privacy Policy
             </Link>
             {' · '}
+            <Link href="/delete-account" className="text-humidor-primary hover:underline">
+              Delete account
+            </Link>
+            {' · '}
             <Link href="/" className="text-humidor-primary hover:underline">
               Home
             </Link>
