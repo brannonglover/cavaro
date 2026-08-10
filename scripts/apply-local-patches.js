@@ -73,3 +73,35 @@ applyReplacement({
   ].join("\n"),
   skipIfContains: "@unknown default:",
 });
+
+// react-native-nitro-modules (via react-native-iap) targets a ReactModuleInfo
+// signature that does not match React Native 0.76's named constructors.
+applyReplacement({
+  name: "nitro-modules ReactModuleInfo RN 0.76",
+  relativePath:
+    "node_modules/react-native-nitro-modules/android/src/main/java/com/margelo/nitro/NitroModulesPackage.kt",
+  before: [
+    "      moduleInfos[NitroModules.NAME] =",
+    "        ReactModuleInfo(",
+    "          NitroModules.NAME,",
+    "          NitroModules.NAME,",
+    "          canOverrideExistingModule = false,",
+    "          needsEagerInit = false,",
+    "          isCxxModule = false,",
+    "          isTurboModule = isTurboModule,",
+    "        )",
+  ].join("\n"),
+  after: [
+    "      moduleInfos[NitroModules.NAME] =",
+    "        ReactModuleInfo(",
+    "          NitroModules.NAME,",
+    "          NitroModules.NAME,",
+    "          false,",
+    "          false,",
+    "          false,",
+    "          false,",
+    "          isTurboModule,",
+    "        )",
+  ].join("\n"),
+  skipIfContains: "false,\n          false,\n          false,\n          false,\n          isTurboModule,",
+});

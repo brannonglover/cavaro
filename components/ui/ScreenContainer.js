@@ -1,4 +1,4 @@
-import { SafeAreaView, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 import { colors, spacing } from '../../theme';
 
 export default function ScreenContainer({
@@ -35,6 +35,7 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.background,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) + 12 : 0,
   },
   content: {
     flex: 1,

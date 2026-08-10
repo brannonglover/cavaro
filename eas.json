@@ -23,6 +23,9 @@
       }
     },
     "production": {
+      "android": {
+        "buildType": "app-bundle"
+      },
       "ios": {
         "image": "macos-sequoia-15.5-xcode-26.0"
       },

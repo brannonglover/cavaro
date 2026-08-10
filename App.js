@@ -1,6 +1,7 @@
 import 'expo-dev-client';
 import { useEffect, useState } from 'react';
 import { Linking, View, StyleSheet, Text, Image, ActivityIndicator } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -9,7 +10,7 @@ import MainTabs from './navigation/MainTabs';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthStack from './navigation/AuthStack';
 import { initDatabase } from './db';
-import { pushUserCigars } from './lib/userCigarsSync';
+import { restoreAllUserDataOnLogin, pushAllUserData } from './lib/userCigarsSync';
 import IapSubscriptionBridge from './components/IapSubscriptionBridge';
 import ResetPassword from './pages/ResetPassword';
 import UpgradeToPremiumModal from './components/UpgradeToPremiumModal';
@@ -82,9 +83,11 @@ function AppContent() {
         if (showAuthFlow && supabase) {
           supabase.auth.getSession().then(({ data: { session } }) => {
             if (session?.access_token) {
-              pushUserCigars(session.access_token).catch((err) => {
-                console.warn('User cigars backfill push failed:', err.message || err);
-              });
+              restoreAllUserDataOnLogin(session.access_token)
+                .then(() => pushAllUserData(session.access_token))
+                .catch((err) => {
+                  console.warn('User data sync failed:', err.message || err);
+                });
             }
           });
         }
@@ -182,8 +185,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   loadingLogo: {
-    width: 200,
-    height: 200,
+    width: 280,
+    height: 170,
   },
   loadingSpinner: {
     marginTop: 24,
@@ -241,14 +244,16 @@ function AuthDeepLinkHandler() {
 
 function App() {
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
-      <StatusBar style="light" />
-      <AuthProvider>
-        <AuthDeepLinkHandler />
-        <IapSubscriptionBridge />
-        <AppContent />
-      </AuthProvider>
-    </GestureHandlerRootView>
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
+        <StatusBar style="light" />
+        <AuthProvider>
+          <AuthDeepLinkHandler />
+          <IapSubscriptionBridge />
+          <AppContent />
+        </AuthProvider>
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }
 

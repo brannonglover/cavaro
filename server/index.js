@@ -10,6 +10,9 @@ const feedbackRoutes = require('./routes/feedback');
 const pairingRoutes = require('./routes/pairing');
 const userRoutes = require('./routes/user');
 const userCigarsRoutes = require('./routes/userCigars');
+const userHumidorsRoutes = require('./routes/userHumidors');
+const userCellaredRoutes = require('./routes/userCellared');
+const userJournalRoutes = require('./routes/userJournal');
 const subscriptionRoutes = require('./routes/subscription');
 const port = process.env.PORT || 5001;
 
@@ -34,8 +37,11 @@ app.use('/api/feedback', feedbackRoutes);
 app.use('/api/pairing', pairingRoutes);
 // User tier (Supabase Auth + user_profiles)
 app.use('/api/user', userRoutes);
-// User favorites/dislikes sync
+// User data sync
 app.use('/api/user/cigars', userCigarsRoutes);
+app.use('/api/user/humidors', userHumidorsRoutes);
+app.use('/api/user/cellared', userCellaredRoutes);
+app.use('/api/user/journal', userJournalRoutes);
 // Apple IAP (verify / restore)
 app.use('/api/subscription', subscriptionRoutes);
 

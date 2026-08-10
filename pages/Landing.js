@@ -7,6 +7,8 @@ import {
   Pressable,
   SafeAreaView,
   Image,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import colors from '../theme/colors';
@@ -132,6 +134,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 24,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) + 24 : 24,
     paddingBottom: 48,
     flexGrow: 1,
   },

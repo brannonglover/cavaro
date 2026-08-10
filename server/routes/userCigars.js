@@ -1,33 +1,15 @@
 const express = require('express');
-const { createClient } = require('@supabase/supabase-js');
 const pool = require('../config/postgres');
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = supabaseUrl && supabaseServiceKey
-  ? createClient(supabaseUrl, supabaseServiceKey)
-  : null;
+const { resolveUserId } = require('../lib/auth');
 
 const router = express.Router();
-
-const SYNCABLE_WHERE =
-  "collection IN ('likes', 'dislikes') OR (collection = 'cavaro' AND is_favorite = true)";
 
 const CIGAR_COLUMNS = [
   'brand', 'name', 'length', 'line', 'description', 'wrapper', 'binder', 'filler', 'image',
   'collection', 'is_favorite', 'quantity', 'smoked_date', 'smoke_notes', 'favorite_notes',
   'flavor_profile', 'strength_profile', 'construction_quality', 'flavor_changes',
+  'date_added', 'humidor_name',
 ];
-
-async function resolveUserId(req) {
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (!token || !supabase) return null;
-
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-  if (error || !user) return null;
-  return user.id;
-}
 
 function normalizeCigar(row) {
   return {
@@ -42,7 +24,7 @@ function normalizeCigar(row) {
     image: row.image ?? null,
     collection: row.collection === 'likes' || row.collection === 'dislikes' ? row.collection : 'cavaro',
     is_favorite: !!row.is_favorite,
-    quantity: Math.max(0, parseInt(row.quantity, 10) || 1),
+    quantity: Math.max(0, Number.isFinite(parseInt(row.quantity, 10)) ? parseInt(row.quantity, 10) : 1),
     smoked_date: row.smoked_date ?? null,
     smoke_notes: row.smoke_notes ?? null,
     favorite_notes: row.favorite_notes ?? null,
@@ -50,19 +32,18 @@ function normalizeCigar(row) {
     strength_profile: row.strength_profile ?? null,
     construction_quality: row.construction_quality ?? null,
     flavor_changes: row.flavor_changes ?? null,
+    date_added: row.date_added ?? null,
+    humidor_name: row.humidor_name?.trim() || null,
   };
 }
 
-function isSyncableCigar(cigar) {
-  if (!cigar.brand || !cigar.name || !cigar.length) return false;
-  return cigar.collection === 'likes'
-    || cigar.collection === 'dislikes'
-    || (cigar.collection === 'cavaro' && cigar.is_favorite);
+function isValidCigar(cigar) {
+  return !!(cigar.brand && cigar.name && cigar.length);
 }
 
 /**
  * GET /api/user/cigars
- * Returns favorites/dislikes for the authenticated user.
+ * Returns all synced cigars for the authenticated user.
  */
 router.get('/', async (req, res) => {
   const userId = await resolveUserId(req);
@@ -74,7 +55,7 @@ router.get('/', async (req, res) => {
     const { rows } = await pool.query(
       `SELECT ${CIGAR_COLUMNS.join(', ')}
        FROM user_cigars
-       WHERE user_id = $1 AND (${SYNCABLE_WHERE})
+       WHERE user_id = $1
        ORDER BY brand, name, length`,
       [userId]
     );
@@ -87,7 +68,7 @@ router.get('/', async (req, res) => {
 
 /**
  * PUT /api/user/cigars
- * Replaces the user's synced favorites/dislikes snapshot.
+ * Replaces the user's full synced cigars snapshot.
  * Body: { cigars: [...] }
  */
 router.put('/', async (req, res) => {
@@ -101,8 +82,7 @@ router.put('/', async (req, res) => {
     return res.status(400).json({ error: 'cigars array required' });
   }
 
-  const cigars = payload.map(normalizeCigar).filter(isSyncableCigar);
-  // Deduplicate by unique key — local snapshots can contain repeats.
+  const cigars = payload.map(normalizeCigar).filter(isValidCigar);
   const uniqueCigars = [];
   const seen = new Set();
   for (const cigar of cigars) {
@@ -122,33 +102,21 @@ router.put('/', async (req, res) => {
         `INSERT INTO user_cigars (
           user_id, brand, name, length, line, description, wrapper, binder, filler, image,
           collection, is_favorite, quantity, smoked_date, smoke_notes, favorite_notes,
-          flavor_profile, strength_profile, construction_quality, flavor_changes, updated_at
+          flavor_profile, strength_profile, construction_quality, flavor_changes,
+          date_added, humidor_name, updated_at
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
           $11, $12, $13, $14, $15, $16,
-          $17, $18, $19, $20, NOW()
+          $17, $18, $19, $20, $21, $22, NOW()
         )`,
         [
           userId,
-          cigar.brand,
-          cigar.name,
-          cigar.length,
-          cigar.line,
-          cigar.description,
-          cigar.wrapper,
-          cigar.binder,
-          cigar.filler,
-          cigar.image,
-          cigar.collection,
-          cigar.is_favorite,
-          cigar.quantity,
-          cigar.smoked_date,
-          cigar.smoke_notes,
-          cigar.favorite_notes,
-          cigar.flavor_profile,
-          cigar.strength_profile,
-          cigar.construction_quality,
-          cigar.flavor_changes,
+          cigar.brand, cigar.name, cigar.length, cigar.line,
+          cigar.description, cigar.wrapper, cigar.binder, cigar.filler, cigar.image,
+          cigar.collection, cigar.is_favorite, cigar.quantity,
+          cigar.smoked_date, cigar.smoke_notes, cigar.favorite_notes,
+          cigar.flavor_profile, cigar.strength_profile, cigar.construction_quality, cigar.flavor_changes,
+          cigar.date_added, cigar.humidor_name,
         ]
       );
     }

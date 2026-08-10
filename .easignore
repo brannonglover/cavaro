@@ -15,9 +15,18 @@ server/node_modules/
 # Backend API — not needed for the mobile app build
 server/
 
+# Native build outputs (local gradle / Xcode artifacts)
+android/app/build/
+android/build/
+android/.gradle/
+ios/build/
+ios/Pods/
+
 # Local working downloads / extracts (LFD/RP image pipelines, etc.)
 tmp/
 **/*.zip
+**/*.aab
+**/*.apk
 
 # Misc bulk / non-app
 certs/

@@ -5,7 +5,7 @@ import { isAuthRetryableFetchError } from '@supabase/auth-js';
 import { setUserId } from '../lib/analytics';
 import AsyncStorage from 'expo-sqlite/kv-store';
 import { API_BASE_URL } from '../api/config';
-import { pushUserCigars, restoreUserCigarsOnLogin } from '../lib/userCigarsSync';
+import { restoreAllUserDataOnLogin, pushAllUserData } from '../lib/userCigarsSync';
 
 /** Non-retryable refresh failures (revoked session, etc.) — clear local auth so user can sign in again. */
 function isInvalidRefreshError(error) {
@@ -111,9 +111,9 @@ export function AuthProvider({ children }) {
           setTier('free');
         }
         if (event === 'SIGNED_IN') {
-          restoreUserCigarsOnLogin(session.access_token)
-            .then(() => pushUserCigars(session.access_token))
-            .catch((err) => console.warn('User cigars restore failed:', err.message || err));
+          restoreAllUserDataOnLogin(session.access_token)
+            .then(() => pushAllUserData(session.access_token))
+            .catch((err) => console.warn('User data sync failed:', err.message || err));
         }
       } else {
         setTier('free');

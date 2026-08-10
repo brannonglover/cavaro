@@ -1,9 +1,10 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text } from 'react-native';
+import { Platform, Text } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '../theme';
 import { SwipeableTabWrapper } from '../components/SwipeableTabWrapper';
-import { cavaroTabBarStyle } from './CavaroTabBar';
+import { cavaroTabBarStyle, TAB_BAR_CONTENT_HEIGHT } from './CavaroTabBar';
 import CavaroStack from './CavaroStack';
 import HomeStack from './HomeStack';
 import Collection from '../pages/Collection';
@@ -53,6 +54,9 @@ function tabIcon(name) {
 }
 
 export default function MainTabs() {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Platform.OS === 'android' ? Math.max(insets.bottom, 8) + 12 : 0;
+
   return (
     <Tab.Navigator
       initialRouteName="Home"
@@ -62,7 +66,13 @@ export default function MainTabs() {
         tabBarShowLabel: true,
         tabBarActiveTintColor: colors.gold,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: cavaroTabBarStyle.bar,
+        tabBarStyle: [
+          cavaroTabBarStyle.bar,
+          Platform.OS === 'android' && {
+            height: TAB_BAR_CONTENT_HEIGHT + bottomPadding,
+            paddingBottom: bottomPadding,
+          },
+        ],
         tabBarLabel: ({ focused, color, children }) => (
           <Text
             style={{
