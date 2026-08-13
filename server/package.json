@@ -20,7 +20,9 @@
     "import-lfd-catalog": "node scripts/importLfdCatalog.js",
     "recolor-lfd-images": "node scripts/recolorLfdCatalogImages.js",
     "parse-rocky-patel-catalog": "python3 scripts/parseRockyPatelCatalog.py",
-    "import-rocky-patel-catalog": "node scripts/importRockyPatelCatalog.js"
+    "import-rocky-patel-catalog": "node scripts/importRockyPatelCatalog.js",
+    "parse-plasencia-catalog": "python3 scripts/parsePlasenciaCatalog.py",
+    "import-plasencia-catalog": "node scripts/importPlasenciaCatalog.js"
   },
   "author": "",
   "license": "ISC",
