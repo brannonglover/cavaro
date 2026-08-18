@@ -1,6 +1,6 @@
 {
   "name": "cavaro",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "main": "index.js",
   "scripts": {
     "version:sync": "node scripts/sync-version.js",
