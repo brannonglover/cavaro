@@ -105,3 +105,21 @@ applyReplacement({
   ].join("\n"),
   skipIfContains: "false,\n          false,\n          false,\n          false,\n          isTurboModule,",
 });
+
+applyReplacement({
+  name: "react-native-bottom-tabs Platform inlineRequires",
+  relativePath: "node_modules/react-native-bottom-tabs/lib/module/TabView.js",
+  before: [
+    "const isAppleSymbol = icon => icon?.sfSymbol;",
+    "const ANDROID_MAX_TABS = 100;",
+    "const TabView = ({",
+  ].join("\n"),
+  after: [
+    "const isAppleSymbol = icon => icon?.sfSymbol;",
+    "const ANDROID_MAX_TABS = 100;",
+    "const IS_ANDROID = Platform.OS === 'android';",
+    "const IS_IOS = Platform.OS === 'ios';",
+    "const TabView = ({",
+  ].join("\n"),
+  skipIfContains: "const IS_ANDROID = Platform.OS === 'android';",
+});

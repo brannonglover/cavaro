@@ -1,6 +1,6 @@
 {
   "name": "server",
-  "version": "2.4.1",
+  "version": "2.5.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -22,7 +22,21 @@
     "parse-rocky-patel-catalog": "python3 scripts/parseRockyPatelCatalog.py",
     "import-rocky-patel-catalog": "node scripts/importRockyPatelCatalog.js",
     "parse-plasencia-catalog": "python3 scripts/parsePlasenciaCatalog.py",
-    "import-plasencia-catalog": "node scripts/importPlasenciaCatalog.js"
+    "import-plasencia-catalog": "node scripts/importPlasenciaCatalog.js",
+    "parse-aj-fernandez-catalog": "python3 scripts/parseAjFernandezCatalog.py",
+    "import-aj-fernandez-catalog": "node scripts/importAjFernandezCatalog.js",
+    "parse-my-father-catalog": "python3 scripts/parseMyFatherCatalog.py",
+    "import-my-father-catalog": "node scripts/importMyFatherCatalog.js",
+    "parse-perdomo-catalog": "python3 scripts/parsePerdomoCatalog.py",
+    "import-perdomo-catalog": "node scripts/importBrandCatalog.js --brand Perdomo --slug perdomo --prefix perdomo",
+    "parse-arturo-fuente-catalog": "python3 scripts/parseArturoFuenteCatalog.py",
+    "import-arturo-fuente-catalog": "node scripts/importBrandCatalog.js --brand \"Arturo Fuente\" --slug arturo-fuente --prefix fuente",
+    "parse-padron-catalog": "python3 scripts/parsePadronCatalog.py",
+    "import-padron-catalog": "node scripts/importBrandCatalog.js --brand \"Padrón\" --slug padron --prefix padron",
+    "parse-davidoff-catalog": "python3 scripts/parseDavidoffCatalog.py",
+    "import-davidoff-catalog": "node scripts/importBrandCatalog.js --brand Davidoff --slug davidoff --prefix davidoff",
+    "parse-oliva-catalog": "python3 scripts/parseOlivaCatalog.py",
+    "import-oliva-catalog": "node scripts/importBrandCatalog.js --brand Oliva --slug oliva --prefix oliva"
   },
   "author": "",
   "license": "ISC",

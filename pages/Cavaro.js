@@ -10,7 +10,7 @@ import {
   InventorySegmentControl,
   InventorySummary,
 } from '../components/humidors';
-import { EmptyState, SectionHeader } from '../components/ui';
+import { EmptyState } from '../components/ui';
 import { createHumidor, getHumidors } from '../db';
 import {
   buildInventorySummary,
@@ -18,11 +18,15 @@ import {
   INVENTORY_SEGMENT_OPTIONS,
   INVENTORY_SEGMENTS,
 } from '../lib/humidorsScreen';
+import { useTabBarHeight } from '../navigation/useTabBarHeight';
 import { colors, spacing } from '../theme';
 
 const LIST_HORIZONTAL_PADDING = 16;
 
-export default function Cavaro({ navigation }) {
+const SEGMENT_IDS = new Set(Object.values(INVENTORY_SEGMENTS));
+
+export default function Cavaro({ navigation, route }) {
+  const tabBarHeight = useTabBarHeight();
   const [humidors, setHumidors] = useState([]);
   const [humidorFilterId, setHumidorFilterId] = useState(HUMIDOR_FILTER_ALL);
   const [segment, setSegment] = useState(INVENTORY_SEGMENTS.ALL);
@@ -53,8 +57,13 @@ export default function Cavaro({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
+      const requestedSegment = route.params?.inventorySegment;
+      if (requestedSegment && SEGMENT_IDS.has(requestedSegment)) {
+        setSegment(requestedSegment);
+        navigation.setParams({ inventorySegment: undefined });
+      }
       refreshHumidors().catch(() => {});
-    }, [refreshHumidors])
+    }, [navigation, refreshHumidors, route.params?.inventorySegment])
   );
 
   const openAddCigar = () => {
@@ -80,9 +89,9 @@ export default function Cavaro({ navigation }) {
 
   if (humidors.length === 0) {
     return (
-      <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']} collapsable={false}>
         <View style={styles.headerBlock}>
-          <HumidorsHeader />
+          <HumidorsHeader cigarCountLabel={summary.cigarCountLabel} />
           <EmptyState
             icon="archive-outline"
             title="Create your first humidor"
@@ -97,7 +106,7 @@ export default function Cavaro({ navigation }) {
 
   const listHeader = (
     <View style={styles.headerBlock}>
-      <HumidorsHeader />
+      <HumidorsHeader cigarCountLabel={summary.cigarCountLabel} />
 
       <InventorySummary title={summary.title} metaParts={summary.metaParts} />
 
@@ -109,8 +118,6 @@ export default function Cavaro({ navigation }) {
         />
       ) : null}
 
-      <SectionHeader title="Inventory" subtitle="Available to smoke" />
-
       <InventorySegmentControl
         options={INVENTORY_SEGMENT_OPTIONS}
         value={segment}
@@ -120,7 +127,7 @@ export default function Cavaro({ navigation }) {
   );
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']} collapsable={false}>
       <CigarList
         view="cavaro"
         inventoryMode
@@ -131,6 +138,7 @@ export default function Cavaro({ navigation }) {
         onInventoryChange={refreshHumidors}
         emptyActionLabel="Add Cigar"
         onEmptyAction={openAddCigar}
+        bottomPadding={tabBarHeight + 88}
       />
 
       <AddCigarBtn onPress={openAddCigar} />

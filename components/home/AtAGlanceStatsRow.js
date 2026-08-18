@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import { StatCard } from '../ui';
+import { hapticLight } from '../../lib/haptics';
 import { spacing } from '../../theme';
 
 function formatCount(value) {
@@ -18,6 +19,7 @@ export default function AtAGlanceStatsRow({
   cellaredCount,
   smokedCount,
   brandCount,
+  onPressStat,
   style,
 }) {
   const counts = { inventoryCount, cellaredCount, smokedCount, brandCount };
@@ -33,6 +35,14 @@ export default function AtAGlanceStatsRow({
           accent={accent}
           label={label}
           value={formatCount(counts[prop])}
+          onPress={
+            onPressStat
+              ? () => {
+                  hapticLight();
+                  onPressStat(key);
+                }
+              : undefined
+          }
           style={styles.stat}
         />
       ))}

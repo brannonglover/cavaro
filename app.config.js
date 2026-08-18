@@ -28,7 +28,7 @@ module.exports = {
     version,
     orientation: "portrait",
     icon: "./assets/icon.png",
-    userInterfaceStyle: "light",
+    userInterfaceStyle: "dark",
     newArchEnabled: true,
     splash: {
       image: "./assets/logo-wd.png",
@@ -78,6 +78,7 @@ module.exports = {
         },
       ],
       "react-native-iap",
+      "react-native-bottom-tabs",
     ],
     extra: {
       eas: {

@@ -19,7 +19,8 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://cavaro-staging.up.railway.app",
         "EXPO_PUBLIC_SUPABASE_URL": "https://srucfmfykauxdnwyyaav.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_J7rp-UeTLUIi2Z0Euv896Q_tBhpWmtk"
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_J7rp-UeTLUIi2Z0Euv896Q_tBhpWmtk",
+        "EXPO_PUBLIC_POSTHOG_KEY": "phc_e1CzzKejNL0mAqWJ774mGP5SCiiJo5xE3aOuLrLpf9k"
       }
     },
     "production": {
@@ -32,7 +33,8 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://cavaro-production-9755.up.railway.app",
         "EXPO_PUBLIC_SUPABASE_URL": "https://srucfmfykauxdnwyyaav.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_J7rp-UeTLUIi2Z0Euv896Q_tBhpWmtk"
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_J7rp-UeTLUIi2Z0Euv896Q_tBhpWmtk",
+        "EXPO_PUBLIC_POSTHOG_KEY": "phc_e1CzzKejNL0mAqWJ774mGP5SCiiJo5xE3aOuLrLpf9k"
       }
     }
   },

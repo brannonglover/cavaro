@@ -38,6 +38,8 @@ export default function StatCard({
   accent = 'gold',
   highlight = true,
   compact = false,
+  onPress,
+  accessibilityLabel,
   style,
 }) {
   const isGlance = layout === 'glance';
@@ -49,6 +51,8 @@ export default function StatCard({
       variant={
         isCollection ? 'elevated' : isGlance ? 'default' : highlight ? 'warm' : 'subtle'
       }
+      onPress={onPress}
+      accessibilityLabel={accessibilityLabel ?? (onPress ? `${value} ${label}` : undefined)}
       style={[
         styles.card,
         highlight && !isGlance && !isCollection && styles.cardHighlight,

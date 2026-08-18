@@ -78,6 +78,10 @@ target 'Cavaro' do
       # non-exhaustive switch statements (on non-frozen Apple enums) into
       # hard errors. SDK 52 pods were authored for Swift 5, so pin them
       # to Swift 5 to keep the old warning-only behaviour.
+      # Keep react-native-bottom-tabs on the toolchain default so iOS 26
+      # Liquid Glass tab APIs behind `#if compiler(>=6.2)` compile.
+      next if target.name == 'react-native-bottom-tabs'
+
       target.build_configurations.each do |build_config|
         if build_config.build_settings['SWIFT_VERSION'].nil? ||
            build_config.build_settings['SWIFT_VERSION'].to_f >= 6.0

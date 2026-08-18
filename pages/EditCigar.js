@@ -6,13 +6,13 @@ import {
   ScrollView,
   TextInput,
   Pressable,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   Image,
   Alert,
   ActionSheetIOS,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { db } from '../db';
@@ -27,6 +27,7 @@ import { trackEvent } from '../lib/analytics';
 import { loadKnownBlendOptions } from '../utils/blendOptions';
 import { CellaringProgressCard } from '../components/ui';
 import { getCellaredItemsForCigar } from '../lib/cellaring';
+import { useTabBarHeight } from '../navigation/useTabBarHeight';
 
 // Size format: #x## or #.#x## (e.g. 6x52, 7.5x50) - no slashes
 const SIZE_FORMAT = /^\d+(\.\d+)?x\d+(\.\d+)?$/;
@@ -39,6 +40,7 @@ export default function EditCigar() {
   const route = useRoute();
   const cigar = route.params?.cigar;
   const { tier, supabase, refreshTier } = useAuth();
+  const tabBarHeight = useTabBarHeight();
 
   const [brand, setBrand] = useState(cigar?.brand ?? '');
   const [name, setName] = useState(cigar?.name ?? '');
@@ -185,7 +187,7 @@ export default function EditCigar() {
 
   if (!cigar) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']} collapsable={false}>
         <View style={styles.header}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={12}>
             <Text style={styles.backText}>← Back</Text>
@@ -201,7 +203,7 @@ export default function EditCigar() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']} collapsable={false}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -219,9 +221,13 @@ export default function EditCigar() {
         <ScrollView
           ref={scrollViewRef}
           style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: 24 + (tabBarHeight || 0) },
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          contentInsetAdjustmentBehavior="never"
           collapsable={false}
         >
           <View style={styles.section}>

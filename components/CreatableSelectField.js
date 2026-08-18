@@ -16,6 +16,7 @@ export default function CreatableSelectField({
   options = [],
   placeholder,
   zIndex = 1,
+  onOpen,
 }) {
   const [focused, setFocused] = useState(false);
   const inputRef = useRef(null);
@@ -64,7 +65,10 @@ export default function CreatableSelectField({
             onChangeText={onChangeText}
             placeholder={placeholder}
             placeholderTextColor={colors.placeholderText}
-            onFocus={() => setFocused(true)}
+            onFocus={() => {
+              setFocused(true);
+              onOpen?.();
+            }}
             onBlur={() => setTimeout(() => setFocused(false), 200)}
             returnKeyType="done"
             autoCapitalize="words"

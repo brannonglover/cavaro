@@ -17,6 +17,7 @@ import {
   SectionHeader,
 } from '../components/ui';
 import { getHomeDashboard } from '../lib/homeDashboard';
+import { INVENTORY_SEGMENTS } from '../lib/humidorsScreen';
 import { colors, spacing, typography } from '../theme';
 
 export default function Home() {
@@ -39,9 +40,35 @@ export default function Home() {
     }, [loadDashboard])
   );
 
-  const openHumidors = () => navigation.navigate('Humidors', { screen: 'CavaroList' });
+  const openHumidors = (inventorySegment) => {
+    if (inventorySegment) {
+      navigation.navigate('Humidors', {
+        screen: 'CavaroList',
+        params: { inventorySegment },
+      });
+      return;
+    }
+    navigation.navigate('Humidors', { screen: 'CavaroList' });
+  };
   const addFirstCigar = () => navigation.navigate('Humidors', { screen: 'AddCigar' });
   const openPairing = () => navigation.navigate('Pairing');
+  const openStat = (key) => {
+    if (key === 'inventory') {
+      openHumidors(INVENTORY_SEGMENTS.ALL);
+      return;
+    }
+    if (key === 'cellared') {
+      openHumidors(INVENTORY_SEGMENTS.CELLARED);
+      return;
+    }
+    if (key === 'smoked') {
+      navigation.navigate('Journal');
+      return;
+    }
+    if (key === 'brands') {
+      navigation.navigate('Collection');
+    }
+  };
   const openRecommendationDetail = () => {
     const rec = dashboard?.smokeRecommendation;
     if (!rec?.cigar) return;
@@ -104,19 +131,33 @@ export default function Home() {
       ) : null}
 
       <FadeInView delay={50}>
-        <DrinkPairingShortcutCard onPress={openPairing} />
-      </FadeInView>
-
-      <FadeInView delay={60}>
         <AtAGlanceStatsRow
           inventoryCount={dashboard.inventoryCount}
           cellaredCount={dashboard.cellaredCount}
           smokedCount={dashboard.smokedCount}
           brandCount={dashboard.brandCount}
+          onPressStat={openStat}
         />
       </FadeInView>
 
-      <FadeInView delay={120}>
+      {dashboard.humidors?.length > 0 ? (
+        <FadeInView delay={120}>
+          <SectionHeader title="Humidor Snapshot" />
+          {dashboard.humidors.map((humidor) => (
+            <HumidorSnapshotCard
+              key={humidor.id}
+              name={humidor.name}
+              cigarCount={humidor.cigar_count}
+              humidity={humidor.humidity}
+              temperature={humidor.temperature}
+              onPress={openHumidors}
+              style={styles.snapshotCard}
+            />
+          ))}
+        </FadeInView>
+      ) : null}
+
+      <FadeInView delay={180} style={styles.cellarSection}>
         <SectionHeader
           title="Ready From Cellar"
           subtitle="Cigars set aside to age"
@@ -143,22 +184,9 @@ export default function Home() {
         )}
       </FadeInView>
 
-      {dashboard.humidors?.length > 0 ? (
-        <FadeInView delay={180}>
-          <SectionHeader title="Humidor Snapshot" />
-          {dashboard.humidors.map((humidor) => (
-            <HumidorSnapshotCard
-              key={humidor.id}
-              name={humidor.name}
-              cigarCount={humidor.cigar_count}
-              humidity={humidor.humidity}
-              temperature={humidor.temperature}
-              onPress={openHumidors}
-              style={styles.snapshotCard}
-            />
-          ))}
-        </FadeInView>
-      ) : null}
+      <FadeInView delay={220}>
+        <DrinkPairingShortcutCard onPress={openPairing} />
+      </FadeInView>
     </ScreenContainer>
   );
 }
@@ -179,6 +207,9 @@ const styles = StyleSheet.create({
   },
   sectionCard: {
     marginBottom: spacing.xl,
+  },
+  cellarSection: {
+    marginTop: spacing.md,
   },
   cellarCard: {
     marginBottom: spacing.md,

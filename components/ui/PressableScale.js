@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Animated, Pressable } from 'react-native';
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const DEFAULT_SCALE = 0.98;
 
 export default function PressableScale({
@@ -27,12 +28,13 @@ export default function PressableScale({
   };
 
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
       disabled={disabled}
       hitSlop={hitSlop}
       accessibilityRole={accessibilityRole}
       accessibilityLabel={accessibilityLabel}
+      style={[style, { transform: [{ scale }] }]}
       onPressIn={(event) => {
         animateTo(scaleTo);
         onPressIn?.(event);
@@ -42,7 +44,7 @@ export default function PressableScale({
         onPressOut?.(event);
       }}
     >
-      <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>
-    </Pressable>
+      {children}
+    </AnimatedPressable>
   );
 }

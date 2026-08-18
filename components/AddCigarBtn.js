@@ -1,10 +1,12 @@
 import { StyleSheet, View } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
 import { hapticMedium } from '../lib/haptics';
+import { useTabBarHeight } from '../navigation/useTabBarHeight';
 import { colors, shadows, spacing } from '../theme';
 import PressableScale from './ui/PressableScale';
 
 function AddCigarBtn({ onPress }) {
+  const tabBarHeight = useTabBarHeight();
   const handlePress = () => {
     hapticMedium();
     onPress?.();
@@ -14,7 +16,7 @@ function AddCigarBtn({ onPress }) {
     <PressableScale
       onPress={handlePress}
       scaleTo={0.92}
-      style={[styles.btnContainer, styles.boxShadow]}
+      style={[styles.btnContainer, styles.boxShadow, { bottom: spacing.lg + tabBarHeight }]}
       accessibilityLabel="Add cigar"
     >
       <View style={styles.btnIconContainer}>

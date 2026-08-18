@@ -65,7 +65,7 @@ export function SwipeableTabWrapper({ children }) {
   );
 
   return (
-    <View style={styles.wrapper}>
+    <View style={styles.wrapper} collapsable={false}>
       <GestureDetector gesture={panGesture}>
         <Animated.View
           style={[

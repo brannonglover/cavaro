@@ -33,6 +33,7 @@ export default function PremiumCard({
   variant = 'default',
   padding,
   scaleTo = 0.985,
+  accessibilityLabel,
 }) {
   const shellStyle = [styles.shell, VARIANTS[variant], style];
   const innerStyle = [
@@ -43,7 +44,12 @@ export default function PremiumCard({
 
   if (onPress) {
     return (
-      <PressableScale onPress={onPress} scaleTo={scaleTo} style={shellStyle}>
+      <PressableScale
+        onPress={onPress}
+        scaleTo={scaleTo}
+        style={shellStyle}
+        accessibilityLabel={accessibilityLabel}
+      >
         {content}
       </PressableScale>
     );

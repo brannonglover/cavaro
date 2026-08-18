@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,16 +6,14 @@ import {
   ScrollView,
   TextInput,
   Pressable,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   Image,
   Alert,
   ActionSheetIOS,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
-import DropDownPicker from 'react-native-dropdown-picker';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { db, COLLECTIONS } from '../db';
 import { fetchCatalog, addCigarToCatalog } from '../api/catalog';
 import { uploadCigarImage } from '../api/upload';
@@ -24,20 +22,11 @@ import colors from '../theme/colors';
 import { pickCigarImage, takeCigarPhoto } from '../utils/imagePicker';
 import DatePickerField, { getTodayDateString } from '../components/DatePickerField';
 import CreatableSelectField from '../components/CreatableSelectField';
+import SelectSheetField from '../components/SelectSheetField';
 import UpgradeToPremiumModal from '../components/UpgradeToPremiumModal';
-import { trackEvent } from '../lib/analytics';
+import { trackCigarAdded } from '../lib/analytics';
 import { collectBlendValues, loadKnownBlendOptions } from '../utils/blendOptions';
-
-const DropdownArrowDown = ({ style }) => (
-  <View style={style}>
-    <MaterialCommunityIcons name="chevron-down" size={24} color={colors.textPrimary} />
-  </View>
-);
-const DropdownArrowUp = ({ style }) => (
-  <View style={style}>
-    <MaterialCommunityIcons name="chevron-up" size={24} color={colors.textPrimary} />
-  </View>
-);
+import { useTabBarHeight } from '../navigation/useTabBarHeight';
 
 // Size format: #x## or #.#x## (e.g. 6x52, 7.5x50) - no slashes
 const SIZE_FORMAT = /^\d+(\.\d+)?x\d+(\.\d+)?$/;
@@ -46,12 +35,14 @@ function isValidSizeFormat(size) {
 }
 
 const FREE_CIGAR_LIMIT = 5;
+const SUGGESTION_SCROLL_PADDING = 220;
 
 export default function AddCigar() {
   const navigation = useNavigation();
   const route = useRoute();
   const targetHumidorId = route.params?.humidorId ?? 1;
   const { tier, supabase, refreshTier } = useAuth();
+  const tabBarHeight = useTabBarHeight();
   const [showCustom, setShowCustom] = useState(false);
   const [cigarCount, setCigarCount] = useState(0);
   const [upgradeModal, setUpgradeModal] = useState({ visible: false, message: '', accessToken: null, userId: null });
@@ -89,59 +80,34 @@ export default function AddCigar() {
   const [cigarSizeArr, setCigarSizeArr] = useState([]);
   const [blendOptions, setBlendOptions] = useState({ wrapper: [], binder: [], filler: [] });
 
-  // Dropdown open state
-  const [brandOpen, setBrandOpen] = useState(false);
-  const [nameOpen, setNameOpen] = useState(false);
-  const [sizeOpen, setSizeOpen] = useState(false);
-
   const isCatalogValid = !!(cigarBrand?.trim() && cigarName?.trim() && cigarSize?.trim());
   const isCustomValid = !!(customBrand?.trim() && customName?.trim() && customSize?.trim() && isValidSizeFormat(customSize));
   const scrollViewRef = useRef(null);
+  const scrollOffsetRef = useRef(0);
+  const wrapperFieldRef = useRef(null);
+  const binderFieldRef = useRef(null);
+  const fillerFieldRef = useRef(null);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      scrollViewRef.current?.scrollTo({ y: 0, animated: false });
-      if (enforceLimit) {
-        db.getFirstAsync("SELECT COUNT(*) as n FROM cigars WHERE collection = 'cavaro'")
-          .then((r) => setCigarCount(r?.n ?? 0));
+  const scrollFieldIntoView = useCallback((fieldRef) => {
+    const field = fieldRef.current;
+    const scroll = scrollViewRef.current;
+    if (!field || !scroll) return;
+    field.measureInWindow((_x, y) => {
+      const delta = y - 140;
+      if (delta > 12) {
+        scroll.scrollTo({
+          y: Math.max(0, scrollOffsetRef.current + delta),
+          animated: true,
+        });
       }
-    }, [enforceLimit])
-  );
-
-  useEffect(() => {
-    loadCatalog();
+    });
   }, []);
 
-  useEffect(() => {
-    async function refreshBlendOptions() {
-      try {
-        const cigarRows = await db.getAllAsync('SELECT wrapper, binder, filler FROM cigars');
-        const rows = [...data, ...cigarRows];
-        setBlendOptions({
-          wrapper: collectBlendValues(rows, 'wrapper'),
-          binder: collectBlendValues(rows, 'binder'),
-          filler: collectBlendValues(rows, 'filler'),
-        });
-      } catch (err) {
-        console.warn('Failed to load blend options:', err.message);
-        try {
-          setBlendOptions(await loadKnownBlendOptions(db));
-        } catch (fallbackErr) {
-          console.warn('Blend options fallback failed:', fallbackErr.message);
-        }
-      }
-    }
-    refreshBlendOptions();
-  }, [data]);
+  const handleBlendFieldOpen = useCallback((fieldRef) => {
+    setTimeout(() => scrollFieldIntoView(fieldRef), 250);
+  }, [scrollFieldIntoView]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      scrollViewRef.current?.scrollTo({ y: 0, animated: false });
-    }, 50);
-    return () => clearTimeout(timer);
-  }, [showCustom]);
-
-  async function loadCatalog() {
+  const loadCatalog = useCallback(async () => {
     try {
       // Fetch shared catalog from API; fallback to local cache if offline
       let rows;
@@ -186,7 +152,47 @@ export default function AddCigar() {
     } catch (err) {
       console.error('Failed to load cigar catalog:', err);
     }
-  }
+  }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+      loadCatalog();
+      if (enforceLimit) {
+        db.getFirstAsync("SELECT COUNT(*) as n FROM cigars WHERE collection = 'cavaro'")
+          .then((r) => setCigarCount(r?.n ?? 0));
+      }
+    }, [enforceLimit, loadCatalog])
+  );
+
+  useEffect(() => {
+    async function refreshBlendOptions() {
+      try {
+        const cigarRows = await db.getAllAsync('SELECT wrapper, binder, filler FROM cigars');
+        const rows = [...data, ...cigarRows];
+        setBlendOptions({
+          wrapper: collectBlendValues(rows, 'wrapper'),
+          binder: collectBlendValues(rows, 'binder'),
+          filler: collectBlendValues(rows, 'filler'),
+        });
+      } catch (err) {
+        console.warn('Failed to load blend options:', err.message);
+        try {
+          setBlendOptions(await loadKnownBlendOptions(db));
+        } catch (fallbackErr) {
+          console.warn('Blend options fallback failed:', fallbackErr.message);
+        }
+      }
+    }
+    refreshBlendOptions();
+  }, [data]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [showCustom]);
 
   // Prefill from Search (when navigating from catalog result)
   const prefill = route.params?.prefillBrand && route.params?.prefillName && route.params?.prefillLength;
@@ -212,7 +218,7 @@ export default function AddCigar() {
     }
   }, [prefill, data, route.params]);
 
-  // Keep name options in sync with the selected brand (DropDownPicker onChangeValue is unreliable).
+  // Keep name options in sync with the selected brand.
   useEffect(() => {
     if (!cigarBrand) {
       setCigarNameArr([]);
@@ -282,34 +288,28 @@ export default function AddCigar() {
     };
   }
 
-  function handleBrandSetValue(callback) {
-    setCigarBrand((prev) => {
-      const next = typeof callback === 'function' ? callback(prev) : callback;
-      const normalized = next ?? '';
-      if (normalized !== prev) {
-        setCigarName('');
-        setCigarSize('');
-        setCigarSizeArr([]);
-        setCigarLine('');
-        setCigarDescription('');
-        setCigarWrapper('');
-        setCigarBinder('');
-        setCigarFiller('');
-        setCigarImage('');
-      }
-      return normalized;
-    });
+  function handleBrandChange(next) {
+    const normalized = next ?? '';
+    if (normalized !== cigarBrand) {
+      setCigarName('');
+      setCigarSize('');
+      setCigarSizeArr([]);
+      setCigarLine('');
+      setCigarDescription('');
+      setCigarWrapper('');
+      setCigarBinder('');
+      setCigarFiller('');
+      setCigarImage('');
+    }
+    setCigarBrand(normalized);
   }
 
-  function handleNameSetValue(callback) {
-    setCigarName((prev) => {
-      const next = typeof callback === 'function' ? callback(prev) : callback;
-      const normalized = next ?? '';
-      if (normalized !== prev) {
-        setCigarSize('');
-      }
-      return normalized;
-    });
+  function handleNameChange(next) {
+    const normalized = next ?? '';
+    if (normalized !== cigarName) {
+      setCigarSize('');
+    }
+    setCigarName(normalized);
   }
 
   async function handleAddImage(setImage) {
@@ -414,7 +414,14 @@ export default function AddCigar() {
         dateToUse,
         targetHumidorId
       );
-      trackEvent('cigar_added', { source: 'catalog', quantity: qty });
+      trackCigarAdded({
+        source: 'catalog',
+        brand: cigarBrand,
+        name: cigarName,
+        line: cigarLine,
+        length: resolvedLength,
+        quantity: qty,
+      });
       navigation.goBack();
     } catch (error) {
       console.log('Add failed:', error);
@@ -471,7 +478,14 @@ export default function AddCigar() {
         dateToUse,
         targetHumidorId
       );
-      trackEvent('cigar_added', { source: 'custom', quantity: qty });
+      trackCigarAdded({
+        source: 'custom',
+        brand: customBrand,
+        name: customName,
+        line: customLine,
+        length: customSize,
+        quantity: qty,
+      });
 
       try {
         await addCigarToCatalog({
@@ -504,7 +518,7 @@ export default function AddCigar() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']} collapsable={false}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -532,9 +546,17 @@ export default function AddCigar() {
         <ScrollView
           ref={scrollViewRef}
           style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: 24 + (tabBarHeight || 0) + (showCustom ? SUGGESTION_SCROLL_PADDING : 0) },
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          contentInsetAdjustmentBehavior="never"
+          onScroll={(e) => {
+            scrollOffsetRef.current = e.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
           collapsable={false}
         >
           {!showCustom ? (
@@ -544,73 +566,31 @@ export default function AddCigar() {
                 <Text style={styles.sectionSubtitle}>Choose brand, name, and size from the database</Text>
               </View>
 
-              <View style={[styles.field, brandOpen && styles.fieldElevated]}>
-                <Text style={styles.label}>Brand</Text>
-                <DropDownPicker
-                  open={brandOpen}
-                  value={cigarBrand || null}
-                  items={brandArr}
-                  setOpen={(open) => {
-                    setBrandOpen(open);
-                    if (open) {
-                      setNameOpen(false);
-                      setSizeOpen(false);
-                    }
-                  }}
-                  setValue={handleBrandSetValue}
-                  setItems={setBrandArr}
-                  placeholder="Select brand"
-                  placeholderStyle={{ color: colors.placeholderText }}
-                  ArrowDownIconComponent={DropdownArrowDown}
-                  ArrowUpIconComponent={DropdownArrowUp}
-                  theme="DARK"
-                  listMode="SCROLLVIEW"
-                  style={styles.dropdown}
-                  dropDownContainerStyle={styles.dropdownContainer}
-                  listItemContainerStyle={styles.dropdownListItem}
-                  listItemLabelStyle={styles.dropdownListItemLabel}
-                  zIndex={3000}
-                  zIndexInverse={1000}
-                />
-              </View>
+              <SelectSheetField
+                label="Brand"
+                value={cigarBrand || ''}
+                items={brandArr}
+                onChange={handleBrandChange}
+                placeholder="Select brand"
+                searchPlaceholder="Search brands"
+              />
 
-              <View style={[styles.field, nameOpen && styles.fieldElevated]}>
-                <Text style={styles.label}>Cigar name</Text>
-                <DropDownPicker
-                  key={`name-${cigarBrand || 'none'}`}
-                  open={nameOpen}
-                  value={cigarName || null}
-                  items={cigarNameArr}
-                  setOpen={(open) => {
-                    setNameOpen(open);
-                    if (open) {
-                      setBrandOpen(false);
-                      setSizeOpen(false);
-                    }
-                  }}
-                  setValue={handleNameSetValue}
-                  setItems={setCigarNameArr}
-                  placeholder={
-                    !cigarBrand
-                      ? 'Select a brand first'
-                      : cigarNameArr.length
-                        ? 'Select cigar'
-                        : 'No cigars for this brand'
-                  }
-                  placeholderStyle={{ color: colors.placeholderText }}
-                  ArrowDownIconComponent={DropdownArrowDown}
-                  ArrowUpIconComponent={DropdownArrowUp}
-                  theme="DARK"
-                  listMode="SCROLLVIEW"
-                  disabled={!cigarBrand || cigarNameArr.length === 0}
-                  style={styles.dropdown}
-                  dropDownContainerStyle={[styles.dropdownContainer, styles.dropdownContainerTall]}
-                  listItemContainerStyle={styles.dropdownListItem}
-                  listItemLabelStyle={styles.dropdownListItemLabel}
-                  zIndex={2000}
-                  zIndexInverse={2000}
-                />
-              </View>
+              <SelectSheetField
+                label="Cigar name"
+                value={cigarName || ''}
+                items={cigarNameArr}
+                onChange={handleNameChange}
+                placeholder={
+                  !cigarBrand
+                    ? 'Select a brand first'
+                    : cigarNameArr.length
+                      ? 'Select cigar'
+                      : 'No cigars for this brand'
+                }
+                searchPlaceholder="Search cigars"
+                disabled={!cigarBrand || cigarNameArr.length === 0}
+                emptyText="No cigars for this brand"
+              />
 
               <View style={styles.field}>
                 <Text style={styles.label}>Line / Series (optional)</Text>
@@ -624,37 +604,16 @@ export default function AddCigar() {
                 />
               </View>
 
-              <View style={[styles.field, sizeOpen && styles.fieldElevated]}>
-                <Text style={styles.label}>Size</Text>
-                <DropDownPicker
-                  key={`size-${cigarBrand || 'none'}-${cigarName || 'none'}`}
-                  open={sizeOpen}
-                  value={cigarSize || null}
-                  items={cigarSizeArr}
-                  setOpen={(open) => {
-                    setSizeOpen(open);
-                    if (open) {
-                      setBrandOpen(false);
-                      setNameOpen(false);
-                    }
-                  }}
-                  setValue={setCigarSize}
-                  setItems={setCigarSizeArr}
-                  placeholder={cigarName ? 'Select size' : 'Select a cigar first'}
-                  placeholderStyle={{ color: colors.placeholderText }}
-                  ArrowDownIconComponent={DropdownArrowDown}
-                  ArrowUpIconComponent={DropdownArrowUp}
-                  theme="DARK"
-                  listMode="SCROLLVIEW"
-                  disabled={!cigarName || cigarSizeArr.length === 0}
-                  style={styles.dropdown}
-                  dropDownContainerStyle={styles.dropdownContainer}
-                  listItemContainerStyle={styles.dropdownListItem}
-                  listItemLabelStyle={styles.dropdownListItemLabel}
-                  zIndex={1000}
-                  zIndexInverse={3000}
-                />
-              </View>
+              <SelectSheetField
+                label="Size"
+                value={cigarSize || ''}
+                items={cigarSizeArr}
+                onChange={setCigarSize}
+                placeholder={cigarName ? 'Select size' : 'Select a cigar first'}
+                searchPlaceholder="Search sizes"
+                disabled={!cigarName || cigarSizeArr.length === 0}
+                emptyText="No sizes for this cigar"
+              />
 
               <View style={styles.field}>
                 <Text style={styles.label}>Quantity</Text>
@@ -815,32 +774,41 @@ export default function AddCigar() {
                 />
               </View>
 
-              <CreatableSelectField
-                label="Wrapper (optional)"
-                value={customWrapper}
-                onChangeText={setCustomWrapper}
-                options={blendOptions.wrapper}
-                placeholder="e.g. Honduras"
-                zIndex={3000}
-              />
+              <View ref={wrapperFieldRef} collapsable={false}>
+                <CreatableSelectField
+                  label="Wrapper (optional)"
+                  value={customWrapper}
+                  onChangeText={setCustomWrapper}
+                  options={blendOptions.wrapper}
+                  placeholder="e.g. Honduras"
+                  zIndex={3000}
+                  onOpen={() => handleBlendFieldOpen(wrapperFieldRef)}
+                />
+              </View>
 
-              <CreatableSelectField
-                label="Binder (optional)"
-                value={customBinder}
-                onChangeText={setCustomBinder}
-                options={blendOptions.binder}
-                placeholder="e.g. Nicaragua"
-                zIndex={2000}
-              />
+              <View ref={binderFieldRef} collapsable={false}>
+                <CreatableSelectField
+                  label="Binder (optional)"
+                  value={customBinder}
+                  onChangeText={setCustomBinder}
+                  options={blendOptions.binder}
+                  placeholder="e.g. Nicaragua"
+                  zIndex={2000}
+                  onOpen={() => handleBlendFieldOpen(binderFieldRef)}
+                />
+              </View>
 
-              <CreatableSelectField
-                label="Filler (optional)"
-                value={customFiller}
-                onChangeText={setCustomFiller}
-                options={blendOptions.filler}
-                placeholder="e.g. Honduras, Nicaragua"
-                zIndex={1000}
-              />
+              <View ref={fillerFieldRef} collapsable={false}>
+                <CreatableSelectField
+                  label="Filler (optional)"
+                  value={customFiller}
+                  onChangeText={setCustomFiller}
+                  options={blendOptions.filler}
+                  placeholder="e.g. Honduras, Nicaragua"
+                  zIndex={1000}
+                  onOpen={() => handleBlendFieldOpen(fillerFieldRef)}
+                />
+              </View>
 
               <View style={styles.field}>
                 <Text style={styles.label}>Photo (optional)</Text>
@@ -943,10 +911,6 @@ const styles = StyleSheet.create({
   field: {
     marginBottom: 20,
   },
-  fieldElevated: {
-    zIndex: 5000,
-    elevation: 5,
-  },
   label: {
     fontSize: 15,
     fontWeight: '500',
@@ -967,27 +931,6 @@ const styles = StyleSheet.create({
     minHeight: 100,
     textAlignVertical: 'top',
     paddingVertical: 16,
-  },
-  dropdown: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.cardBorder,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  dropdownContainer: {
-    backgroundColor: colors.cardBg,
-    borderColor: colors.cardBorder,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  dropdownContainerTall: {
-    maxHeight: 280,
-  },
-  dropdownListItem: {
-    backgroundColor: colors.cardBg,
-  },
-  dropdownListItemLabel: {
-    color: colors.textPrimary,
   },
   detailsCard: {
     backgroundColor: colors.cardBg,

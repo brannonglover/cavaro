@@ -1,25 +1,26 @@
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Platform, Text } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, typography, spacing } from '../theme';
+import { createNativeBottomTabNavigator } from '@bottom-tabs/react-navigation';
 import { SwipeableTabWrapper } from '../components/SwipeableTabWrapper';
-import { cavaroTabBarStyle, TAB_BAR_CONTENT_HEIGHT } from './CavaroTabBar';
+import { colors } from '../theme';
 import CavaroStack from './CavaroStack';
 import HomeStack from './HomeStack';
 import Collection from '../pages/Collection';
 import MyTaste from '../pages/MyTaste';
 import Journal from '../pages/Journal';
 
-const Tab = createBottomTabNavigator();
+const Tab = createNativeBottomTabNavigator();
 
 const TAB_ICONS = {
-  Home: { focused: 'home', unfocused: 'home-outline' },
-  Humidors: { focused: 'archive', unfocused: 'archive-outline' },
-  Collection: { focused: 'view-grid', unfocused: 'view-grid-outline' },
-  MyTaste: { focused: 'star-four-points', unfocused: 'star-four-points-outline' },
-  Journal: { focused: 'notebook', unfocused: 'notebook-outline' },
+  Home: { sf: 'house', sfFilled: 'house.fill' },
+  Humidors: { sf: 'archivebox', sfFilled: 'archivebox.fill' },
+  Collection: { sf: 'square.grid.2x2', sfFilled: 'square.grid.2x2.fill' },
+  MyTaste: { sf: 'sparkle', sfFilled: 'sparkle' },
+  Journal: { sf: 'book', sfFilled: 'book.fill' },
 };
+
+function tabBarIcon(name) {
+  const icon = TAB_ICONS[name];
+  return ({ focused }) => ({ sfSymbol: focused ? icon.sfFilled : icon.sf });
+}
 
 function withSwipe(Screen) {
   function SwipeableScreen(props) {
@@ -40,63 +41,27 @@ const SwipeableCollection = withSwipe(Collection);
 const SwipeableMyTaste = withSwipe(MyTaste);
 const SwipeableJournal = withSwipe(Journal);
 
-function tabIcon(name) {
-  return ({ focused, color }) => {
-    const icons = TAB_ICONS[name];
-    return (
-      <MaterialCommunityIcons
-        name={focused ? icons.focused : icons.unfocused}
-        size={focused ? 24 : 22}
-        color={color}
-      />
-    );
-  };
-}
-
 export default function MainTabs() {
-  const insets = useSafeAreaInsets();
-  const bottomPadding = Platform.OS === 'android' ? Math.max(insets.bottom, 8) + 12 : 0;
-
   return (
     <Tab.Navigator
       initialRouteName="Home"
+      translucent
+      hapticFeedbackEnabled
+      labeled
+      scrollEdgeAppearance="transparent"
+      minimizeBehavior="never"
+      tabBarActiveTintColor={colors.gold}
+      tabBarInactiveTintColor={colors.textMuted}
       screenOptions={{
-        sceneContainerStyle: { backgroundColor: colors.background },
-        headerShown: false,
-        tabBarShowLabel: true,
-        tabBarActiveTintColor: colors.gold,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: [
-          cavaroTabBarStyle.bar,
-          Platform.OS === 'android' && {
-            height: TAB_BAR_CONTENT_HEIGHT + bottomPadding,
-            paddingBottom: bottomPadding,
-          },
-        ],
-        tabBarLabel: ({ focused, color, children }) => (
-          <Text
-            style={{
-              color,
-              fontSize: typography.caption.fontSize,
-              lineHeight: typography.caption.lineHeight,
-              fontWeight: focused ? '600' : '500',
-              marginTop: spacing.xs,
-            }}
-          >
-            {children}
-          </Text>
-        ),
-        tabBarItemStyle: {
-          paddingVertical: spacing.xs,
-        },
+        sceneStyle: { backgroundColor: colors.background },
       }}
     >
       <Tab.Screen
         name="Home"
         component={SwipeableHomeStack}
         options={{
-          tabBarLabel: 'Home',
-          tabBarIcon: tabIcon('Home'),
+          title: 'Home',
+          tabBarIcon: tabBarIcon('Home'),
         }}
       />
       <Tab.Screen
@@ -110,33 +75,32 @@ export default function MainTabs() {
           },
         })}
         options={{
-          tabBarLabel: 'Humidors',
-          tabBarIcon: tabIcon('Humidors'),
-          popToTopOnBlur: true,
+          title: 'Humidors',
+          tabBarIcon: tabBarIcon('Humidors'),
         }}
       />
       <Tab.Screen
         name="Collection"
         component={SwipeableCollection}
         options={{
-          tabBarLabel: 'Collection',
-          tabBarIcon: tabIcon('Collection'),
+          title: 'Collection',
+          tabBarIcon: tabBarIcon('Collection'),
         }}
       />
       <Tab.Screen
         name="MyTaste"
         component={SwipeableMyTaste}
         options={{
-          tabBarLabel: 'My Taste',
-          tabBarIcon: tabIcon('MyTaste'),
+          title: 'My Taste',
+          tabBarIcon: tabBarIcon('MyTaste'),
         }}
       />
       <Tab.Screen
         name="Journal"
         component={SwipeableJournal}
         options={{
-          tabBarLabel: 'Journal',
-          tabBarIcon: tabIcon('Journal'),
+          title: 'Journal',
+          tabBarIcon: tabBarIcon('Journal'),
         }}
       />
     </Tab.Navigator>
