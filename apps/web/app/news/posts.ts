@@ -1,3 +1,8 @@
+export type NewsHeroLogo = {
+  src: string;
+  alt: string;
+};
+
 export type NewsPost = {
   slug: string;
   title: string;
@@ -5,6 +10,7 @@ export type NewsPost = {
   publishedAt: string;
   heroImage?: string;
   heroImageAlt?: string;
+  heroCollage?: NewsHeroLogo[];
 };
 
 /**
@@ -14,6 +20,26 @@ export type NewsPost = {
  * 3. Register it in app/news/post-content.ts
  */
 export const newsPosts: NewsPost[] = [
+  {
+    slug: 'eight-brands-join-cavaro',
+    title: 'Eight Iconic Brands Join the Cavaro Catalog',
+    excerpt:
+      'Arturo Fuente, Padrón, Davidoff, My Father, Oliva, Perdomo, AJ Fernandez, and Plasencia — over 700 new cigars are live in Cavaro.',
+    publishedAt: '2026-08-24',
+    heroImage: '/news/eight-brands-collage.png',
+    heroImageAlt:
+      'Arturo Fuente, Padrón, Davidoff, My Father, Oliva, Perdomo, AJ Fernandez, and Plasencia logos',
+    heroCollage: [
+      { src: '/news/logos/arturo-fuente.png', alt: 'Arturo Fuente' },
+      { src: '/news/logos/padron.png', alt: 'Padrón' },
+      { src: '/news/logos/davidoff.svg', alt: 'Davidoff' },
+      { src: '/news/logos/my-father.png', alt: 'My Father' },
+      { src: '/news/logos/oliva.png', alt: 'Oliva' },
+      { src: '/news/logos/perdomo.png', alt: 'Perdomo' },
+      { src: '/news/logos/aj-fernandez.png', alt: 'AJ Fernandez' },
+      { src: '/news/logos/plasencia.svg', alt: 'Plasencia' },
+    ],
+  },
   {
     slug: 'rocky-patel-now-in-cavaro',
     title: 'Rocky Patel Joins the Cavaro Catalog',

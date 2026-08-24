@@ -32,14 +32,30 @@ export default function NewsPage() {
               className="overflow-hidden rounded-xl border border-humidor-border bg-humidor-card transition-colors hover:border-humidor-primary/50"
             >
               <Link href={`/news/${post.slug}`} className="flex flex-col sm:flex-row">
-                {post.heroImage && (
-                  <div className="flex aspect-[16/9] w-full items-center justify-center bg-humidor-bg/60 p-6 sm:aspect-auto sm:w-48 sm:shrink-0 sm:p-4">
-                    <img
-                      src={post.heroImage}
-                      alt={post.heroImageAlt ?? ''}
-                      className="max-h-full max-w-full object-contain"
-                    />
+                {post.heroCollage ? (
+                  <div className="flex aspect-[16/9] w-full items-center justify-center bg-humidor-bg/60 p-4 sm:aspect-auto sm:w-48 sm:shrink-0 sm:p-3">
+                    <div className="grid w-full max-w-[9rem] grid-cols-4 gap-2 sm:max-w-none">
+                      {post.heroCollage.map((logo) => (
+                        <div key={logo.alt} className="flex h-7 items-center justify-center sm:h-8">
+                          <img
+                            src={logo.src}
+                            alt={logo.alt}
+                            className="max-h-full max-w-full object-contain"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
+                ) : (
+                  post.heroImage && (
+                    <div className="flex aspect-[16/9] w-full items-center justify-center bg-humidor-bg/60 p-6 sm:aspect-auto sm:w-48 sm:shrink-0 sm:p-4">
+                      <img
+                        src={post.heroImage}
+                        alt={post.heroImageAlt ?? ''}
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    </div>
+                  )
                 )}
                 <div className="flex flex-1 flex-col p-5 sm:p-6">
                   <time
