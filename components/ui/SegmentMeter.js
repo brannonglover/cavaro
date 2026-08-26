@@ -4,7 +4,7 @@ import { colors, radius, spacing } from '../../theme';
 const SEGMENT_COUNT = 5;
 
 /**
- * 5-segment gold meter for pairing scores (1–5).
+ * 5-segment gold meter for scores (1–5).
  */
 export default function SegmentMeter({ value = 0, max = SEGMENT_COUNT, style }) {
   const filled = Math.min(max, Math.max(0, Math.round(Number(value) || 0)));

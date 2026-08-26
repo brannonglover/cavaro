@@ -12,6 +12,8 @@ import {
 } from '../components/humidors';
 import { EmptyState } from '../components/ui';
 import { createHumidor, getHumidors } from '../db';
+import { useAuth } from '../context/AuthContext';
+import { scheduleFullPush } from '../lib/userCigarsSync';
 import {
   buildInventorySummary,
   HUMIDOR_FILTER_ALL,
@@ -27,6 +29,7 @@ const SEGMENT_IDS = new Set(Object.values(INVENTORY_SEGMENTS));
 
 export default function Cavaro({ navigation, route }) {
   const tabBarHeight = useTabBarHeight();
+  const { supabase } = useAuth();
   const [humidors, setHumidors] = useState([]);
   const [humidorFilterId, setHumidorFilterId] = useState(HUMIDOR_FILTER_ALL);
   const [segment, setSegment] = useState(INVENTORY_SEGMENTS.ALL);
@@ -81,6 +84,7 @@ export default function Cavaro({ navigation, route }) {
 
     try {
       await createHumidor(name);
+      scheduleFullPush(supabase);
       await refreshHumidors();
     } catch (error) {
       Alert.alert('Could not create humidor', error.message || 'Please try again.');

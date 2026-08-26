@@ -1,6 +1,5 @@
 import { SafeAreaView, StyleSheet, View, Text } from 'react-native';
 import CigarList from '../components/CigarList';
-import FeedbackBtn from '../components/FeedbackBtn';
 import colors from '../theme/colors';
 
 function Favorites({ navigation }) {
@@ -10,11 +9,8 @@ function Favorites({ navigation }) {
     <View style={styles.screen}>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <View>
-            <Text style={styles.title}>Favorites</Text>
-            <Text style={styles.subtitle}>Cigars you love</Text>
-          </View>
-          <FeedbackBtn />
+          <Text style={styles.title}>Favorites</Text>
+          <Text style={styles.subtitle}>Cigars you love</Text>
         </View>
         <CigarList
           view={view}
@@ -36,9 +32,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingVertical: 20,
     paddingHorizontal: 24,
     borderBottomWidth: 1,

@@ -1,5 +1,6 @@
-import { Modal, View, Image, Pressable, Text, StyleSheet } from 'react-native';
+import { Modal, View, Pressable, Text, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import CigarImage from './ui/CigarImage';
 import { colors } from '../theme';
 
 export default function ImageViewerModal({ visible, imageUri, onClose }) {
@@ -18,7 +19,11 @@ export default function ImageViewerModal({ visible, imageUri, onClose }) {
           <Text style={styles.closeText}>✕ Close</Text>
         </Pressable>
         <Pressable style={styles.imageWrap} onPress={onClose}>
-          <Image source={{ uri: imageUri }} style={styles.image} resizeMode="contain" />
+          <CigarImage
+            imageUrl={imageUri}
+            variant="full"
+            style={styles.image}
+          />
         </Pressable>
       </View>
     </Modal>

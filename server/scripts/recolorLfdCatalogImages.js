@@ -1,12 +1,13 @@
 /**
- * Replace white studio backgrounds on LFD catalog images with Cavaro surface tones
- * and tight-crop around the cigar so thumbnails/heroes don't look tiny.
- *
- * Downloads distinct La Flor Dominicana catalog image URLs, soft-keys white→dark,
- * crops to the cigar with modest padding, re-uploads, and updates cigar_catalog.
+ * Replace white studio backgrounds on catalog images with Cavaro surface tones
+ * and crop around the cigar so portrait rails fill like Plasencia product shots.
  *
  * Run from server/:
  *   node scripts/recolorLfdCatalogImages.js
+ *   node scripts/recolorLfdCatalogImages.js --brand=Plasencia
+ *   node scripts/recolorLfdCatalogImages.js --brand=Davidoff --brand=Oliva
+ *   node scripts/recolorLfdCatalogImages.js --all
+ *   node scripts/recolorLfdCatalogImages.js --reframe --all
  *   node scripts/recolorLfdCatalogImages.js --dry-run
  *   node scripts/recolorLfdCatalogImages.js --bg=211912
  */
@@ -20,104 +21,37 @@ const { supabase } = require('../config/supabase');
 
 const BUCKET = 'cigar-images';
 const DRY_RUN = process.argv.includes('--dry-run');
+const ALL = process.argv.includes('--all');
+const REFRAME = process.argv.includes('--reframe');
 const bgFlag = process.argv.find((arg) => arg.startsWith('--bg='));
 const BG_HEX = (bgFlag ? bgFlag.split('=')[1] : '211912').replace(/^#/, '');
+const BRANDS = process.argv
+  .filter((arg) => arg.startsWith('--brand='))
+  .map((arg) => arg.slice('--brand='.length).trim())
+  .filter(Boolean);
 
-const PYTHON = process.env.LFD_PYTHON || '/tmp/lfd-venv/bin/python';
-const WORK_DIR = path.join(os.tmpdir(), `lfd-recolor-${Date.now()}`);
-
-const RECOLOR_PY = `
-import sys
-import numpy as np
-from PIL import Image
-
-src, dst, bg_hex = sys.argv[1], sys.argv[2], sys.argv[3]
-br, bgc, bb = int(bg_hex[0:2], 16), int(bg_hex[2:4], 16), int(bg_hex[4:6], 16)
-BG = np.array([br, bgc, bb], dtype=np.float32)
-
-arr = np.asarray(Image.open(src).convert('RGB'), dtype=np.float32)
-r, g, b = arr[..., 0], arr[..., 1], arr[..., 2]
-mx = np.maximum(np.maximum(r, g), b)
-mn = np.minimum(np.minimum(r, g), b)
-chroma = mx - mn
-luma = (r + g + b) / 3.0
-
-# Soft-key near-white / light-gray studio backdrop onto app surface color.
-LOW, HIGH = 198, 246
-t = np.clip((luma - LOW) / (HIGH - LOW), 0.0, 1.0)
-t = t * t * (3.0 - 2.0 * t)
-chroma_keep = np.clip((chroma - 18.0) / 40.0, 0.0, 1.0)
-t = t * (1.0 - chroma_keep)
-
-mask = (t > 0.15).astype(np.uint8)
-padded = np.pad(mask, 1, mode='edge')
-dilated = np.maximum.reduce([
-    padded[0:-2, 0:-2], padded[0:-2, 1:-1], padded[0:-2, 2:],
-    padded[1:-1, 0:-2], padded[1:-1, 1:-1], padded[1:-1, 2:],
-    padded[2:, 0:-2], padded[2:, 1:-1], padded[2:, 2:],
-]).astype(np.float32)
-fringe = np.clip(dilated - mask.astype(np.float32), 0.0, 1.0)
-fringe_t = fringe * np.clip((luma - 170.0) / 60.0, 0.0, 1.0) * 0.85
-t = np.maximum(t, fringe_t)
-arr = arr * (1.0 - t[..., None]) + BG * t[..., None]
-
-# Tight crop to cigar subject so card/hero cover framing fills with the product.
-dist = np.linalg.norm(arr - BG, axis=2)
-bbox = None
-for thr in (22, 16, 12, 9, 6):
-    subject = dist > thr
-    h, w = subject.shape
-    border = max(1, min(h, w) // 80)
-    subject[:border, :] = False
-    subject[-border:, :] = False
-    subject[:, :border] = False
-    subject[:, -border:] = False
-    ys, xs = np.where(subject)
-    if len(xs) < 200:
-        continue
-    x0, x1 = int(xs.min()), int(xs.max())
-    y0, y1 = int(ys.min()), int(ys.max())
-    if (x1 - x0) < w * 0.015 or (y1 - y0) < h * 0.04:
-        continue
-    bbox = (x0, y0, x1, y1)
-    break
-
-if bbox is not None:
-    x0, y0, x1, y1 = bbox
-    bw, bh = x1 - x0 + 1, y1 - y0 + 1
-    H, W = arr.shape[:2]
-    # Keep the FULL cigar visible for fullscreen contain viewing,
-    # with modest side padding so cards still fill well under cover.
-    cigar_width_frac = 0.55
-    vert_pad_frac = 0.06
-    pad_y = max(8, int(bh * vert_pad_frac))
-    target_w = max(bw + 16, int(bw / cigar_width_frac))
-    pad_x = max(8, (target_w - bw) // 2)
-    x0 = max(0, x0 - pad_x)
-    y0 = max(0, y0 - pad_y)
-    x1 = min(W - 1, x1 + pad_x)
-    y1 = min(H - 1, y1 + pad_y)
-    crop = arr[y0:y1 + 1, x0:x1 + 1]
-    ch, cw = crop.shape[:2]
-    want_w = max(cw, int(bw / cigar_width_frac))
-    want_h = ch
-    canvas = np.zeros((want_h, want_w, 3), dtype=np.float32)
-    canvas[:] = BG
-    ox = (want_w - cw) // 2
-    canvas[0:ch, ox:ox + cw] = crop
-    arr = canvas
-
-Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), 'RGB').save(
-    dst, 'JPEG', quality=90, optimize=True
-)
-print(dst)
-`;
+const PYTHON_CANDIDATES = [
+  process.env.LFD_PYTHON,
+  '/tmp/lfd-venv/bin/python',
+  'python3',
+].filter(Boolean);
+const PYTHON = PYTHON_CANDIDATES.find((candidate) => {
+  if (candidate === 'python3') return true;
+  return fs.existsSync(candidate);
+}) || 'python3';
+const CATALOG_COMMON = path.join(__dirname, 'catalogCommon.py');
+const WORK_DIR = path.join(os.tmpdir(), `catalog-recolor-${Date.now()}`);
 
 function slugify(value) {
   return String(value)
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_|_$/g, '');
+}
+
+function isAiLifestyle(url) {
+  const value = String(url || '').toLowerCase();
+  return value.includes('/catalog/') && value.includes('.png');
 }
 
 async function download(url, dest) {
@@ -128,13 +62,11 @@ async function download(url, dest) {
 }
 
 function recolorLocal(src, dest) {
-  const scriptPath = path.join(WORK_DIR, 'recolor.py');
-  fs.writeFileSync(scriptPath, RECOLOR_PY);
-  const result = spawnSync(PYTHON, [scriptPath, src, dest, BG_HEX], {
+  const result = spawnSync(PYTHON, [CATALOG_COMMON, src, dest, BG_HEX], {
     encoding: 'utf8',
   });
   if (result.status !== 0) {
-    throw new Error(result.stderr || result.stdout || 'recolor failed');
+    throw new Error((result.stderr || result.stdout || 'recolor failed').trim());
   }
 }
 
@@ -144,9 +76,36 @@ async function upload(localPath, storagePath) {
     contentType: 'image/jpeg',
     upsert: true,
   });
-  if (error) throw error;
+  if (error || !data?.path) {
+    throw new Error(error?.message || 'Upload returned no path');
+  }
   const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(data.path);
   return urlData.publicUrl;
+}
+
+async function loadRows() {
+  const brands = ALL || BRANDS.length ? BRANDS : ['La Flor Dominicana'];
+  if (ALL) {
+    const { rows } = await pool.query(`
+      SELECT DISTINCT brand, image
+      FROM cigar_catalog
+      WHERE COALESCE(image, '') <> ''
+      ORDER BY brand, image
+    `);
+    return rows;
+  }
+
+  const { rows } = await pool.query(
+    `
+      SELECT DISTINCT brand, image
+      FROM cigar_catalog
+      WHERE brand = ANY($1)
+        AND COALESCE(image, '') <> ''
+      ORDER BY brand, image
+    `,
+    [brands]
+  );
+  return rows;
 }
 
 async function main() {
@@ -154,34 +113,46 @@ async function main() {
     console.error('Supabase required. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
     process.exit(1);
   }
-  if (!fs.existsSync(PYTHON)) {
-    console.error(`Python not found at ${PYTHON}. Create venv with Pillow or set LFD_PYTHON.`);
+
+  const pyCheck = spawnSync(PYTHON, ['-c', 'from PIL import Image'], { encoding: 'utf8' });
+  if (pyCheck.status !== 0) {
+    console.error(`Python with Pillow not found (${PYTHON}). Create a venv or set LFD_PYTHON.`);
     process.exit(1);
   }
 
   fs.mkdirSync(WORK_DIR, { recursive: true });
-  console.log(`Background #${BG_HEX}; tight-crop enabled`);
-
-  const { rows } = await pool.query(`
-    SELECT DISTINCT image
-    FROM cigar_catalog
-    WHERE brand = 'La Flor Dominicana'
-      AND COALESCE(image, '') <> ''
-    ORDER BY image
-  `);
-
-  console.log(`Found ${rows.length} distinct LFD catalog images`);
+    const rows = (await loadRows()).filter((row) => {
+      if (isAiLifestyle(row.image)) return false;
+      const framed = /_framed_/i.test(row.image || '');
+      return REFRAME ? framed : !framed;
+    });
+  const label = ALL ? 'all brands' : [...new Set(rows.map((row) => row.brand))].join(', ') || 'none';
+  console.log(`Background #${BG_HEX}; ${rows.length} distinct images (${label})`);
 
   let updated = 0;
   let failed = 0;
+  const seen = new Set();
 
-  for (const { image: oldUrl } of rows) {
-    const base = path.basename(new URL(oldUrl).pathname).replace(/\.[^.]+$/, '');
-    const src = path.join(WORK_DIR, `${base}-src.jpg`);
-    const dest = path.join(WORK_DIR, `${base}-dark.jpg`);
+  for (const { brand, image: oldUrl } of rows) {
+    if (!oldUrl || seen.has(oldUrl)) continue;
+    seen.add(oldUrl);
+
+    let base;
+    try {
+      const rawBase = path.basename(new URL(oldUrl).pathname).replace(/\.[^.]+$/, '');
+      base = rawBase
+        .replace(/^(?:[a-z0-9_]+?_framed_)+/i, '')
+        .replace(/(?:_\d{13,})+$/, '') || rawBase;
+    } catch {
+      failed += 1;
+      console.error(`  ✗ bad url: ${oldUrl}`);
+      continue;
+    }
+    const src = path.join(WORK_DIR, `${slugify(brand)}_${base}-src.jpg`);
+    const dest = path.join(WORK_DIR, `${slugify(brand)}_${base}-dark.jpg`);
 
     try {
-      console.log(`\nProcessing ${base}`);
+      console.log(`\n${brand} / ${base}`);
       await download(oldUrl, src);
       recolorLocal(src, dest);
 
@@ -190,13 +161,10 @@ async function main() {
         continue;
       }
 
-      const storagePath = `catalog/${slugify(`lfd_framed_${base}`)}_${Date.now()}.jpg`;
+      const storagePath = `catalog/${slugify(`${brand}_framed_${base}`)}_${Date.now()}.jpg`;
       const newUrl = await upload(dest, storagePath);
-
       const result = await pool.query(
-        `UPDATE cigar_catalog
-         SET image = $1
-         WHERE brand = 'La Flor Dominicana' AND image = $2`,
+        `UPDATE cigar_catalog SET image = $1 WHERE image = $2`,
         [newUrl, oldUrl]
       );
       updated += result.rowCount;

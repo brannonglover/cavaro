@@ -11,6 +11,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import colors from '../theme/colors';
 import ConfirmModal from './ConfirmModal';
+import FeedbackModal from './FeedbackModal';
 import { useAuth } from '../context/AuthContext';
 import { deleteAccount } from '../api/user';
 import { wipeLocalUserData } from '../db';
@@ -26,6 +27,7 @@ export default function AccountMenu({ onSignOut, children, triggerStyle }) {
   /** null | 1 (first warning) | 2 (final confirm) */
   const [deleteConfirmStep, setDeleteConfirmStep] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
+  const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const triggerRef = useRef(null);
 
@@ -76,6 +78,11 @@ export default function AccountMenu({ onSignOut, children, triggerStyle }) {
   const confirmDeleteAccount = () => {
     close();
     setDeleteConfirmStep(1);
+  };
+
+  const openFeedback = () => {
+    close();
+    setFeedbackVisible(true);
   };
 
   const screenWidth = Dimensions.get('window').width;
@@ -138,6 +145,10 @@ export default function AccountMenu({ onSignOut, children, triggerStyle }) {
           <ActivityIndicator size="large" color={colors.textSecondary} />
         </View>
       </Modal>
+      <FeedbackModal
+        visible={feedbackVisible}
+        onClose={() => setFeedbackVisible(false)}
+      />
       <Pressable ref={triggerRef} onPress={open} style={[styles.trigger, triggerStyle]}>
         {children}
       </Pressable>
@@ -157,6 +168,20 @@ export default function AccountMenu({ onSignOut, children, triggerStyle }) {
               },
             ]}
           >
+            <Pressable
+              style={styles.menuItem}
+              onPress={openFeedback}
+              disabled={deleting}
+              android_ripple={{ color: colors.borderLight }}
+            >
+              <MaterialCommunityIcons
+                name="message-text-outline"
+                size={20}
+                color={colors.textSecondary}
+                style={styles.menuIcon}
+              />
+              <Text style={styles.menuItemText}>Send feedback</Text>
+            </Pressable>
             <Pressable
               style={styles.menuItem}
               onPress={handleSignOut}
@@ -228,6 +253,11 @@ const styles = StyleSheet.create({
   },
   menuIcon: {
     marginRight: 10,
+  },
+  menuItemText: {
+    fontSize: 16,
+    color: colors.textPrimary,
+    fontWeight: '500',
   },
   menuItemTextDestructive: {
     fontSize: 16,

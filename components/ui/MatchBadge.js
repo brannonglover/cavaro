@@ -11,10 +11,10 @@ const LEVEL_VARIANTS = {
   'Unlikely Match': 'danger',
 };
 
-export default function MatchBadge({ level, style, textStyle }) {
+export default function MatchBadge({ level, label, style, textStyle }) {
   return (
     <CavaroBadge
-      label={level}
+      label={label || level}
       variant={LEVEL_VARIANTS[level] ?? 'default'}
       style={style}
       textStyle={textStyle}

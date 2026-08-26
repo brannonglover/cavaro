@@ -1,4 +1,4 @@
-import { db } from './index';
+import { db, withSerializedTransaction } from './index';
 import {
   parseJournalEntry,
   serializeFlavorList,
@@ -205,7 +205,7 @@ export async function migrateSmokeHistoryToJournal() {
   if (!rows?.length) return 0;
 
   const now = new Date().toISOString();
-  await db.withTransactionAsync(async () => {
+  await withSerializedTransaction(async () => {
     for (const row of rows) {
       await db.runAsync(
         `INSERT INTO smoke_journal_entries (
@@ -237,7 +237,7 @@ export async function markCigarSmokedWithJournal({ cigarId, userId, entry }) {
   validateJournalEntryInput(journalInput);
   const values = buildEntryValues(journalInput);
 
-  await db.withTransactionAsync(async () => {
+  await withSerializedTransaction(async () => {
     const cigar = await db.getFirstAsync(
       'SELECT quantity FROM cigars WHERE id = ?',
       Number(cigarId)

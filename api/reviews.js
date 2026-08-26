@@ -3,20 +3,25 @@ import { API_BASE_URL } from './config';
 const REVIEWS_URL = `${API_BASE_URL}/api/reviews`;
 
 /**
- * Search community reviews by taste keywords.
+ * Search catalog + community reviews by taste keywords or cigar name.
  * @param {string[]} keywords - Search terms
  * @param {string} [accessToken] - Supabase access token (required for auth)
+ * @param {'taste'|'cigar'} [type='taste']
  * @returns {Promise<object[]>} Cigar results
  * @throws {Error} When search limit exceeded (429) or other errors
  */
-export async function searchReviewsByTaste(keywords, accessToken) {
+export async function searchReviewsByTaste(keywords, accessToken, type = 'taste') {
   if (!keywords?.length) return [];
   const q = keywords.map((k) => String(k).trim()).filter(Boolean).join(',');
   if (!q) return [];
   const headers = {};
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  const searchType = type === 'cigar' ? 'cigar' : 'taste';
   try {
-    const res = await fetch(`${REVIEWS_URL}/search?q=${encodeURIComponent(q)}`, { headers });
+    const res = await fetch(
+      `${REVIEWS_URL}/search?q=${encodeURIComponent(q)}&type=${searchType}`,
+      { headers }
+    );
     if (res.status === 429) {
       const data = await res.json().catch(() => ({}));
       const err = new Error(data.message || data.error || 'Daily search limit reached');
@@ -32,7 +37,7 @@ export async function searchReviewsByTaste(keywords, accessToken) {
     if (!res.ok) throw new Error(`Search failed: ${res.status}`);
     return res.json();
   } catch (err) {
-    if (err.code === 'SEARCH_LIMIT_EXCEEDED') throw err;
+    if (err.code === 'SEARCH_LIMIT_EXCEEDED' || err.code === 'SIGN_IN_REQUIRED') throw err;
     console.warn('Reviews search failed:', err.message);
     return [];
   }

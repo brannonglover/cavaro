@@ -10,6 +10,7 @@ const path = require('path');
 const pool = require('../config/postgres');
 const { supabase } = require('../config/supabase');
 const { ensureCatalogSchema } = require('../lib/catalogSchema');
+const { backfillBrandTasteProfiles } = require('../lib/catalogTaste');
 
 function arg(name, fallback = '') {
   const i = process.argv.indexOf(`--${name}`);
@@ -102,9 +103,11 @@ async function main() {
     );
     for (const row of existingImages.rows) {
       const blend = blendKeyForProduct({ name: row.name, line: row.name }, blendNames);
-      if (blend && row.image && !imageByBlend.has(blend)) {
-        imageByBlend.set(blend, row.image);
-      }
+      if (!blend || !row.image || imageByBlend.has(blend)) continue;
+      const localPath = blendImages[blend];
+      if (localPath && fs.existsSync(localPath)) continue;
+      if (/\/catalog\/.+\.png(?:\?|$)/i.test(row.image)) continue;
+      imageByBlend.set(blend, row.image);
     }
 
     const del = await pool.query(`DELETE FROM cigar_catalog WHERE brand = $1`, [BRAND]);
@@ -176,8 +179,9 @@ async function main() {
       `\nDry run complete. Rows: ${catalog.length}, distinct names: ${names.size}, with images: ${withImage}`
     );
   } else {
+    const taste = await backfillBrandTasteProfiles(pool, { brand: BRAND });
     console.log(
-      `\nDone. Uploaded ${uploaded} images, inserted ${upserted} catalog rows (${withImage} with images).`
+      `\nDone. Uploaded ${uploaded} images, inserted ${upserted} catalog rows (${withImage} with images). Taste profiles: ${taste.saved} saved, ${taste.unchanged} unchanged, ${taste.empty} without notes.`
     );
   }
 

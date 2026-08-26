@@ -17,52 +17,53 @@ export default function SmokeRecommendationCard({
 
   return (
     <PremiumCard variant="elevated" padding={0} style={[styles.card, style]}>
-      <View style={styles.media}>
-        <CigarImage
-          imageUrl={imageUrl}
-          wrapper={wrapper}
-          variant="hero"
-          style={styles.image}
-          imageStyle={styles.image}
-        />
-        <View style={styles.mediaOverlay} />
-      </View>
-
-      <View style={styles.content}>
-        <View style={styles.labelRow}>
-          <View style={styles.labelIcon}>
-            <MaterialCommunityIcons name="cigar" size={16} color={colors.gold} />
-          </View>
-          <Text style={styles.sectionLabel}>Smoke Recommendation</Text>
+      <View style={styles.row}>
+        <View style={styles.rail}>
+          <CigarImage
+            imageUrl={imageUrl}
+            wrapper={wrapper}
+            variant="inventory"
+            style={styles.image}
+            imageStyle={styles.image}
+          />
         </View>
 
-        <Text style={styles.title} numberOfLines={2}>
-          {displayName}
-        </Text>
+        <View style={styles.content}>
+          <View style={styles.labelRow}>
+            <View style={styles.labelIcon}>
+              <MaterialCommunityIcons name="cigar" size={16} color={colors.gold} />
+            </View>
+            <Text style={styles.sectionLabel}>Smoke Recommendation</Text>
+          </View>
 
-        {meta ? (
-          <Text style={styles.brand} numberOfLines={1}>
-            {meta}
+          <Text style={styles.title} numberOfLines={2}>
+            {displayName}
           </Text>
-        ) : null}
 
-        {reason ? (
-          <Text style={styles.reason} numberOfLines={2}>
-            {reason}
-          </Text>
-        ) : null}
+          {meta ? (
+            <Text style={styles.brand} numberOfLines={1}>
+              {meta}
+            </Text>
+          ) : null}
 
-        {onViewDetails ? (
-          <CavaroButton
-            variant="ghost"
-            label="View Details →"
-            onPress={onViewDetails}
-            style={styles.action}
-          />
-        ) : null}
+          {reason ? (
+            <Text style={styles.reason} numberOfLines={3}>
+              {reason}
+            </Text>
+          ) : null}
 
-        <View style={styles.watermark} pointerEvents="none">
-          <MaterialCommunityIcons name="star-four-points-outline" size={56} color="rgba(200, 164, 93, 0.1)" />
+          {onViewDetails ? (
+            <CavaroButton
+              variant="ghost"
+              label="View Details →"
+              onPress={onViewDetails}
+              style={styles.action}
+            />
+          ) : null}
+
+          <View style={styles.watermark} pointerEvents="none">
+            <MaterialCommunityIcons name="star-four-points-outline" size={56} color="rgba(200, 164, 93, 0.1)" />
+          </View>
         </View>
       </View>
     </PremiumCard>
@@ -74,22 +75,27 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     overflow: 'hidden',
   },
-  media: {
-    height: 168,
+  row: {
+    flexDirection: 'row',
+    minHeight: 176,
+    alignItems: 'stretch',
+  },
+  rail: {
+    width: 108,
+    overflow: 'hidden',
     backgroundColor: colors.surface,
   },
   image: {
     ...StyleSheet.absoluteFillObject,
   },
-  mediaOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(13, 11, 9, 0.2)',
-  },
   content: {
+    flex: 1,
+    minWidth: 0,
     padding: spacing.md,
     backgroundColor: colors.surfaceWarm,
     position: 'relative',
     overflow: 'hidden',
+    justifyContent: 'center',
   },
   labelRow: {
     flexDirection: 'row',

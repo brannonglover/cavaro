@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/postgres');
 const { ensureCatalogSchema } = require('../lib/catalogSchema');
+const { upsertBrandTasteProfile } = require('../lib/catalogTaste');
+
+const CATALOG_SELECT =
+  'id, brand, name, line, description, wrapper, binder, filler, length, size_name, image, flavors, strength, taste_source';
 
 let schemaReady = null;
 function readyCatalogSchema() {
@@ -19,7 +23,7 @@ router.get('/', async (req, res) => {
   try {
     await readyCatalogSchema();
     const result = await pool.query(
-      'SELECT id, brand, name, line, description, wrapper, binder, filler, length, size_name, image FROM cigar_catalog ORDER BY brand, name, length, size_name'
+      `SELECT ${CATALOG_SELECT} FROM cigar_catalog ORDER BY brand, name, length, size_name`
     );
     res.json(result.rows);
   } catch (err) {
@@ -48,7 +52,7 @@ router.post('/', async (req, res) => {
          filler = EXCLUDED.filler,
          size_name = COALESCE(EXCLUDED.size_name, cigar_catalog.size_name),
          image = EXCLUDED.image
-       RETURNING id, brand, name, line, description, wrapper, binder, filler, length, size_name, image`,
+       RETURNING ${CATALOG_SELECT}`,
       [
         brand.trim(),
         name.trim(),
@@ -62,7 +66,17 @@ router.post('/', async (req, res) => {
         image || '',
       ]
     );
-    res.status(201).json(result.rows[0]);
+    await upsertBrandTasteProfile(pool, {
+      brand: brand.trim(),
+      name: name.trim(),
+      line: (line || '').trim(),
+      description: description || '',
+    });
+    const hydrated = await pool.query(
+      `SELECT ${CATALOG_SELECT} FROM cigar_catalog WHERE id = $1`,
+      [result.rows[0].id]
+    );
+    res.status(201).json(hydrated.rows[0] || result.rows[0]);
   } catch (err) {
     console.error('Catalog POST error:', err.message || err, err.stack);
     const detail = process.env.NODE_ENV !== 'production' ? err.message : undefined;

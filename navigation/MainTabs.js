@@ -59,6 +59,13 @@ export default function MainTabs() {
       <Tab.Screen
         name="Home"
         component={SwipeableHomeStack}
+        listeners={({ navigation }) => ({
+          // My Taste deep-links into TasteSearch and leaves that nested route
+          // sticky on this tab — always land on Home on tab press.
+          tabPress: () => {
+            navigation.navigate('Home', { screen: 'HomeMain' });
+          },
+        })}
         options={{
           title: 'Home',
           tabBarIcon: tabBarIcon('Home'),
@@ -68,7 +75,7 @@ export default function MainTabs() {
         name="Humidors"
         component={SwipeableCavaroStack}
         listeners={({ navigation }) => ({
-          // Home / Search deep-link into AddCigar and leave that nested route
+          // Home / Taste Search deep-link into AddCigar and leave that nested route
           // sticky on this tab — always land on the inventory list on tab press.
           tabPress: () => {
             navigation.navigate('Humidors', { screen: 'CavaroList' });

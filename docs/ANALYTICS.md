@@ -23,13 +23,13 @@ If the key is not set, analytics are disabled (no-op). The app works normally wi
 ## What's tracked
 
 ### Screen views (automatic)
-- Tab navigation: Favorites, Dislikes, Cavaro, Search, Pairing
+- Tab navigation: Favorites, Dislikes, Cavaro, Search, TasteSearch
 - Stack screens: CavaroList, AddCigar, EditCigar, Landing, Login, Signup
 
 ### Feature events
 | Event | Properties |
 |------|------------|
-| `cigar_added` | `cigar` (Brand Line Name), `brand`, `name`, `line`, `length`, `quantity`, `source` (catalog/custom) |
+| `cigar_added` | `cigar` (Brand Line Name), `brand`, `name`, `line`, `length`, `quantity`, `source` (catalog/custom/quick_add) |
 | `cigar_edited` | — |
 | `cigar_favorited` | — |
 | `cigar_unfavorited` | — |
@@ -37,9 +37,11 @@ If the key is not set, analytics are disabled (no-op). The app works normally wi
 | `cigar_smoked` | — |
 | `personal_notes_saved` | — |
 | `strength_profile_saved` | — |
-| `search_performed` | `keyword_count`, `has_results` |
+| `taste_search_opened` | `source` (home/home_empty/my_taste) |
+| `search_performed` | `keyword_count`, `has_results`, `search_type` (taste/cigar) |
 | `add_from_search` | `brand`, `name` |
-| `pairing_requested` | `has_result` |
+| `quick_add_from_search` | `brand`, `name`, `incremented`, `humidor_count` |
+| `taste_analyzed` | `has_result`, `correlates` |
 | `landing_cta` | `action` (get_started/subscribe/already_have_account/restore_subscription) |
 | `login_success` | — |
 | `signup_success` | `tier` |
@@ -58,3 +60,12 @@ In PostHog, create a **Trends** insight:
 4. Optional: formula/property sum on `quantity` if you want sticks added, not unique add-actions
 
 Search “add to Cavaro” clicks are `add_from_search` and fire before the cigar is actually saved. Use `cigar_added` for inventory popularity.
+
+## Taste Profile add paths
+
+The Taste Profile screen has two ways to add a cigar, and they track differently:
+
+- The bottom **Add to collection** button opens the prefilled Add Cigar form. It fires `add_from_search` on tap; `cigar_added` (`source: catalog`) only follows if the user completes the form.
+- The header **plus** is a one-tap quick add straight into a humidor. It fires `quick_add_from_search` plus `cigar_added` (`source: quick_add`) together, after the write succeeds.
+
+`incremented` on `quick_add_from_search` distinguishes topping up a cigar the user already stores from adding a new one; `humidor_count` shows how often the humidor picker had to appear.

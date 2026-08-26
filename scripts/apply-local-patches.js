@@ -123,3 +123,39 @@ applyReplacement({
   ].join("\n"),
   skipIfContains: "const IS_ANDROID = Platform.OS === 'android';",
 });
+
+applyReplacement({
+  name: "screens HeaderConfig Paper view on New Arch",
+  relativePath: "node_modules/react-native-screens/ios/RNSScreenStackHeaderConfig.mm",
+  before: [
+    "#ifdef RCT_NEW_ARCH_ENABLED",
+    "#else",
+    "",
+    "- (UIView *)view",
+    "{",
+    "  return [[RNSScreenStackHeaderConfig alloc] initWithBridge:self.bridge];",
+    "}",
+  ].join("\n"),
+  after: [
+    "#ifdef RCT_NEW_ARCH_ENABLED",
+    "- (UIView *)view",
+    "{",
+    "  return [[RNSScreenStackHeaderConfig alloc] initWithFrame:CGRectZero];",
+    "}",
+    "#else",
+    "",
+    "- (UIView *)view",
+    "{",
+    "  return [[RNSScreenStackHeaderConfig alloc] initWithBridge:self.bridge];",
+    "}",
+  ].join("\n"),
+  skipIfContains: "initWithFrame:CGRectZero",
+});
+
+applyReplacement({
+  name: "react-native-svg drop color native prop",
+  relativePath: "node_modules/react-native-svg/src/elements/Svg.tsx",
+  before: "    props.tintColor = color;\n",
+  after: "    props.tintColor = color;\n    delete props.color;\n",
+  skipIfContains: "delete props.color",
+});

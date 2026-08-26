@@ -21,6 +21,8 @@ import io
 import json
 import re
 import ssl
+import subprocess
+import sys
 import time
 import unicodedata
 import urllib.parse
@@ -35,6 +37,8 @@ TMP = REPO / "tmp" / "my-father"
 ASSETS = REPO / "assets" / "my-father"
 PROCESSED = TMP / "processed"
 RAW = TMP / "raw-images"
+SERIES_JJ_LINEUP = ASSETS / "sources" / "series-jj-lineup.png"
+PROCESS_SERIES_JJ = Path(__file__).resolve().parent / "processSeriesJjLineup.py"
 CIGARS_JSON = TMP / "wp-cigars.json"
 API = "https://myfathercigars.com/wp-json/wp/v2/cigar?per_page=100"
 BG_RGB = (0x21, 0x19, 0x12)
@@ -101,6 +105,54 @@ SIZE_RE = re.compile(
     r"(?P<len>\d+(?:\s+\d+/\d+)?)\s*[xX×]\s*(?P<rg>\d{2,3})"
     r"(?:\s*[xX×]\s*(?P<rg2>\d{2,3}))?\s*$"
 )
+
+# Blends the WP cigar CPT does not expose. The API only carries the current
+# lineup, so discontinued and limited releases have no post to scrape and would
+# otherwise be absent from the catalog entirely. Vitolas and components come
+# from My Father's release notes and retailer listings. Size names follow the
+# plural house style already used by the scraped rows in the same line.
+# A vitola is (size_name, length) or (size_name, length, wrapper) when the
+# release uses a different wrapper per size.
+EXTRA_BLENDS = [
+    {
+        "name": "Don Pepin Garcia Series JJ Maduro",
+        "line": "Don Pepin Garcia",
+        "description": (
+            "The maduro companion to Series JJ, added two years after the original and "
+            "dressed in a very dark Nicaraguan Corojo Maduro wrapper over an all-Nicaraguan "
+            "binder and filler. Three quarters to full-bodied with a fine draw and an even "
+            "burn, it leans on spice, earth and cocoa with hints of dried fruit sweetness."
+        ),
+        "wrapper": "Corojo Maduro",
+        "binder": "Nicaragua",
+        "filler": "Nicaragua",
+        "vitolas": [
+            ("Petit Corona", "4 5/8x42"),
+            ("Selectos", "5x50"),
+            ("Belicosos", "5 3/4x52"),
+            ("Toros", "6x54"),
+            ("Toro Gordo", "6x60"),
+        ],
+    },
+    {
+        "name": "Don Pepin Garcia Series JJ 20th Anniversary Limited Edition",
+        "line": "Don Pepin Garcia",
+        "description": (
+            "A 2025 limited edition marking twenty years of Series JJ, and a new blend rather "
+            "than a reissue of the original. A Nicaraguan puro grown entirely on the Garcia "
+            "family farms, it carries rare Pelo de Oro in the filler and is blended full-bodied. "
+            "Each commemorative box holds sixteen Toros under a shade-grown Corojo '99 Rosado "
+            "wrapper plus a single darker Rosado Oscuro Salomon. Limited to 2,500 boxes."
+        ),
+        "wrapper": "Corojo '99 Rosado",
+        "binder": "Nicaragua",
+        "filler": "Nicaragua",
+        "vitolas": [
+            ("Toros", "6 1/2x52", "Corojo '99 Rosado"),
+            ("Salomones", "7 1/4x57", "Corojo '99 Rosado Oscuro"),
+        ],
+    },
+]
 
 
 def slugify(value: str) -> str:
@@ -325,6 +377,40 @@ def recolor_and_crop(src: bytes, dest_path: Path):
     out.save(dest_path, "JPEG", quality=90, optimize=True)
 
 
+def build_extra_rows(seen: set) -> list[dict]:
+    """Curated blends, skipped whenever the site already published the vitola."""
+    rows = []
+    for blend in EXTRA_BLENDS:
+        name = blend["name"]
+        added = 0
+        for vitola in blend["vitolas"]:
+            size_name, length = vitola[0], vitola[1]
+            wrapper = vitola[2] if len(vitola) > 2 else blend["wrapper"]
+            key = (name.lower(), size_name.lower(), length)
+            if key in seen:
+                continue
+            seen.add(key)
+            added += 1
+            rows.append(
+                {
+                    "brand": "My Father",
+                    "name": name,
+                    "line": blend["line"],
+                    "description": blend["description"],
+                    "wrapper": wrapper,
+                    "binder": blend["binder"],
+                    "filler": blend["filler"],
+                    "length": length,
+                    "size_name": size_name,
+                    "image": "",
+                    "_source": "curated",
+                    "_blend_image": "",
+                }
+            )
+        print(f"  {name}: {added} sizes (curated)")
+    return rows
+
+
 def build_catalog(posts: list[dict]) -> list[dict]:
     rows = []
     seen = set()
@@ -381,14 +467,39 @@ def build_catalog(posts: list[dict]) -> list[dict]:
             )
         print(f"  {name}: {len(vitolas)} sizes")
 
+    rows.extend(build_extra_rows(seen))
     rows.sort(key=lambda r: (r["line"].lower(), r["name"].lower(), r["size_name"].lower(), r["length"]))
     return rows
+
+
+def ensure_series_jj_lineup_images() -> dict[str, str]:
+    if not SERIES_JJ_LINEUP.exists():
+        return {}
+    result = subprocess.run(
+        [sys.executable, str(PROCESS_SERIES_JJ)],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        print(f"  series jj lineup fail: {(result.stderr or result.stdout).strip()}")
+        return {}
+    blend_images_path = TMP / "blend-images.json"
+    if not blend_images_path.exists():
+        return {}
+    payload = json.loads(blend_images_path.read_text())
+    return {
+        name: path
+        for name, path in payload.items()
+        if name.startswith("Don Pepin Garcia Series JJ") and path
+    }
 
 
 def download_images(catalog: list[dict]) -> dict[str, str]:
     RAW.mkdir(parents=True, exist_ok=True)
     PROCESSED.mkdir(parents=True, exist_ok=True)
-    blend_images: dict[str, str] = {}
+    blend_images: dict[str, str] = ensure_series_jj_lineup_images()
+    if blend_images:
+        print(f"  series jj lineup: {len(blend_images)} blends")
     fetched: dict[str, bytes] = {}
 
     for row in catalog:
@@ -397,6 +508,10 @@ def download_images(catalog: list[dict]) -> dict[str, str]:
             continue
         url = row.get("_blend_image") or ""
         if not url:
+            # Record the blend anyway: the importer treats this file as the roster
+            # of known blend names, and a missing entry lets a blend inherit a
+            # prefix-matching sibling's photo (JJ Maduro picking up plain JJ).
+            blend_images[name] = ""
             print(f"  no image: {name}")
             continue
         dest = PROCESSED / f"{slugify(name)}.jpg"

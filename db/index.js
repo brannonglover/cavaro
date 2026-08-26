@@ -10,6 +10,30 @@ import * as SQLite from 'expo-sqlite';
 const DB_NAME = 'cigars.db';
 export const db = SQLite.openDatabaseSync(DB_NAME);
 
+let resolveDatabaseReady = () => {};
+const databaseReady = new Promise((resolve) => {
+  resolveDatabaseReady = resolve;
+});
+
+export function whenDatabaseReady() {
+  return databaseReady;
+}
+
+let writeChain = Promise.resolve();
+
+export function enqueueDbWrite(task) {
+  const run = writeChain.then(task, task);
+  writeChain = run.then(
+    () => undefined,
+    () => undefined
+  );
+  return run;
+}
+
+export function withSerializedTransaction(work) {
+  return enqueueDbWrite(() => db.withTransactionAsync(work));
+}
+
 const COLLECTIONS = {
   CAVARO: 'cavaro',
   LIKES: 'likes',
@@ -32,7 +56,8 @@ export { COLLECTIONS };
  * Creates tables and migrates data. Catalog is fetched from API; local cigar_catalog is offline cache.
  */
 export async function initDatabase() {
-  await db.withTransactionAsync(async () => {
+  try {
+    await withSerializedTransaction(async () => {
     // Create cigar catalog table (central database users select from)
     await db.execAsync(`
       CREATE TABLE IF NOT EXISTS cigar_catalog (
@@ -98,6 +123,13 @@ export async function initDatabase() {
       await db.execAsync('ALTER TABLE cigar_catalog_new RENAME TO cigar_catalog');
       await db.execAsync('CREATE INDEX IF NOT EXISTS idx_catalog_brand ON cigar_catalog(brand)');
       await db.execAsync('CREATE INDEX IF NOT EXISTS idx_catalog_brand_name ON cigar_catalog(brand, name)');
+    }
+
+    const catalogCols = await db.getAllAsync('PRAGMA table_info(cigar_catalog)');
+    for (const col of ['flavors', 'strength', 'taste_source']) {
+      if (!catalogCols.some((c) => c.name === col)) {
+        await db.execAsync(`ALTER TABLE cigar_catalog ADD COLUMN ${col} TEXT`);
+      }
     }
 
     // Create user cigars table
@@ -303,10 +335,13 @@ export async function initDatabase() {
       await db.execAsync('DROP TABLE likes');
       await db.execAsync('DROP TABLE dislikes');
     }
-  });
+    });
 
-  const { migrateSmokeHistoryToJournal } = await import('./journal');
-  await migrateSmokeHistoryToJournal();
+    const { migrateSmokeHistoryToJournal } = await import('./journal');
+    await migrateSmokeHistoryToJournal();
+  } finally {
+    resolveDatabaseReady();
+  }
 }
 
 /**
@@ -402,6 +437,85 @@ export async function moveCigarToHumidor(cigarId, targetHumidorId) {
   );
 }
 
+/**
+ * One-tap inventory add. Bumps quantity when the same blend and size is already
+ * stored in that humidor so quick-add never creates duplicate rows.
+ *
+ * `limitNewRowsTo` mirrors the free-tier cap on the Add Cigar screen. Only new
+ * rows count against it; topping up something already stored stays allowed.
+ * @returns {Promise<{ incremented: boolean, cigarId: number, quantity: number }>}
+ */
+export async function addCigarToHumidor({ cigar, humidorId, quantity = 1, limitNewRowsTo = null }) {
+  const brand = cigar?.brand?.trim();
+  const name = cigar?.name?.trim();
+  const length = cigar?.length?.trim();
+  if (!brand || !name || !length) {
+    const error = new Error('Cigar needs a brand, name, and size before it can be saved');
+    error.code = 'INCOMPLETE_CIGAR';
+    throw error;
+  }
+  if (!humidorId) throw new Error('Pick a humidor to add this cigar to');
+
+  const qty = Math.max(1, parseInt(quantity, 10) || 1);
+  let result = null;
+
+  await withSerializedTransaction(async () => {
+    const existing = await db.getFirstAsync(
+      `SELECT id, quantity FROM cigars
+       WHERE humidor_id = ? AND collection = ?
+         AND LOWER(TRIM(brand)) = ? AND LOWER(TRIM(name)) = ? AND LOWER(TRIM(length)) = ?
+       ORDER BY id LIMIT 1`,
+      humidorId,
+      COLLECTIONS.CAVARO,
+      brand.toLowerCase(),
+      name.toLowerCase(),
+      length.toLowerCase()
+    );
+
+    if (!existing && limitNewRowsTo != null) {
+      const row = await db.getFirstAsync(
+        'SELECT COUNT(*) as n FROM cigars WHERE collection = ?',
+        COLLECTIONS.CAVARO
+      );
+      if ((row?.n ?? 0) >= limitNewRowsTo) {
+        const error = new Error('Cigar limit reached');
+        error.code = 'CIGAR_LIMIT_REACHED';
+        throw error;
+      }
+    }
+
+    if (existing) {
+      const nextQuantity = Math.max(0, parseInt(existing.quantity, 10) || 0) + qty;
+      await db.runAsync('UPDATE cigars SET quantity = ? WHERE id = ?', nextQuantity, existing.id);
+      result = { incremented: true, cigarId: existing.id, quantity: nextQuantity };
+      return;
+    }
+
+    const inserted = await db.runAsync(
+      `INSERT INTO cigars (
+        brand, name, line, description, wrapper, binder, filler, length, image,
+        quantity, collection, date_added, humidor_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      brand,
+      name,
+      cigar.line?.trim() || null,
+      cigar.description ?? '',
+      cigar.wrapper ?? '',
+      cigar.binder ?? '',
+      cigar.filler ?? '',
+      length,
+      cigar.image ?? '',
+      qty,
+      COLLECTIONS.CAVARO,
+      new Date().toISOString().slice(0, 10),
+      humidorId
+    );
+    result = { incremented: false, cigarId: inserted.lastInsertRowId, quantity: qty };
+  });
+
+  return result;
+}
+
 export async function startCellaring({
   cigarId,
   humidorId,
@@ -410,7 +524,7 @@ export async function startCellaring({
   notes,
 }) {
   const today = new Date().toISOString().slice(0, 10);
-  await db.withTransactionAsync(async () => {
+  await withSerializedTransaction(async () => {
     const cigar = await db.getFirstAsync(
       'SELECT quantity, humidor_id FROM cigars WHERE id = ?',
       cigarId
@@ -446,7 +560,7 @@ export async function startCellaring({
  * Removes local collection and smoke history (e.g. after account deletion).
  */
 export async function wipeLocalUserData() {
-  await db.withTransactionAsync(async () => {
+  await withSerializedTransaction(async () => {
     await db.execAsync('DELETE FROM smoke_journal_entries');
     await db.execAsync('DELETE FROM smoke_history');
     await db.execAsync('DELETE FROM cellared_items');

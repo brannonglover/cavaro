@@ -782,6 +782,7 @@ export default function CigarList({
                   onMarkSmoked={() => setSmokedOneModalCigar(cigar)}
                   onMove={() => setMoveCigarModalCigar(cigar)}
                   onStartCellaring={() => setCellaringModalCigar(cigar)}
+                  onImagePress={setViewerImage}
                 />
               </Pressable>
               <ExpandableDetails

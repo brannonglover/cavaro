@@ -10,7 +10,7 @@ import MainTabs from './navigation/MainTabs';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthStack from './navigation/AuthStack';
 import { initDatabase } from './db';
-import { restoreAllUserDataOnLogin, pushAllUserData } from './lib/userCigarsSync';
+import { hydrateUserData } from './lib/userCigarsSync';
 import IapSubscriptionBridge from './components/IapSubscriptionBridge';
 import ResetPassword from './pages/ResetPassword';
 import UpgradeToPremiumModal from './components/UpgradeToPremiumModal';
@@ -83,11 +83,9 @@ function AppContent() {
         if (showAuthFlow && supabase) {
           supabase.auth.getSession().then(({ data: { session } }) => {
             if (session?.access_token) {
-              restoreAllUserDataOnLogin(session.access_token)
-                .then(() => pushAllUserData(session.access_token))
-                .catch((err) => {
-                  console.warn('User data sync failed:', err.message || err);
-                });
+              hydrateUserData(session.access_token).catch((err) => {
+                console.warn('User data sync failed:', err.message || err);
+              });
             }
           });
         }

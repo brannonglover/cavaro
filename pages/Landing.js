@@ -17,14 +17,14 @@ import SubscriptionLegalLinks from '../components/SubscriptionLegalLinks';
 const FREE_FEATURES = [
   'Up to 5 cigars',
   'Up to 5 favorites',
-  'Basic tasting notes',
+  'Tasting journal & My Taste',
+  '3 taste searches per day',
 ];
 const PREMIUM_FEATURES = [
-  'Unlimited cigars',
-  'Unlimited favorites',
-  'Strength profile',
-  'Photos',
-  'AI drink pairings',
+  'Unlimited cigars & favorites',
+  'Strength profile & photos',
+  'Unlimited taste search',
+  'Palate match & tasting notes',
 ];
 
 export default function Landing({ onGetStarted, onSubscribe, onAlreadyHaveAccount, onRestoreSubscription }) {
@@ -44,7 +44,7 @@ export default function Landing({ onGetStarted, onSubscribe, onAlreadyHaveAccoun
           <View style={styles.whySection}>
             <Text style={styles.sectionTitle}>Why Cavaro?</Text>
             <Text style={styles.sectionText}>
-              Track your collection, log tasting notes, and discover drink pairings. Access a growing, community-built cigar database that expands with every contribution. Built for cigar enthusiasts who want to get the most from every smoke.
+              Track your collection, log tasting notes, and find cigars that match your palate. Access a growing, community-built cigar database that expands with every contribution. Built for cigar enthusiasts who want to get the most from every smoke.
             </Text>
             <View style={styles.benefits}>
               <View style={styles.benefitRow}>
@@ -61,7 +61,7 @@ export default function Landing({ onGetStarted, onSubscribe, onAlreadyHaveAccoun
               </View>
               <View style={styles.benefitRow}>
                 <MaterialCommunityIcons name="check-circle" size={20} color={colors.like} />
-                <Text style={styles.benefitText}>AI-powered drink pairings</Text>
+                <Text style={styles.benefitText}>Taste search that learns your palate</Text>
               </View>
             </View>
           </View>

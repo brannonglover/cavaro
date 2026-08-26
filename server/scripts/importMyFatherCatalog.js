@@ -11,6 +11,12 @@
  * Run from server/:
  *   node scripts/importMyFatherCatalog.js
  *   node scripts/importMyFatherCatalog.js --dry-run
+ *   node scripts/importMyFatherCatalog.js --additive
+ *
+ * The default run clears the brand and reinserts it, which reissues row ids and
+ * briefly drops the `image` column values that image tooling maintains. Use
+ * --additive to insert only catalog rows that are missing, leaving every
+ * existing row (and its image) untouched.
  */
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const fs = require('fs');
@@ -28,6 +34,7 @@ const CATALOG_PATH = [
 ].find((p) => fs.existsSync(p));
 const BLEND_IMAGES_PATH = path.join(ROOT, 'blend-images.json');
 const DRY_RUN = process.argv.includes('--dry-run');
+const ADDITIVE = process.argv.includes('--additive');
 
 function slugify(value) {
   return String(value)
@@ -74,7 +81,14 @@ async function main() {
   const blendImages = fs.existsSync(BLEND_IMAGES_PATH)
     ? JSON.parse(fs.readFileSync(BLEND_IMAGES_PATH, 'utf8'))
     : {};
-  const blendNames = new Set(Object.keys(blendImages));
+  // Every distinct catalog name is a blend in its own right. Without seeding
+  // these, a blend missing from blend-images.json falls through to prefix
+  // matching and inherits a sibling's photo — "Series JJ Maduro" would show the
+  // plain "Series JJ" cigar.
+  const blendNames = new Set([
+    ...Object.keys(blendImages),
+    ...catalog.map((row) => row.name).filter(Boolean),
+  ]);
 
   console.log(`Catalog rows: ${catalog.length}`);
   console.log(`Blend images: ${blendNames.size}`);
@@ -101,12 +115,17 @@ async function main() {
       }
     }
 
-    const del = await pool.query(`DELETE FROM cigar_catalog WHERE brand = $1`, [BRAND]);
-    console.log(`Cleared ${del.rowCount} existing ${BRAND} rows`);
+    if (ADDITIVE) {
+      console.log(`Additive mode: keeping existing ${BRAND} rows and their images`);
+    } else {
+      const del = await pool.query(`DELETE FROM cigar_catalog WHERE brand = $1`, [BRAND]);
+      console.log(`Cleared ${del.rowCount} existing ${BRAND} rows`);
+    }
   }
 
   let uploaded = 0;
   let upserted = 0;
+  let skipped = 0;
   let withImage = 0;
 
   for (const product of catalog) {
@@ -145,9 +164,10 @@ async function main() {
       continue;
     }
 
-    await pool.query(
+    const inserted = await pool.query(
       `INSERT INTO cigar_catalog (brand, name, line, description, wrapper, binder, filler, length, size_name, image)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       ${ADDITIVE ? `ON CONFLICT (brand, name, COALESCE(size_name, ''), length) DO NOTHING` : ''}`,
       [
         product.brand,
         product.name,
@@ -161,6 +181,13 @@ async function main() {
         image,
       ]
     );
+    if (inserted.rowCount === 0) {
+      skipped += 1;
+      continue;
+    }
+    if (ADDITIVE) {
+      console.log(`  + ${product.name} | ${product.size_name || '-'} | ${product.length}`);
+    }
     upserted += 1;
   }
 
@@ -171,7 +198,8 @@ async function main() {
     );
   } else {
     console.log(
-      `\nDone. Uploaded ${uploaded} images, inserted ${upserted} catalog rows (${withImage} with images).`
+      `\nDone. Uploaded ${uploaded} images, inserted ${upserted} catalog rows`
+      + `${ADDITIVE ? `, left ${skipped} existing rows untouched` : ` (${withImage} with images)`}.`
     );
   }
 

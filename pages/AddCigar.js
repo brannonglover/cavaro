@@ -14,10 +14,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
-import { db, COLLECTIONS } from '../db';
+import { db, COLLECTIONS, withSerializedTransaction } from '../db';
 import { fetchCatalog, addCigarToCatalog } from '../api/catalog';
+import { serializeFlavors } from '../lib/tasteVocabulary';
 import { uploadCigarImage } from '../api/upload';
+import { productImageUrl } from '../lib/cigarImage';
 import { useAuth } from '../context/AuthContext';
+import { scheduleFullPush } from '../lib/userCigarsSync';
 import colors from '../theme/colors';
 import { pickCigarImage, takeCigarPhoto } from '../utils/imagePicker';
 import DatePickerField, { getTodayDateString } from '../components/DatePickerField';
@@ -25,6 +28,7 @@ import CreatableSelectField from '../components/CreatableSelectField';
 import SelectSheetField from '../components/SelectSheetField';
 import UpgradeToPremiumModal from '../components/UpgradeToPremiumModal';
 import { trackCigarAdded } from '../lib/analytics';
+import { FREE_CIGAR_LIMIT } from '../constants/limits';
 import { collectBlendValues, loadKnownBlendOptions } from '../utils/blendOptions';
 import { useTabBarHeight } from '../navigation/useTabBarHeight';
 
@@ -34,7 +38,6 @@ function isValidSizeFormat(size) {
   return size?.trim() && SIZE_FORMAT.test(size.trim());
 }
 
-const FREE_CIGAR_LIMIT = 5;
 const SUGGESTION_SCROLL_PADDING = 220;
 
 export default function AddCigar() {
@@ -115,7 +118,7 @@ export default function AddCigar() {
         rows = await fetchCatalog();
         // Cache in local SQLite for offline use (don't fail the screen if cache write fails)
         try {
-          await db.withTransactionAsync(async () => {
+          await withSerializedTransaction(async () => {
             await db.execAsync('DELETE FROM cigar_catalog');
             const seen = new Set();
             for (const c of rows) {
@@ -124,8 +127,11 @@ export default function AddCigar() {
               if (seen.has(key)) continue;
               seen.add(key);
               await db.runAsync(
-                `INSERT INTO cigar_catalog (brand, name, line, description, wrapper, binder, filler, length, image, size_name)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                `INSERT INTO cigar_catalog (
+                   brand, name, line, description, wrapper, binder, filler, length, image, size_name,
+                   flavors, strength, taste_source
+                 )
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 c.brand,
                 c.name,
                 c.line || '',
@@ -135,7 +141,10 @@ export default function AddCigar() {
                 c.filler || '',
                 c.length,
                 c.image || '',
-                sizeName
+                sizeName,
+                serializeFlavors(c.flavors),
+                c.strength || null,
+                c.taste_source || null
               );
             }
           });
@@ -214,7 +223,7 @@ export default function AddCigar() {
       setCigarWrapper(match.wrapper || '');
       setCigarBinder(match.binder || '');
       setCigarFiller(match.filler || '');
-      setCigarImage(match.image || '');
+      setCigarImage(productImageUrl(match.image) || '');
     }
   }, [prefill, data, route.params]);
 
@@ -396,7 +405,7 @@ export default function AddCigar() {
         }
       }
       if (!imageUrl && match?.image) {
-        imageUrl = match.image;
+        imageUrl = productImageUrl(match.image) || '';
       }
       await db.runAsync(
         'INSERT INTO cigars (brand, name, line, description, wrapper, binder, filler, length, image, quantity, collection, date_added, humidor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -414,6 +423,7 @@ export default function AddCigar() {
         dateToUse,
         targetHumidorId
       );
+      scheduleFullPush(supabase);
       trackCigarAdded({
         source: 'catalog',
         brand: cigarBrand,
@@ -478,6 +488,7 @@ export default function AddCigar() {
         dateToUse,
         targetHumidorId
       );
+      scheduleFullPush(supabase);
       trackCigarAdded({
         source: 'custom',
         brand: customBrand,

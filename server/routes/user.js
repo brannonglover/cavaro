@@ -2,6 +2,7 @@ const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
 const pool = require('../config/postgres');
 const { syncSubscriptionTierFromApple, iapConfigured } = require('../lib/appleAppStore');
+const { effectiveTierForUser, isPremiumTestUser } = require('../lib/auth');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -36,7 +37,7 @@ router.get('/tier', async (req, res) => {
       [user.id]
     );
 
-    if (iapConfigured()) {
+    if (iapConfigured() && !isPremiumTestUser(user)) {
       await syncSubscriptionTierFromApple(pool, user.id);
     }
 
@@ -44,7 +45,15 @@ router.get('/tier', async (req, res) => {
       'SELECT tier FROM user_profiles WHERE id = $1',
       [user.id]
     );
-    const tier = rows[0]?.tier === 'premium' ? 'premium' : 'free';
+    let storedTier = rows[0]?.tier;
+    if (isPremiumTestUser(user) && storedTier !== 'premium') {
+      await pool.query(
+        `UPDATE user_profiles SET tier = 'premium', updated_at = NOW() WHERE id = $1`,
+        [user.id]
+      );
+      storedTier = 'premium';
+    }
+    const tier = effectiveTierForUser(user, storedTier);
     return res.json({ tier });
   } catch (err) {
     console.error('Tier fetch error:', err);

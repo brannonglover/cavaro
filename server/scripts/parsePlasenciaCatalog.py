@@ -29,6 +29,10 @@ from html import unescape
 import unicodedata
 from pathlib import Path
 from xml.etree import ElementTree as ET
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from catalogCommon import recolor_and_crop  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[2]
 TMP = REPO / "tmp" / "plasencia"
@@ -764,30 +768,11 @@ def download_images(http: Http, catalog: list[dict]) -> dict[str, str]:
         if not data:
             continue
 
-        # Convert PNG→JPEG via Pillow if available; else write raw and rename
         try:
-            from io import BytesIO
-            from PIL import Image
-
-            im = Image.open(BytesIO(data)).convert("RGBA")
-            # composite onto dark brown similar to RP
-            bg = Image.new("RGBA", im.size, (33, 25, 18, 255))
-            composed = Image.alpha_composite(bg, im).convert("RGB")
-            composed.save(out_path, "JPEG", quality=90)
-        except Exception:
-            # raw write
-            raw_path = out_path.with_suffix(Path(row.get("_sp_image_name") or row.get("_web_image") or "x.jpg").suffix or ".jpg")
-            raw_path.write_bytes(data)
-            if raw_path != out_path:
-                try:
-                    from io import BytesIO
-                    from PIL import Image
-
-                    im = Image.open(raw_path).convert("RGB")
-                    im.save(out_path, "JPEG", quality=90)
-                    raw_path.unlink(missing_ok=True)
-                except Exception:
-                    out_path = raw_path
+            recolor_and_crop(data, out_path)
+        except Exception as e:
+            print(f"  process fail {row['name']}/{row['size_name']}: {e}")
+            continue
 
         blend_images[key] = str(out_path)
         blend_images.setdefault(row["name"], str(out_path))

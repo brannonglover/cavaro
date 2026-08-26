@@ -1,6 +1,6 @@
 {
   "name": "server",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -19,6 +19,7 @@
     "ios": "expo run:ios",
     "import-lfd-catalog": "node scripts/importLfdCatalog.js",
     "recolor-lfd-images": "node scripts/recolorLfdCatalogImages.js",
+    "recolor-catalog-images": "node scripts/recolorLfdCatalogImages.js --all",
     "parse-rocky-patel-catalog": "python3 scripts/parseRockyPatelCatalog.py",
     "import-rocky-patel-catalog": "node scripts/importRockyPatelCatalog.js",
     "parse-plasencia-catalog": "python3 scripts/parsePlasenciaCatalog.py",
@@ -36,7 +37,10 @@
     "parse-davidoff-catalog": "python3 scripts/parseDavidoffCatalog.py",
     "import-davidoff-catalog": "node scripts/importBrandCatalog.js --brand Davidoff --slug davidoff --prefix davidoff",
     "parse-oliva-catalog": "python3 scripts/parseOlivaCatalog.py",
-    "import-oliva-catalog": "node scripts/importBrandCatalog.js --brand Oliva --slug oliva --prefix oliva"
+    "import-oliva-catalog": "node scripts/importBrandCatalog.js --brand Oliva --slug oliva --prefix oliva",
+    "parse-alec-bradley-catalog": "python3 scripts/parseAlecBradleyCatalog.py",
+    "import-alec-bradley-catalog": "node scripts/importBrandCatalog.js --brand \"Alec Bradley\" --slug alec-bradley --prefix alec_bradley",
+    "backfill-catalog-taste": "node scripts/backfill-catalog-taste.js"
   },
   "author": "",
   "license": "ISC",

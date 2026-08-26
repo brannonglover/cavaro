@@ -4,10 +4,10 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import {
   AtAGlanceStatsRow,
   CellarEmptyCard,
-  DrinkPairingShortcutCard,
   HomeHeader,
   HumidorSnapshotCard,
   SmokeRecommendationCard,
+  TasteSearchShortcutCard,
 } from '../components/home';
 import {
   CellaringProgressCard,
@@ -16,6 +16,7 @@ import {
   ScreenContainer,
   SectionHeader,
 } from '../components/ui';
+import { trackEvent } from '../lib/analytics';
 import { getHomeDashboard } from '../lib/homeDashboard';
 import { INVENTORY_SEGMENTS } from '../lib/humidorsScreen';
 import { colors, spacing, typography } from '../theme';
@@ -51,7 +52,10 @@ export default function Home() {
     navigation.navigate('Humidors', { screen: 'CavaroList' });
   };
   const addFirstCigar = () => navigation.navigate('Humidors', { screen: 'AddCigar' });
-  const openPairing = () => navigation.navigate('Pairing');
+  const openTasteSearch = (source) => {
+    trackEvent('taste_search_opened', { source });
+    navigation.navigate('TasteSearch');
+  };
   const openStat = (key) => {
     if (key === 'inventory') {
       openHumidors(INVENTORY_SEGMENTS.ALL);
@@ -106,7 +110,10 @@ export default function Home() {
           actionLabel="Add First Cigar"
           onAction={addFirstCigar}
         />
-        <DrinkPairingShortcutCard onPress={openPairing} style={styles.sectionCard} />
+        <TasteSearchShortcutCard
+          onPress={() => openTasteSearch('home_empty')}
+          style={styles.sectionCard}
+        />
       </ScreenContainer>
     );
   }
@@ -185,7 +192,7 @@ export default function Home() {
       </FadeInView>
 
       <FadeInView delay={220}>
-        <DrinkPairingShortcutCard onPress={openPairing} />
+        <TasteSearchShortcutCard onPress={() => openTasteSearch('home')} />
       </FadeInView>
     </ScreenContainer>
   );

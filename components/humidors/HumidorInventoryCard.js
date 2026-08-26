@@ -40,6 +40,7 @@ export default function HumidorInventoryCard({
   onMarkSmoked,
   onMove,
   onStartCellaring,
+  onImagePress,
   expanded = false,
   embedded = false,
   style,
@@ -48,19 +49,24 @@ export default function HumidorInventoryCard({
   const showActions = quantity > 0;
   const sizeLabel = formatInventorySize(cigar);
   const resolvedAssets = useResolvedCigarImage(cigar);
+  const photoUrl = resolvedAssets.imageUrl;
 
   return (
     <View style={[styles.card, embedded && styles.cardEmbedded, style]}>
       <View style={styles.row}>
-        <View style={styles.imageWrap}>
+        <Pressable
+          onPress={() => photoUrl && onImagePress?.(photoUrl)}
+          disabled={!photoUrl || !onImagePress}
+          style={styles.imageWrap}
+        >
           <CigarImage
-            imageUrl={resolvedAssets.imageUrl}
+            imageUrl={photoUrl}
             wrapper={resolvedAssets.wrapper}
             variant="inventory"
             style={styles.image}
             imageStyle={styles.image}
           />
-        </View>
+        </Pressable>
 
         <View style={styles.content}>
           <View style={styles.titleRow}>
@@ -150,10 +156,10 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
   },
   imageWrap: {
-    width: 72,
+    width: 88,
     alignSelf: 'stretch',
     overflow: 'hidden',
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: colors.surface,
   },
   image: {
     ...StyleSheet.absoluteFillObject,

@@ -11,7 +11,9 @@ import {
   ScreenContainer,
 } from '../components/ui';
 import ImageViewerModal from '../components/ImageViewerModal';
+import { useResolvedCigarImage } from '../hooks/useResolvedCigarImage';
 import { getCatalogDetailsForCigar } from '../lib/cigarImage';
+import { explainCigarMatch, humanizeMatchReason } from '../lib/matchExplanation';
 import { borderRadius, colors, spacing, typography } from '../theme';
 
 function pickValue(...values) {
@@ -42,6 +44,11 @@ export default function CigarDetail() {
   const { cigar, recommendation, imageUrl, displayWrapper } = route.params ?? {};
   const [details, setDetails] = useState(null);
   const [viewerOpen, setViewerOpen] = useState(false);
+  const resolvedPhoto = useResolvedCigarImage(
+    cigar
+      ? { ...cigar, image: imageUrl || cigar.image, wrapper: displayWrapper || cigar.wrapper }
+      : null
+  );
 
   useEffect(() => {
     if (!cigar) return;
@@ -68,12 +75,21 @@ export default function CigarDetail() {
   const line = pickValue(cigar.line, details?.line);
   const size = pickValue(cigar.length, details?.length);
   const description = pickValue(cigar.description, details?.description);
-  const wrapper = pickValue(cigar.wrapper, displayWrapper, details?.wrapper);
+  const wrapper = pickValue(cigar.wrapper, displayWrapper, resolvedPhoto.wrapper, details?.wrapper);
+  const photoUrl = resolvedPhoto.imageUrl;
   const binder = pickValue(cigar.binder, details?.binder);
   const filler = pickValue(cigar.filler, details?.filler);
   const meta = [brand, line].filter(Boolean).join(' · ');
-  const highlights = getRecommendationHighlights(recommendation?.reasons);
+  const highlights = getRecommendationHighlights(recommendation?.reasons)
+    .map(humanizeMatchReason);
   const hasBlend = wrapper || binder || filler;
+  const matchExplanation = recommendation?.level
+    ? explainCigarMatch({
+      level: recommendation.level,
+      reasons: recommendation.reasons,
+      score: recommendation.score,
+    })
+    : null;
 
   return (
     <ScreenContainer scroll contentContainerStyle={styles.scrollContent}>
@@ -86,31 +102,30 @@ export default function CigarDetail() {
       </View>
 
       <PremiumCard variant="elevated" padding={0} style={styles.heroCard}>
-        <Pressable
-          style={styles.heroMedia}
-          onPress={() => imageUrl && setViewerOpen(true)}
-          disabled={!imageUrl}
-        >
-          <CigarImage
-            imageUrl={imageUrl}
-            wrapper={wrapper}
-            variant="hero"
-            style={styles.heroImage}
-            imageStyle={styles.heroImage}
-            resizeMode="contain"
-          />
-          <View style={styles.heroOverlay} pointerEvents="none" />
-          {imageUrl ? (
-            <View style={styles.heroHint} pointerEvents="none">
-              <MaterialCommunityIcons name="fullscreen" size={16} color={colors.goldMuted} />
-              <Text style={styles.heroHintText}>Tap to view</Text>
-            </View>
-          ) : null}
-        </Pressable>
-        <View style={styles.heroBody}>
-          <Text style={styles.name}>{name}</Text>
-          {meta ? <Text style={styles.meta}>{meta}</Text> : null}
-          {size ? <Text style={styles.size}>Size {size}</Text> : null}
+        <View style={styles.heroRow}>
+          <Pressable
+            style={styles.heroRail}
+            onPress={() => photoUrl && setViewerOpen(true)}
+            disabled={!photoUrl}
+          >
+            <CigarImage
+              imageUrl={photoUrl}
+              wrapper={wrapper}
+              variant="hero"
+              style={styles.heroImage}
+              imageStyle={styles.heroImage}
+            />
+            {photoUrl ? (
+              <View style={styles.heroHint} pointerEvents="none">
+                <MaterialCommunityIcons name="fullscreen" size={16} color={colors.goldMuted} />
+              </View>
+            ) : null}
+          </Pressable>
+          <View style={styles.heroBody}>
+            <Text style={styles.name}>{name}</Text>
+            {meta ? <Text style={styles.meta}>{meta}</Text> : null}
+            {size ? <Text style={styles.size}>Size {size}</Text> : null}
+          </View>
         </View>
       </PremiumCard>
 
@@ -130,11 +145,16 @@ export default function CigarDetail() {
             <View style={styles.recommendationHeading}>
               <Text style={styles.sectionLabel}>Why tonight's pick</Text>
               {recommendation.level ? (
-                <MatchBadge level={recommendation.level} />
+                <MatchBadge
+                  level={recommendation.level}
+                  label={matchExplanation?.headline}
+                />
               ) : null}
             </View>
           </View>
-          <Text style={styles.recommendationReason}>{recommendation.reason}</Text>
+          <Text style={styles.recommendationReason}>
+            {matchExplanation?.detail || recommendation.reason}
+          </Text>
           {highlights.length > 0 ? (
             <View style={styles.highlightList}>
               {highlights.map((item) => (
@@ -183,31 +203,43 @@ export default function CigarDetail() {
       ) : null}
 
       <PremiumCard variant="warm" style={styles.sectionCard}>
-        <View style={styles.pairingHeader}>
-          <View style={styles.pairingIcon}>
-            <MaterialCommunityIcons name="glass-cocktail" size={18} color={colors.gold} />
+        <View style={styles.tasteHeader}>
+          <View style={styles.tasteIcon}>
+            <MaterialCommunityIcons name="magnify" size={18} color={colors.gold} />
           </View>
-          <View style={styles.pairingCopy}>
-            <Text style={styles.sectionLabel}>Drink Pairing</Text>
-            <Text style={styles.pairingBlurb}>
-              Get AI drink suggestions that complement this cigar.
+          <View style={styles.tasteCopy}>
+            <Text style={styles.sectionLabel}>Taste Search</Text>
+            <Text style={styles.tasteBlurb}>
+              See this cigar's likely flavors and how they line up with your palate.
             </Text>
           </View>
         </View>
         <CavaroButton
-          label="Get drink pairing"
-          icon="glass-cocktail"
+          label="Check against my taste"
+          icon="magnify"
           onPress={() => {
-            const pairingQuery = [brand, name].filter(Boolean).join(' ').trim() || name;
-            navigation.navigate('Pairing', { cigar: pairingQuery });
+            navigation.navigate('TasteSearchDetail', {
+              cigar: {
+                ...cigar,
+                brand,
+                name,
+                line,
+                length: size,
+                description,
+                wrapper,
+                binder,
+                filler,
+                image: photoUrl || cigar.image,
+              },
+            });
           }}
-          style={styles.pairingBtn}
+          style={styles.tasteBtn}
         />
       </PremiumCard>
 
       <ImageViewerModal
         visible={viewerOpen}
-        imageUri={imageUrl}
+        imageUri={photoUrl}
         onClose={() => setViewerOpen(false)}
       />
     </ScreenContainer>
@@ -250,37 +282,35 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     overflow: 'hidden',
   },
-  heroMedia: {
-    height: 320,
+  heroRow: {
+    flexDirection: 'row',
+    minHeight: 200,
+    alignItems: 'stretch',
+  },
+  heroRail: {
+    width: 120,
+    overflow: 'hidden',
     backgroundColor: colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   heroImage: {
     ...StyleSheet.absoluteFillObject,
   },
-  heroOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(13, 11, 9, 0.08)',
-  },
   heroHint: {
     position: 'absolute',
-    right: spacing.md,
-    bottom: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
+    right: spacing.xs,
+    bottom: spacing.xs,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: 'rgba(13, 11, 9, 0.55)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.sm,
-  },
-  heroHintText: {
-    ...typography.caption,
-    color: colors.goldMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   heroBody: {
+    flex: 1,
+    minWidth: 0,
     padding: spacing.md,
+    justifyContent: 'center',
     backgroundColor: colors.surfaceWarm,
   },
   name: {
@@ -369,13 +399,13 @@ const styles = StyleSheet.create({
   blendLabel: {
     color: colors.textMuted,
   },
-  pairingHeader: {
+  tasteHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.sm,
     marginBottom: spacing.md,
   },
-  pairingIcon: {
+  tasteIcon: {
     width: 34,
     height: 34,
     borderRadius: borderRadius.sm,
@@ -383,15 +413,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pairingCopy: {
+  tasteCopy: {
     flex: 1,
   },
-  pairingBlurb: {
+  tasteBlurb: {
     ...typography.body,
     color: colors.textMuted,
     lineHeight: 22,
   },
-  pairingBtn: {
+  tasteBtn: {
     alignSelf: 'stretch',
   },
 });

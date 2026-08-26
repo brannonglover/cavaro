@@ -5,7 +5,8 @@ import { isAuthRetryableFetchError } from '@supabase/auth-js';
 import { setUserId } from '../lib/analytics';
 import AsyncStorage from 'expo-sqlite/kv-store';
 import { API_BASE_URL } from '../api/config';
-import { restoreAllUserDataOnLogin, pushAllUserData } from '../lib/userCigarsSync';
+import { hydrateUserData } from '../lib/userCigarsSync';
+import { isPremiumTestUser } from '../lib/premiumTest';
 
 /** Non-retryable refresh failures (revoked session, etc.) — clear local auth so user can sign in again. */
 function isInvalidRefreshError(error) {
@@ -78,7 +79,7 @@ export function AuthProvider({ children }) {
         setUser(u);
         setUserId(u?.id ?? null);
         if (session?.access_token) {
-          fetchTier(session.access_token).then(setTier).catch(() => setTier('free'));
+          fetchTier(session.access_token, u).then(setTier).catch(() => setTier('free'));
         } else {
           setTier('free');
         }
@@ -105,15 +106,15 @@ export function AuthProvider({ children }) {
       setUserId(u?.id ?? null);
       if (session?.access_token) {
         try {
-          const t = await fetchTier(session.access_token);
+          const t = await fetchTier(session.access_token, u);
           setTier(t);
         } catch {
           setTier('free');
         }
         if (event === 'SIGNED_IN') {
-          restoreAllUserDataOnLogin(session.access_token)
-            .then(() => pushAllUserData(session.access_token))
-            .catch((err) => console.warn('User data sync failed:', err.message || err));
+          hydrateUserData(session.access_token).catch((err) =>
+            console.warn('User data sync failed:', err.message || err)
+          );
         }
       } else {
         setTier('free');
@@ -136,14 +137,15 @@ export function AuthProvider({ children }) {
         });
         supabase.auth.getSession().then(async (result) => {
           const session = await sessionFromGetResult(supabase, result);
-          if (session?.access_token) fetchTier(session.access_token).then(setTier);
+          if (session?.access_token) fetchTier(session.access_token, user).then(setTier);
         });
       }
     });
     return () => sub.remove();
   }, [supabase, user]);
 
-  async function fetchTier(accessToken) {
+  async function fetchTier(accessToken, authUser = user) {
+    if (isPremiumTestUser(authUser)) return 'premium';
     const res = await fetch(`${API_BASE_URL}/api/user/tier`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
@@ -168,7 +170,7 @@ export function AuthProvider({ children }) {
       if (!user || !supabase) return;
       const result = await supabase.auth.getSession();
       const session = await sessionFromGetResult(supabase, result);
-      if (session?.access_token) fetchTier(session.access_token).then(setTier);
+      if (session?.access_token) fetchTier(session.access_token, user).then(setTier);
     },
     setTierFromSubscription: (newTier) => {
       if (newTier === 'premium') setTier('premium');

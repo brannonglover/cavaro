@@ -18,6 +18,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { db } from '../db';
 import { useAuth } from '../context/AuthContext';
 import { uploadCigarImage } from '../api/upload';
+import { scheduleFullPush } from '../lib/userCigarsSync';
 import colors from '../theme/colors';
 import { pickCigarImage, takeCigarPhoto } from '../utils/imagePicker';
 import DatePickerField from '../components/DatePickerField';
@@ -177,6 +178,7 @@ export default function EditCigar() {
         dateAddedVal,
         cigar.id
       );
+      scheduleFullPush(supabase);
       trackEvent('cigar_edited');
       navigation.goBack();
     } catch (error) {

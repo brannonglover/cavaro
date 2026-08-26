@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { CavaroText } from '../ui';
 import { colors, radius, spacing } from '../../theme';
 
@@ -12,7 +12,8 @@ export default function InventorySegmentControl({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={[styles.row, style]}
+      style={[styles.scroll, style]}
+      contentContainerStyle={styles.row}
     >
       {options.map((option) => {
         const active = option.id === value;
@@ -37,7 +38,12 @@ export default function InventorySegmentControl({
 }
 
 const styles = StyleSheet.create({
+  scroll: {
+    flexGrow: 0,
+  },
   row: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
     paddingBottom: spacing.lg,
   },

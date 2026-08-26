@@ -10,9 +10,10 @@ export { default as CavaroButton, CAVARO_BUTTON_VARIANTS } from './CavaroButton'
 export { default as EmptyState } from './EmptyState';
 export { default as CavaroBadge, CAVARO_BADGE_VARIANTS } from './CavaroBadge';
 export { default as MatchBadge, MATCH_LEVELS } from './MatchBadge';
+export { default as PalateFitNote } from './PalateFitNote';
 export { default as CellaringProgressCard } from './CellaringProgressCard';
 export { default as PressableScale } from './PressableScale';
 export { default as FadeInView } from './FadeInView';
 export { default as CigarImage } from './CigarImage';
 export { default as SegmentMeter } from './SegmentMeter';
-export { default as DrinkPairingCard, getDrinkIcon } from './DrinkPairingCard';
+export { default as SegmentedControl } from './SegmentedControl';

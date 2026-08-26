@@ -15,7 +15,6 @@ import {
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import colors from '../theme/colors';
 import { PressableScale } from './ui';
@@ -277,18 +276,8 @@ export default function SelectSheetField({
                 />
                 <Animated.View
                   pointerEvents="none"
-                  style={[styles.listFade, { opacity: fadeOpacity }]}
-                >
-                  <Svg width="100%" height="100%" preserveAspectRatio="none">
-                    <Defs>
-                      <LinearGradient id="selectSheetListFade" x1="0" y1="0" x2="0" y2="1">
-                        <Stop offset="0" stopColor={colors.cardBg} stopOpacity="0" />
-                        <Stop offset="1" stopColor={colors.cardBg} stopOpacity="0.92" />
-                      </LinearGradient>
-                    </Defs>
-                    <Rect width="100%" height="100%" fill="url(#selectSheetListFade)" />
-                  </Svg>
-                </Animated.View>
+                  style={[styles.listFade, { opacity: fadeOpacity, backgroundColor: colors.cardBg }]}
+                />
               </View>
             </Animated.View>
           </KeyboardAvoidingView>

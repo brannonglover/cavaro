@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { MatchBadge } from '../ui';
 import TasteAccentCard from './TasteAccentCard';
+import { explainCigarMatch } from '../../lib/matchExplanation';
 import { borderRadius, colors, spacing, typography } from '../../theme';
 
 const LEVEL_STYLES = {
@@ -36,6 +37,7 @@ const DEFAULT_STYLE = LEVEL_STYLES['Needs Another Chance'];
 export default function MatchInsightCard({ cigar, level, reason, score, style }) {
   const tokens = LEVEL_STYLES[level] ?? DEFAULT_STYLE;
   const meta = [cigar?.brand, cigar?.line].filter(Boolean).join(' · ') || '—';
+  const explanation = explainCigarMatch({ level, reasons: [], score });
 
   return (
     <TasteAccentCard
@@ -54,7 +56,7 @@ export default function MatchInsightCard({ cigar, level, reason, score, style })
             <Text style={styles.name} numberOfLines={1}>
               {cigar?.name || 'Unknown'}
             </Text>
-            <MatchBadge level={level} />
+            <MatchBadge level={level} label={explanation?.headline} />
           </View>
           <Text style={styles.meta} numberOfLines={1}>
             {meta}

@@ -3,24 +3,21 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { PremiumCard } from '../ui';
 import { borderRadius, colors, spacing, typography } from '../../theme';
 
-/**
- * Home shortcut into the Drink Pairing screen (no auto-fetch).
- */
-export default function DrinkPairingShortcutCard({ onPress, style }) {
+export default function TasteSearchShortcutCard({ onPress, style }) {
   return (
     <PremiumCard variant="warm" style={[styles.card, style]} onPress={onPress}>
       <View style={styles.row}>
         <View style={styles.iconWrap}>
-          <MaterialCommunityIcons name="glass-cocktail" size={22} color={colors.gold} />
+          <MaterialCommunityIcons name="magnify" size={22} color={colors.gold} />
         </View>
         <View style={styles.copy}>
-          <Text style={styles.title}>Drink Pairing</Text>
+          <Text style={styles.title}>Taste Search</Text>
           <Text style={styles.subtitle} numberOfLines={2}>
-            AI suggestions for what to sip with your smoke
+            Find cigars by flavor — or look one up against your palate
           </Text>
         </View>
       </View>
-      <Text style={styles.action}>Find a pairing →</Text>
+      <Text style={styles.action}>Search by taste →</Text>
     </PremiumCard>
   );
 }

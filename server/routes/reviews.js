@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { createClient } = require('@supabase/supabase-js');
 const pool = require('../config/postgres');
+const { effectiveTierForUser } = require('../lib/auth');
+const { ensureCatalogSchema } = require('../lib/catalogSchema');
+const { canonicalLabelsFromKeywords } = require('../lib/tasteVocabulary');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -10,6 +13,17 @@ const supabase = supabaseUrl && supabaseServiceKey
   : null;
 
 const FREE_SEARCH_LIMIT_PER_DAY = 3;
+
+let schemaReady = null;
+function readyCatalogSchema() {
+  if (!schemaReady) {
+    schemaReady = ensureCatalogSchema(pool).catch((err) => {
+      schemaReady = null;
+      throw err;
+    });
+  }
+  return schemaReady;
+}
 
 /**
  * Resolve user and tier from Authorization header.
@@ -34,7 +48,7 @@ async function resolveUserAndTier(req) {
     'SELECT tier FROM user_profiles WHERE id = $1',
     [user.id]
   );
-  const tier = rows[0]?.tier === 'premium' ? 'premium' : 'free';
+  const tier = effectiveTierForUser(user, rows[0]?.tier);
   return { userId: user.id, tier };
 }
 
@@ -73,35 +87,91 @@ async function checkAndIncrementSearchCount(userId) {
   return { allowed: true, remaining: FREE_SEARCH_LIMIT_PER_DAY - count - 1 };
 }
 
+const TASTE_SEARCH_COLS = [
+  'c.description',
+  'c.wrapper',
+  'c.binder',
+  'c.filler',
+  'c.name',
+  'c.brand',
+  'r.flavor_profile',
+  'r.favorite_notes',
+  'r.strength_profile',
+  'r.construction_quality',
+  'r.flavor_changes',
+];
+
 /**
- * Build LIKE conditions for taste search across review fields.
+ * Build LIKE conditions for taste search across catalog + review fields.
  * Keywords are OR'd (any match).
  */
-function buildSearchConditions(keywords) {
+function buildTasteSearchConditions(keywords) {
   const conditions = [];
   const params = [];
-  const searchCols = ['r.flavor_profile', 'r.favorite_notes', 'r.strength_profile', 'r.construction_quality', 'r.flavor_changes', 'c.description', 'c.wrapper', 'c.binder', 'c.filler'];
-  for (const term of keywords) {
-    const like = `%${term}%`;
-    params.push(like);
-    const paramPlaceholder = `$${params.length}`;
-    const colConditions = searchCols.map((col) => `COALESCE(${col}, '') ILIKE ${paramPlaceholder}`);
-    conditions.push(`(${colConditions.join(' OR ')})`);
+  const flavorLabels = canonicalLabelsFromKeywords(keywords);
+  const unprofiled = `(c.flavors IS NULL OR jsonb_typeof(c.flavors) <> 'array' OR jsonb_array_length(c.flavors) = 0)`;
+
+  if (flavorLabels.length) {
+    params.push(flavorLabels);
+    conditions.push(
+      `(c.flavors IS NOT NULL AND jsonb_typeof(c.flavors) = 'array' AND jsonb_array_length(c.flavors) > 0 AND EXISTS (
+          SELECT 1 FROM jsonb_array_elements_text(c.flavors) AS flavor
+          WHERE flavor = ANY($${params.length}::text[])
+        ))`
+    );
   }
-  return { conditions: conditions.join(' OR '), params };
+
+  const textParts = [];
+  for (const term of keywords) {
+    params.push(`%${term}%`);
+    const paramPlaceholder = `$${params.length}`;
+    const colConditions = TASTE_SEARCH_COLS.map(
+      (col) => `COALESCE(${col}, '') ILIKE ${paramPlaceholder}`
+    );
+    textParts.push(`(${colConditions.join(' OR ')})`);
+  }
+  const textSql = textParts.join(' OR ');
+  if (textSql) {
+    conditions.push(flavorLabels.length ? `(${unprofiled} AND (${textSql}))` : `(${textSql})`);
+  }
+
+  return { where: conditions.join(' OR ') || 'FALSE', params };
 }
 
-// GET /api/reviews/search?q=earthy,woody,pepper
+function buildCigarNameConditions(keywords) {
+  const conditions = [];
+  const params = [];
+  for (const term of keywords) {
+    params.push(`%${term}%`);
+    const p = `$${params.length}`;
+    conditions.push(
+      `(c.brand ILIKE ${p} OR c.name ILIKE ${p} OR COALESCE(c.line, '') ILIKE ${p})`
+    );
+  }
+  return { where: conditions.join(' AND '), params };
+}
+
+const SEARCH_SELECT = `
+  SELECT c.id, c.brand, c.name, c.line, c.description, c.wrapper, c.binder, c.filler,
+         c.length, c.size_name, c.image, c.flavors, c.strength, c.taste_source,
+         STRING_AGG(DISTINCT NULLIF(BTRIM(r.flavor_profile), ''), ' · ') AS community_flavors
+  FROM cigar_catalog c
+  LEFT JOIN cigar_reviews r ON r.catalog_id = c.id
+`;
+
+// GET /api/reviews/search?q=earthy,woody,pepper&type=taste|cigar
 // Requires: Authorization: Bearer <supabase_access_token>
 // Free users: 3 searches per day. Returns 429 when limit exceeded.
 router.get('/search', async (req, res) => {
   try {
+    await readyCatalogSchema();
     const auth = await resolveUserAndTier(req);
     if (!auth) {
       return res.status(401).json({ error: 'Sign in required to search' });
     }
 
     const q = (req.query.q || '').trim();
+    const type = String(req.query.type || 'taste').toLowerCase() === 'cigar' ? 'cigar' : 'taste';
     const keywords = q
       .toLowerCase()
       .split(/[\s,]+/)
@@ -111,7 +181,7 @@ router.get('/search', async (req, res) => {
     }
 
     if (auth.tier === 'free') {
-      const { allowed, remaining } = await checkAndIncrementSearchCount(auth.userId);
+      const { allowed } = await checkAndIncrementSearchCount(auth.userId);
       if (!allowed) {
         return res.status(429).json({
           error: 'Daily search limit reached',
@@ -121,14 +191,23 @@ router.get('/search', async (req, res) => {
       }
     }
 
-    const { conditions, params } = buildSearchConditions(keywords);
+    const built = type === 'cigar'
+      ? buildCigarNameConditions(keywords)
+      : buildTasteSearchConditions(keywords);
+
     const result = await pool.query(
-      `SELECT DISTINCT c.id, c.brand, c.name, c.description, c.wrapper, c.binder, c.filler, c.length, c.image
-       FROM cigar_reviews r
-       JOIN cigar_catalog c ON c.id = r.catalog_id
-       WHERE ${conditions}
-       ORDER BY c.brand, c.name, c.length`,
-      params
+      `WITH matches AS (
+         ${SEARCH_SELECT}
+         WHERE ${built.where}
+         GROUP BY c.id
+       )
+       SELECT DISTINCT ON (lower(brand), lower(name)) *
+       FROM matches
+       ORDER BY lower(brand), lower(name),
+                CASE WHEN COALESCE(image, '') ILIKE '%.jpg%' THEN 0 ELSE 1 END,
+                length NULLS LAST
+       LIMIT 40`,
+      built.params
     );
     res.json(result.rows);
   } catch (err) {

@@ -17,7 +17,9 @@ import { markCigarSmokedWithJournal } from '../../db';
 import { hapticSuccess } from '../../lib/haptics';
 import { trackEvent } from '../../lib/analytics';
 import { useAuth } from '../../context/AuthContext';
+import { scheduleFullPush } from '../../lib/userCigarsSync';
 import HumidorInventoryCard from './HumidorInventoryCard';
+import ImageViewerModal from '../ImageViewerModal';
 import { colors, spacing, typography } from '../../theme';
 
 function SwipeActions({ onSmoke, onMove, onEdit, onClose }) {
@@ -67,10 +69,11 @@ export default function HumidorInventoryList({
   onInventoryChange,
   onAddCigar,
 }) {
-  const { user } = useAuth();
+  const { user, supabase } = useAuth();
   const [smokedModalCigar, setSmokedModalCigar] = useState(null);
   const [moveModalCigar, setMoveModalCigar] = useState(null);
   const [cellaringModalCigar, setCellaringModalCigar] = useState(null);
+  const [viewerImage, setViewerImage] = useState(null);
 
   const handleMarkSmokedSave = async (review) => {
     if (!smokedModalCigar) return;
@@ -86,6 +89,7 @@ export default function HumidorInventoryList({
       });
       hapticSuccess();
       setSmokedModalCigar(null);
+      scheduleFullPush(supabase);
       onInventoryChange?.();
     } catch (error) {
       Alert.alert('Could not save', error.message || 'Please try again.');
@@ -121,6 +125,7 @@ export default function HumidorInventoryList({
         onMarkSmoked={() => setSmokedModalCigar(item)}
         onMove={() => setMoveModalCigar(item)}
         onStartCellaring={() => setCellaringModalCigar(item)}
+        onImagePress={setViewerImage}
       />
     </Swipeable>
   );
@@ -141,6 +146,11 @@ export default function HumidorInventoryList({
         showsVerticalScrollIndicator={false}
       />
 
+      <ImageViewerModal
+        visible={!!viewerImage}
+        imageUri={viewerImage}
+        onClose={() => setViewerImage(null)}
+      />
       <MarkSmokedReviewModal
         visible={!!smokedModalCigar}
         cigar={smokedModalCigar}

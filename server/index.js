@@ -7,7 +7,7 @@ const catalogRoutes = require('./routes/catalog');
 const reviewsRoutes = require('./routes/reviews');
 const uploadRoutes = require('./routes/upload');
 const feedbackRoutes = require('./routes/feedback');
-const pairingRoutes = require('./routes/pairing');
+const tasteRoutes = require('./routes/taste');
 const userRoutes = require('./routes/user');
 const userCigarsRoutes = require('./routes/userCigars');
 const userHumidorsRoutes = require('./routes/userHumidors');
@@ -33,8 +33,8 @@ app.use('/api/reviews', reviewsRoutes);
 app.use('/api/upload', uploadRoutes);
 // User feedback (emails to brannonglover@gmail.com)
 app.use('/api/feedback', feedbackRoutes);
-// AI drink pairing (OpenAI proxy)
-app.use('/api/pairing', pairingRoutes);
+// AI cigar taste analysis (OpenAI proxy)
+app.use('/api/taste', tasteRoutes);
 // User tier (Supabase Auth + user_profiles)
 app.use('/api/user', userRoutes);
 // User data sync

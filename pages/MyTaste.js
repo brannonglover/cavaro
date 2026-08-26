@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
@@ -16,6 +16,7 @@ import {
   ScreenContainer,
   SectionHeader,
 } from '../components/ui';
+import { trackEvent } from '../lib/analytics';
 import { getMyTasteInsights } from '../lib/myTasteInsights';
 import { borderRadius, colors, spacing, typography } from '../theme';
 
@@ -39,6 +40,27 @@ export default function MyTaste() {
     }, [loadInsights])
   );
 
+  const openTasteSearch = () => {
+    trackEvent('taste_search_opened', { source: 'my_taste' });
+    // TasteSearch lives in the Home tab's stack, so target it through that tab.
+    navigation.navigate('Home', { screen: 'TasteSearch' });
+  };
+
+  const header = (
+    <View style={styles.header}>
+      <Text style={styles.title}>My Taste</Text>
+      <Pressable
+        onPress={openTasteSearch}
+        style={styles.headerAction}
+        hitSlop={12}
+        accessibilityRole="button"
+        accessibilityLabel="Open Taste Search"
+      >
+        <MaterialCommunityIcons name="magnify" size={24} color={colors.gold} />
+      </Pressable>
+    </View>
+  );
+
   if (!insights) {
     return (
       <ScreenContainer>
@@ -52,7 +74,7 @@ export default function MyTaste() {
   if (insights.isEmpty) {
     return (
       <ScreenContainer scroll contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>My Taste</Text>
+        {header}
         <EmptyState
           icon="heart-outline"
           title="Cavaro Is Learning Your Palate"
@@ -67,7 +89,7 @@ export default function MyTaste() {
   return (
     <ScreenContainer scroll contentContainerStyle={styles.scrollContent}>
       <FadeInView delay={0}>
-        <Text style={styles.title}>My Taste</Text>
+        {header}
         <Text style={styles.subtitle}>
           Based on {insights.entryCount} journal {insights.entryCount === 1 ? 'entry' : 'entries'}
         </Text>
@@ -183,6 +205,15 @@ const styles = StyleSheet.create({
   loadingText: {
     ...typography.body,
     color: colors.textMuted,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerAction: {
+    minWidth: 44,
+    alignItems: 'flex-end',
   },
   title: {
     ...typography.title,
