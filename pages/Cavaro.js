@@ -3,7 +3,6 @@ import { Alert, StyleSheet, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CigarList from '../components/CigarList';
-import AddCigarBtn from '../components/AddCigarBtn';
 import {
   HumidorSelector,
   HumidorsHeader,
@@ -94,7 +93,7 @@ export default function Cavaro({ navigation, route }) {
   if (humidors.length === 0) {
     return (
       <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']} collapsable={false}>
-        <View style={styles.headerBlock}>
+        <View style={styles.fixedHeader}>
           <HumidorsHeader cigarCountLabel={summary.cigarCountLabel} />
           <EmptyState
             icon="archive-outline"
@@ -110,8 +109,6 @@ export default function Cavaro({ navigation, route }) {
 
   const listHeader = (
     <View style={styles.headerBlock}>
-      <HumidorsHeader cigarCountLabel={summary.cigarCountLabel} />
-
       <InventorySummary title={summary.title} metaParts={summary.metaParts} />
 
       {hasMultipleHumidors ? (
@@ -132,6 +129,12 @@ export default function Cavaro({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']} collapsable={false}>
+      <View style={styles.fixedHeader}>
+        <HumidorsHeader
+          cigarCountLabel={summary.cigarCountLabel}
+          onAddPress={openAddCigar}
+        />
+      </View>
       <CigarList
         view="cavaro"
         inventoryMode
@@ -142,10 +145,8 @@ export default function Cavaro({ navigation, route }) {
         onInventoryChange={refreshHumidors}
         emptyActionLabel="Add Cigar"
         onEmptyAction={openAddCigar}
-        bottomPadding={tabBarHeight + 88}
+        bottomPadding={tabBarHeight + spacing.lg}
       />
-
-      <AddCigarBtn onPress={openAddCigar} />
     </SafeAreaView>
   );
 }
@@ -155,8 +156,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  headerBlock: {
+  fixedHeader: {
     paddingTop: spacing.lg,
+    paddingHorizontal: LIST_HORIZONTAL_PADDING,
+  },
+  headerBlock: {
     paddingHorizontal: LIST_HORIZONTAL_PADDING,
   },
 });

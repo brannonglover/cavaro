@@ -23,7 +23,7 @@ export function useResolvedCigarImage(cigar) {
     return () => {
       active = false;
     };
-  }, [cigar?.id, cigar?.image, cigar?.brand, cigar?.name, cigar?.length, cigar?.wrapper]);
+  }, [cigar?.id, cigar?.image, cigar?.brand, cigar?.name, cigar?.line, cigar?.length, cigar?.wrapper]);
 
   return assets;
 }

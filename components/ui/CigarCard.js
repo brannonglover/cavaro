@@ -18,6 +18,7 @@ export default function CigarCard({
   wrapper,
   quantity,
   imageUrl,
+  cigarId,
   rating,
   subtitle,
   compact = false,
@@ -30,8 +31,10 @@ export default function CigarCard({
   const meta = [brand, line].filter(Boolean).join(' · ');
   const detail = vitola || subtitle;
   const resolved = useResolvedCigarImage({
+    id: cigarId,
     brand,
     name,
+    line,
     length: vitola,
     image: imageUrl,
     wrapper,

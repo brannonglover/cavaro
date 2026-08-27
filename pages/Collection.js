@@ -138,12 +138,13 @@ export default function Collection() {
           {stats.topRated.map((cigar) => (
             <CigarCard
               key={`top-${cigar.id}`}
+              cigarId={cigar.id}
               name={cigar.name}
               brand={cigar.brand}
               line={cigar.line}
               vitola={cigar.length}
-              wrapper={cigar.displayWrapper}
-              imageUrl={cigar.resolvedImage}
+              wrapper={cigar.displayWrapper ?? cigar.wrapper}
+              imageUrl={cigar.image}
               rating={cigar.best_rating}
             />
           ))}
@@ -156,12 +157,13 @@ export default function Collection() {
           {stats.mostSmoked.map((cigar) => (
             <CigarCard
               key={`smoked-${cigar.id}`}
+              cigarId={cigar.id}
               name={cigar.name}
               brand={cigar.brand}
               line={cigar.line}
               vitola={cigar.length}
-              wrapper={cigar.displayWrapper}
-              imageUrl={cigar.resolvedImage}
+              wrapper={cigar.displayWrapper ?? cigar.wrapper}
+              imageUrl={cigar.image}
               subtitle={`Smoked ${cigar.smoke_count} ${cigar.smoke_count === 1 ? 'time' : 'times'}`}
             />
           ))}

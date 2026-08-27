@@ -6,7 +6,7 @@ import { getWrapperPalette } from '../../lib/wrapperColors';
 import { colors } from '../../theme';
 
 /** Card rails: cap through the primary band and a little wrapper below. */
-const HEAD_FOCUS_FRACTION = 0.42;
+const HEAD_FOCUS_FRACTION = 0.58;
 
 const VARIANTS = {
   hero: {
@@ -103,7 +103,9 @@ function FramedProductImage({ uri, focus, rotate90, style }) {
     } else {
       const scaleW = box.width / contentW;
       const scaleHead = box.height / (contentH * HEAD_FOCUS_FRACTION);
-      scale = Math.max(scaleW, scaleHead);
+      // Use the smaller scale so wide product photos don't zoom past the head
+      // region — Math.max let width-filling win and cropped to just the tip.
+      scale = Math.min(scaleW, scaleHead);
       top = 0;
     }
     const dispW = contentW * scale;
@@ -147,7 +149,9 @@ function FramedProductImage({ uri, focus, rotate90, style }) {
           resizeMode="stretch"
           style={[styles.framedImage, frame]}
         />
-      ) : null}
+      ) : (
+        <Image source={{ uri }} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
+      )}
     </View>
   );
 }
