@@ -1,5 +1,4 @@
-import { useEffect, useRef } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useResolvedCigarImage } from '../../hooks/useResolvedCigarImage';
 import CigarImage from '../ui/CigarImage';
@@ -12,36 +11,12 @@ function formatInventorySize(cigar) {
   return `Size: ${normalized}`;
 }
 
-function InventoryChevron({ expanded }) {
-  const rotation = useRef(new Animated.Value(expanded ? 1 : 0)).current;
-
-  useEffect(() => {
-    Animated.timing(rotation, {
-      toValue: expanded ? 1 : 0,
-      duration: 180,
-      useNativeDriver: true,
-    }).start();
-  }, [expanded, rotation]);
-
-  const spin = rotation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '180deg'],
-  });
-
-  return (
-    <Animated.View style={{ transform: [{ rotate: spin }] }}>
-      <MaterialCommunityIcons name="chevron-down" size={22} color={colors.textMuted} />
-    </Animated.View>
-  );
-}
-
 export default function HumidorInventoryCard({
   cigar,
   onMarkSmoked,
   onMove,
   onStartCellaring,
   onImagePress,
-  expanded = false,
   embedded = false,
   style,
 }) {
@@ -130,7 +105,7 @@ export default function HumidorInventoryCard({
         </View>
 
         <View style={styles.chevronWrap}>
-          <InventoryChevron expanded={expanded} />
+          <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textMuted} />
         </View>
       </View>
     </View>

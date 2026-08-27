@@ -142,6 +142,7 @@ export default function Cavaro({ navigation, route }) {
         inventorySegment={segment}
         listHeader={listHeader}
         onEditCigar={(cigar) => navigation.navigate('EditCigar', { cigar })}
+        onViewCigar={(cigar) => navigation.navigate('CigarDetail', { cigar, inventoryMode: true })}
         onInventoryChange={refreshHumidors}
         emptyActionLabel="Add Cigar"
         onEmptyAction={openAddCigar}

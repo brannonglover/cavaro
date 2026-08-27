@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   AccentCard,
@@ -13,7 +13,13 @@ import {
 import ImageViewerModal from '../components/ImageViewerModal';
 import { useResolvedCigarImage } from '../hooks/useResolvedCigarImage';
 import { getCatalogDetailsForCigar } from '../lib/cigarImage';
+import {
+  formatAgingDuration,
+  formatDateStringLocal,
+  formatLastSmoked,
+} from '../lib/cigarInventoryDates';
 import { explainCigarMatch, humanizeMatchReason } from '../lib/matchExplanation';
+import { db } from '../db';
 import { borderRadius, colors, spacing, typography } from '../theme';
 
 function pickValue(...values) {
@@ -41,8 +47,15 @@ function getRecommendationHighlights(reasons) {
 export default function CigarDetail() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { cigar, recommendation, imageUrl, displayWrapper } = route.params ?? {};
+  const {
+    cigar,
+    recommendation,
+    imageUrl,
+    displayWrapper,
+    inventoryMode = false,
+  } = route.params ?? {};
   const [details, setDetails] = useState(null);
+  const [smokeHistory, setSmokeHistory] = useState([]);
   const [viewerOpen, setViewerOpen] = useState(false);
   const resolvedPhoto = useResolvedCigarImage(
     cigar
@@ -56,6 +69,30 @@ export default function CigarDetail() {
       .then(setDetails)
       .catch(() => setDetails(null));
   }, [cigar]);
+
+  const loadSmokeHistory = useCallback(async () => {
+    if (!cigar?.id) {
+      setSmokeHistory([]);
+      return;
+    }
+    try {
+      const rows = await db.getAllAsync(
+        'SELECT smoked_at FROM smoke_history WHERE cigar_id = ? ORDER BY smoked_at DESC',
+        cigar.id
+      );
+      setSmokeHistory(rows || []);
+    } catch {
+      setSmokeHistory([]);
+    }
+  }, [cigar?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!inventoryMode) return undefined;
+      loadSmokeHistory();
+      return undefined;
+    }, [inventoryMode, loadSmokeHistory])
+  );
 
   if (!cigar) {
     return (
@@ -91,6 +128,21 @@ export default function CigarDetail() {
     })
     : null;
 
+  const quantity = cigar.quantity ?? 1;
+  const addedDateFormatted = formatDateStringLocal(cigar.date_added?.trim() ?? '');
+  const agingDuration = formatAgingDuration(cigar.date_added);
+  const smokeHistoryFormatted = smokeHistory.map(
+    (row) => formatDateStringLocal(row.smoked_at) ?? row.smoked_at
+  );
+  const lastSmokedDisplay = smokeHistoryFormatted.length > 0
+    ? smokeHistoryFormatted.join(', ')
+    : formatLastSmoked(cigar);
+  const hasInventoryInfo = inventoryMode && (
+    quantity > 0
+    || addedDateFormatted
+    || lastSmokedDisplay
+  );
+
   return (
     <ScreenContainer scroll contentContainerStyle={styles.scrollContent}>
       <View style={styles.header}>
@@ -122,7 +174,14 @@ export default function CigarDetail() {
             ) : null}
           </Pressable>
           <View style={styles.heroBody}>
-            <Text style={styles.name}>{name}</Text>
+            <View style={styles.heroTitleRow}>
+              <Text style={styles.name}>{name}</Text>
+              {inventoryMode && quantity > 0 ? (
+                <View style={styles.quantityBadge}>
+                  <Text style={styles.quantityText}>{quantity}</Text>
+                </View>
+              ) : null}
+            </View>
             {meta ? <Text style={styles.meta}>{meta}</Text> : null}
             {size ? <Text style={styles.size}>Size {size}</Text> : null}
           </View>
@@ -169,6 +228,33 @@ export default function CigarDetail() {
             <Text style={styles.matchScore}>Match score {recommendation.score}</Text>
           ) : null}
         </AccentCard>
+      ) : null}
+
+      {hasInventoryInfo ? (
+        <PremiumCard variant="subtle" style={styles.sectionCard}>
+          <Text style={styles.sectionLabel}>In your humidor</Text>
+          {quantity > 0 ? (
+            <Text style={styles.inventoryLine}>
+              <Text style={styles.inventoryLabel}>On hand: </Text>
+              {quantity} {quantity === 1 ? 'cigar' : 'cigars'}
+            </Text>
+          ) : null}
+          {addedDateFormatted ? (
+            <Text style={styles.inventoryLine}>
+              <Text style={styles.inventoryLabel}>Added: </Text>
+              {addedDateFormatted}
+              {agingDuration ? ` (aged ${agingDuration})` : ''}
+            </Text>
+          ) : null}
+          {lastSmokedDisplay ? (
+            <Text style={styles.inventoryLine}>
+              <Text style={styles.inventoryLabel}>
+                {smokeHistoryFormatted.length > 1 ? 'Smoked: ' : 'Last smoked: '}
+              </Text>
+              {lastSmokedDisplay}
+            </Text>
+          ) : null}
+        </PremiumCard>
       ) : null}
 
       {description ? (
@@ -313,11 +399,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.surfaceWarm,
   },
+  heroTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
   name: {
     ...typography.title,
     fontSize: 24,
     lineHeight: 30,
     color: colors.text,
+    flex: 1,
+  },
+  quantityBadge: {
+    minWidth: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.goldMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    marginTop: 2,
+  },
+  quantityText: {
+    ...typography.caption,
+    fontWeight: '700',
+    color: colors.white,
   },
   meta: {
     ...typography.body,
@@ -397,6 +504,15 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   blendLabel: {
+    color: colors.textMuted,
+  },
+  inventoryLine: {
+    ...typography.body,
+    color: colors.text,
+    lineHeight: 24,
+    marginBottom: spacing.xs,
+  },
+  inventoryLabel: {
     color: colors.textMuted,
   },
   tasteHeader: {
