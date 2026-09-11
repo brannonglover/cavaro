@@ -489,7 +489,7 @@ export default function CigarList({
         ).then(refreshList).catch((e) => console.log(e));
       }
     } else {
-      if (tier === 'free' && supabase) {
+      if (tier === 'free' && user) {
         const rows = await db.getAllAsync('SELECT COUNT(*) as n FROM cigars WHERE is_favorite = 1');
         const count = rows?.[0]?.n ?? 0;
         if (count >= FREE_FAVORITES_LIMIT) {
@@ -805,7 +805,7 @@ export default function CigarList({
               cigar={cigar}
               onEdit={() => openPersonalNotes(cigar)}
               onOpenStrengthProfile={(c) => {
-                if (tier === 'free' && supabase) {
+                if (tier === 'free' && user) {
                   showUpgradePrompt('Strength profile is a Premium feature. Subscribe to add strength and flavor notes for each third.');
                 } else {
                   setStrengthProfileModalCigar(c);
@@ -838,7 +838,7 @@ export default function CigarList({
                   strength={getOverallStrength(cigar.strength_profile)}
                   onPress={(e) => {
                     e.stopPropagation();
-                    if (tier === 'free' && supabase) {
+                    if (tier === 'free' && user) {
                       showUpgradePrompt('Strength profile is a Premium feature. Subscribe to add strength and flavor notes for each third.');
                     } else {
                       setStrengthProfileModalCigar(cigar);
@@ -939,7 +939,7 @@ export default function CigarList({
                   strength={getOverallStrength(cigar.strength_profile)}
                   onPress={(e) => {
                     e.stopPropagation();
-                    if (tier === 'free' && supabase) {
+                    if (tier === 'free' && user) {
                       showUpgradePrompt('Strength profile is a Premium feature. Subscribe to add strength and flavor notes for each third.');
                     } else {
                       setStrengthProfileModalCigar(cigar);

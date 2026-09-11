@@ -27,7 +27,8 @@ import DatePickerField, { getTodayDateString } from '../components/DatePickerFie
 import CreatableSelectField from '../components/CreatableSelectField';
 import SelectSheetField from '../components/SelectSheetField';
 import UpgradeToPremiumModal from '../components/UpgradeToPremiumModal';
-import { trackCigarAdded } from '../lib/analytics';
+import SignupPromptModal from '../components/SignupPromptModal';
+import { trackCigarAdded, trackEvent } from '../lib/analytics';
 import { FREE_CIGAR_LIMIT } from '../constants/limits';
 import { collectBlendValues, loadKnownBlendOptions } from '../utils/blendOptions';
 import { useTabBarHeight } from '../navigation/useTabBarHeight';
@@ -44,12 +45,13 @@ export default function AddCigar() {
   const navigation = useNavigation();
   const route = useRoute();
   const targetHumidorId = route.params?.humidorId ?? 1;
-  const { tier, supabase, refreshTier } = useAuth();
+  const { tier, user, supabase, refreshTier, isGuest } = useAuth();
   const tabBarHeight = useTabBarHeight();
   const [showCustom, setShowCustom] = useState(false);
   const [cigarCount, setCigarCount] = useState(0);
   const [upgradeModal, setUpgradeModal] = useState({ visible: false, message: '', accessToken: null, userId: null });
-  const enforceLimit = tier === 'free' && supabase;
+  const [showSignupPrompt, setShowSignupPrompt] = useState(false);
+  const enforceLimit = tier === 'free' && !!user;
 
   // Catalog selection state
   const [cigarBrand, setCigarBrand] = useState('');
@@ -432,7 +434,12 @@ export default function AddCigar() {
         length: resolvedLength,
         quantity: qty,
       });
-      navigation.goBack();
+      if (isGuest) {
+        trackEvent('guest_first_cigar_added', { cigar_count: cigarCount + 1 });
+        setShowSignupPrompt(true);
+      } else {
+        navigation.goBack();
+      }
     } catch (error) {
       console.log('Add failed:', error);
       Alert.alert(
@@ -510,14 +517,24 @@ export default function AddCigar() {
           length: customSize.trim(),
           image: imageUrl,
         });
-        navigation.goBack();
+        if (isGuest) {
+          trackEvent('guest_first_cigar_added', { cigar_count: cigarCount + 1 });
+          setShowSignupPrompt(true);
+        } else {
+          navigation.goBack();
+        }
       } catch (catalogErr) {
         console.warn('Catalog sync failed:', catalogErr.message);
-        Alert.alert(
-          'Added to Cavaro',
-          'Your cigar was saved to your collection, but it could not be added to the shared catalog right now. You can still use it in Cavaro.',
-          [{ text: 'OK', onPress: () => navigation.goBack() }]
-        );
+        if (isGuest) {
+          trackEvent('guest_first_cigar_added', { cigar_count: cigarCount + 1 });
+          setShowSignupPrompt(true);
+        } else {
+          Alert.alert(
+            'Added to Cavaro',
+            'Your cigar was saved to your collection, but it could not be added to the shared catalog right now. You can still use it in Cavaro.',
+            [{ text: 'OK', onPress: () => navigation.goBack() }]
+          );
+        }
       }
     } catch (error) {
       console.log('Add custom failed:', error);
@@ -858,6 +875,18 @@ export default function AddCigar() {
         userId={upgradeModal.userId}
         tier={tier}
         refreshTier={refreshTier}
+      />
+      <SignupPromptModal
+        visible={showSignupPrompt}
+        cigarCount={cigarCount + 1}
+        onSignUp={(method) => {
+          setShowSignupPrompt(false);
+          navigation.goBack();
+        }}
+        onDismiss={() => {
+          setShowSignupPrompt(false);
+          navigation.goBack();
+        }}
       />
     </SafeAreaView>
   );

@@ -19,10 +19,13 @@ import {
 import { trackEvent } from '../lib/analytics';
 import { getHomeDashboard } from '../lib/homeDashboard';
 import { INVENTORY_SEGMENTS } from '../lib/humidorsScreen';
+import { useAuth } from '../context/AuthContext';
+import GuestAccountBanner from '../components/GuestAccountBanner';
 import { colors, spacing, typography } from '../theme';
 
 export default function Home() {
   const navigation = useNavigation();
+  const { exitGuestMode, isGuest } = useAuth();
   const [dashboard, setDashboard] = useState(null);
 
   const loadDashboard = useCallback(async () => {
@@ -102,7 +105,7 @@ export default function Home() {
   if (dashboard.isEmpty) {
     return (
       <ScreenContainer scroll contentContainerStyle={styles.scrollContent}>
-        <HomeHeader greeting={dashboard.greeting} onAddCigar={addFirstCigar} />
+        <HomeHeader greeting={dashboard.greeting} onAddCigar={addFirstCigar} onCreateAccount={exitGuestMode} />
         <EmptyState
           icon="smoking"
           title="Welcome to Cavaro"
@@ -121,8 +124,14 @@ export default function Home() {
   return (
     <ScreenContainer scroll contentContainerStyle={styles.scrollContent}>
       <FadeInView delay={0}>
-        <HomeHeader greeting={dashboard.greeting} onAddCigar={addFirstCigar} />
+        <HomeHeader greeting={dashboard.greeting} onAddCigar={addFirstCigar} onCreateAccount={exitGuestMode} />
       </FadeInView>
+
+      {isGuest && (
+        <FadeInView delay={20}>
+          <GuestAccountBanner onCreateAccount={exitGuestMode} />
+        </FadeInView>
+      )}
 
       {dashboard.smokeRecommendation ? (
         <FadeInView delay={40}>

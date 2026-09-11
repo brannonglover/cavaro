@@ -7,6 +7,9 @@ import AsyncStorage from 'expo-sqlite/kv-store';
 import { API_BASE_URL } from '../api/config';
 import { hydrateUserData } from '../lib/userCigarsSync';
 import { isPremiumTestUser } from '../lib/premiumTest';
+import { wipeLocalUserData } from '../db';
+
+const GUEST_MODE_KEY = 'cavaro_guest_mode';
 
 /** Non-retryable refresh failures (revoked session, etc.) — clear local auth so user can sign in again. */
 function isInvalidRefreshError(error) {
@@ -61,9 +64,20 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [tier, setTier] = useState('free'); // 'free' | 'premium'
   const [loading, setLoading] = useState(true);
+  const [isGuest, setIsGuest] = useState(false);
   const [previewFreeTier, setPreviewFreeTier] = useState(false);
   const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
   const [pendingPremiumSubscribe, setPendingPremiumSubscribe] = useState(false);
+
+  async function enterGuestMode() {
+    setIsGuest(true);
+    try { await AsyncStorage.setItem(GUEST_MODE_KEY, '1'); } catch {}
+  }
+
+  async function exitGuestMode() {
+    setIsGuest(false);
+    try { await AsyncStorage.removeItem(GUEST_MODE_KEY); } catch {}
+  }
 
   useEffect(() => {
     if (!supabase) {
@@ -75,10 +89,17 @@ export function AuthProvider({ children }) {
       .getSession()
       .then(async (result) => {
         await initAnalytics();
+        const guestFlag = await AsyncStorage.getItem(GUEST_MODE_KEY).catch(() => null);
         const session = await sessionFromGetResult(supabase, result);
         const u = session ? await fetchFreshUser(supabase) : null;
         setUser(u);
         setUserId(u?.id ?? null, { email: u?.email });
+        if (u) {
+          // Authenticated — clear any lingering guest flag
+          if (guestFlag) await exitGuestMode();
+        } else {
+          setIsGuest(guestFlag === '1');
+        }
         if (session?.access_token) {
           fetchTier(session.access_token, u).then(setTier).catch(() => setTier('free'));
         } else {
@@ -100,12 +121,17 @@ export function AuthProvider({ children }) {
         setNeedsPasswordReset(false);
       } else if (event === 'SIGNED_OUT') {
         setNeedsPasswordReset(false);
+        try { await wipeLocalUserData(); } catch {}
+        await exitGuestMode();
       }
 
       const u = session?.user ?? null;
       setUser(u);
       setUserId(u?.id ?? null, { email: u?.email });
       if (session?.access_token) {
+        if (isGuest || event === 'SIGNED_IN') {
+          await exitGuestMode();
+        }
         try {
           const t = await fetchTier(session.access_token, u);
           setTier(t);
@@ -113,7 +139,7 @@ export function AuthProvider({ children }) {
           setTier('free');
         }
         if (event === 'SIGNED_IN') {
-          hydrateUserData(session.access_token).catch((err) =>
+          hydrateUserData(session.access_token, { isGuestMigration: isGuest }).catch((err) =>
             console.warn('User data sync failed:', err.message || err)
           );
         }
@@ -163,6 +189,9 @@ export function AuthProvider({ children }) {
     actualTier: tier,
     loading,
     supabase,
+    isGuest,
+    enterGuestMode,
+    exitGuestMode,
     needsPasswordReset,
     clearPasswordReset: () => setNeedsPasswordReset(false),
     previewFreeTier,

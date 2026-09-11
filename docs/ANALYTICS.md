@@ -44,7 +44,24 @@ If the key is not set, analytics are disabled (no-op). The app works normally wi
 | `taste_analyzed` | `has_result`, `correlates` |
 | `landing_cta` | `action` (get_started/subscribe/already_have_account/restore_subscription) |
 | `login_success` | — |
+| `login_failed` | `error` |
 | `signup_success` | `tier` |
+| `signup_failed` | `reason` (missing_name/missing_fields/password_too_short/duplicate_account/error), `error` (when reason=error) |
+| `signup_abandoned` | `tier` |
+
+### Guest onboarding funnel
+| Event | Properties |
+|------|------------|
+| `onboarding_viewed` | — |
+| `explore_as_guest` | — |
+| `existing_user_signin_selected` | — |
+| `guest_first_cigar_added` | `cigar_count` |
+| `guest_signup_prompt_viewed` | `cigar_count` |
+| `guest_signup_method_selected` | `method` (apple/google/email), `cigar_count` |
+| `guest_signup_dismissed` | `cigar_count` |
+| `guest_data_migration_started` | `cigar_count` |
+| `guest_data_migration_completed` | — |
+| `guest_data_migration_failed` | `error` |
 
 ## User identification
 

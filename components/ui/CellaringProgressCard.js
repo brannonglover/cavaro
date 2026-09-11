@@ -63,7 +63,7 @@ export default function CellaringProgressCard({
       <View style={styles.inner}>
         <View style={styles.watermark} pointerEvents="none">
           <MaterialCommunityIcons
-            name="barrel-outline"
+            name="barrel"
             size={52}
             color={isReady ? 'rgba(200, 164, 93, 0.12)' : 'rgba(143, 116, 64, 0.1)'}
           />

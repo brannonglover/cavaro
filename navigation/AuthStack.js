@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { trackEvent } from '../lib/analytics';
+import Welcome from '../pages/Welcome';
 import Landing from '../pages/Landing';
 import Login from '../pages/Login';
 import Signup from '../pages/Signup';
@@ -21,6 +22,16 @@ export default function AuthStack({ onAuthenticated }) {
         contentStyle: { backgroundColor: colors.screenBg },
       }}
     >
+      <Stack.Screen name="Welcome">
+        {({ navigation }) => (
+          <Welcome
+            onExplore={() => {
+              trackEvent('onboarding_viewed');
+            }}
+            onSignIn={() => navigation.navigate('Login')}
+          />
+        )}
+      </Stack.Screen>
       <Stack.Screen name="Landing">
         {({ navigation }) => (
           <Landing
@@ -70,7 +81,10 @@ export default function AuthStack({ onAuthenticated }) {
             supabase={supabase}
             tier={signupTier}
             onSuccess={onAuthenticated}
-            onBack={() => navigation.goBack()}
+            onBack={() => {
+              trackEvent('signup_abandoned', { tier: signupTier });
+              navigation.goBack();
+            }}
             onGoToLogin={() => navigation.navigate('Login')}
             onGoToForgotPassword={(email) => navigation.navigate('ForgotPassword', { email })}
           />

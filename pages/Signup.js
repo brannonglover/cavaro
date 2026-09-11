@@ -9,7 +9,9 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import colors from '../theme/colors';
 import { trackEvent } from '../lib/analytics';
 import { AUTH_CALLBACK_WEB_URL } from '../constants/authUrls';
@@ -44,16 +46,14 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin,
     const e = email.trim();
     const p = password;
     const name = firstName.trim();
-    if (!name) {
-      Alert.alert('Missing name', 'Please enter your first name.');
-      return;
-    }
     if (!e || !p) {
       Alert.alert('Missing fields', 'Please enter email and password.');
+      trackEvent('signup_failed', { reason: 'missing_fields' });
       return;
     }
     if (p.length < 6) {
       Alert.alert('Password too short', 'Use at least 6 characters.');
+      trackEvent('signup_failed', { reason: 'password_too_short' });
       return;
     }
     if (!supabase) {
@@ -68,7 +68,7 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin,
           email: e,
           password: p,
           options: {
-            data: { first_name: name },
+            data: name ? { first_name: name } : undefined,
             emailRedirectTo: AUTH_CALLBACK_WEB_URL,
           },
         }
@@ -76,12 +76,14 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin,
       if (error) {
         if (isDuplicateSignupError(error)) {
           setAlreadyHasAccount(true);
+          trackEvent('signup_failed', { reason: 'duplicate_account' });
           return;
         }
         throw error;
       }
       if (isDuplicateSignupResponse(data)) {
         setAlreadyHasAccount(true);
+        trackEvent('signup_failed', { reason: 'duplicate_account' });
         return;
       }
       trackEvent('signup_success', { tier });
@@ -96,6 +98,7 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin,
         setCheckEmailFor(e);
       }
     } catch (err) {
+      trackEvent('signup_failed', { reason: 'error', error: err.message || 'unknown' });
       Alert.alert('Sign up failed', err.message || 'Please try again.');
     } finally {
       setLoading(false);
@@ -142,14 +145,46 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin,
           <Text style={styles.title}>Create account</Text>
           <Text style={styles.subtitle}>
             {tier === 'premium'
-              ? 'Step 1: Create your Cavaro account. Step 2: Subscribe with your Apple ID for App Store billing.'
-              : 'Free tier: up to 5 cigars'}
+              ? 'Create your Cavaro account, then subscribe for Premium.'
+              : 'Create a free account to back up your collection.'}
           </Text>
+
+          {Platform.OS === 'ios' && (
+            <Pressable
+              style={styles.socialBtn}
+              onPress={() => {
+                trackEvent('guest_signup_method_selected', { method: 'apple' });
+                Alert.alert('Coming soon', 'Sign in with Apple will be available in the next update.');
+              }}
+              disabled={loading}
+            >
+              <MaterialCommunityIcons name="apple" size={20} color="#fff" />
+              <Text style={styles.socialBtnText}>Continue with Apple</Text>
+            </Pressable>
+          )}
+
+          <Pressable
+            style={styles.socialBtn}
+            onPress={() => {
+              trackEvent('guest_signup_method_selected', { method: 'google' });
+              Alert.alert('Coming soon', 'Sign in with Google will be available in the next update.');
+            }}
+            disabled={loading}
+          >
+            <MaterialCommunityIcons name="google" size={20} color="#fff" />
+            <Text style={styles.socialBtnText}>Continue with Google</Text>
+          </Pressable>
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
 
           <View style={styles.inputWrap}>
             <TextInput
               style={styles.input}
-              placeholder="First name"
+              placeholder="First name (optional)"
               placeholderTextColor={colors.placeholderText}
               value={firstName}
               onChangeText={setFirstName}
@@ -314,5 +349,38 @@ const styles = StyleSheet.create({
   linkText: {
     fontSize: 15,
     color: colors.primary,
+  },
+  socialBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: colors.cardBg,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    paddingVertical: 14,
+    marginBottom: 12,
+  },
+  socialBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 8,
+    marginBottom: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.cardBorder,
+  },
+  dividerText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginHorizontal: 16,
   },
 });

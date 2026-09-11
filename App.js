@@ -68,7 +68,7 @@ function PostSignupPremiumPrompt() {
 function AppContent() {
   const [isReady, setIsReady] = useState(false);
   const [showLoadingMessage, setShowLoadingMessage] = useState(false);
-  const { user, loading: authLoading, needsPasswordReset, supabase, clearPasswordReset } = useAuth();
+  const { user, loading: authLoading, needsPasswordReset, supabase, clearPasswordReset, isGuest } = useAuth();
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -127,6 +127,15 @@ function AppContent() {
       );
     }
     if (!user) {
+      if (isGuest) {
+        return (
+          <View style={styles.appRoot}>
+            <NavigationContainerWithAnalytics>
+              <MainTabs />
+            </NavigationContainerWithAnalytics>
+          </View>
+        );
+      }
       return (
         <NavigationContainerWithAnalytics>
           <AuthStack onAuthenticated={() => {}} />

@@ -101,7 +101,7 @@ function SectionHeading({ icon, label, trailing }) {
 export default function TasteSearchDetail() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { tier, supabase, refreshTier } = useAuth();
+  const { tier, user, supabase, refreshTier } = useAuth();
   const {
     cigar,
     flavors: initialFlavors,
@@ -262,7 +262,7 @@ export default function TasteSearchDetail() {
       const result = await addCigarToHumidor({
         cigar: { ...cigar, image: resolvedAssets.imageUrl || '' },
         humidorId: humidor.id,
-        limitNewRowsTo: tier === 'free' && supabase ? FREE_CIGAR_LIMIT : null,
+        limitNewRowsTo: tier === 'free' && !!user ? FREE_CIGAR_LIMIT : null,
       });
       scheduleFullPush(supabase);
       hapticSuccess();

@@ -9,7 +9,9 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import colors from '../theme/colors';
 import { restoreSubscription } from '../api/subscription';
 import { useAuth } from '../context/AuthContext';
@@ -30,6 +32,7 @@ export default function Login({ supabase, onSuccess, onBack, restoreAfterSignIn 
     const p = password;
     if (!e || !p) {
       Alert.alert('Missing fields', 'Please enter email and password.');
+      trackEvent('login_failed', { error: 'missing_fields' });
       return;
     }
     if (!supabase) {
@@ -52,6 +55,7 @@ export default function Login({ supabase, onSuccess, onBack, restoreAfterSignIn 
       }
       onSuccess?.();
     } catch (err) {
+      trackEvent('login_failed', { error: err.message || 'unknown' });
       Alert.alert('Sign in failed', err.message || 'Please check your credentials.');
     } finally {
       setLoading(false);
@@ -77,6 +81,38 @@ export default function Login({ supabase, onSuccess, onBack, restoreAfterSignIn 
 
           <Text style={styles.title}>Sign in</Text>
           <Text style={styles.subtitle}>Welcome back</Text>
+
+          {Platform.OS === 'ios' && (
+            <Pressable
+              style={styles.socialBtn}
+              onPress={() => {
+                trackEvent('guest_signup_method_selected', { method: 'apple' });
+                Alert.alert('Coming soon', 'Sign in with Apple will be available in the next update.');
+              }}
+              disabled={loading}
+            >
+              <MaterialCommunityIcons name="apple" size={20} color="#fff" />
+              <Text style={styles.socialBtnText}>Continue with Apple</Text>
+            </Pressable>
+          )}
+
+          <Pressable
+            style={styles.socialBtn}
+            onPress={() => {
+              trackEvent('guest_signup_method_selected', { method: 'google' });
+              Alert.alert('Coming soon', 'Sign in with Google will be available in the next update.');
+            }}
+            disabled={loading}
+          >
+            <MaterialCommunityIcons name="google" size={20} color="#fff" />
+            <Text style={styles.socialBtnText}>Continue with Google</Text>
+          </Pressable>
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
 
           <View style={styles.inputWrap}>
             <TextInput
@@ -191,5 +227,38 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: '#fff',
+  },
+  socialBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: colors.cardBg,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    paddingVertical: 14,
+    marginBottom: 12,
+  },
+  socialBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 8,
+    marginBottom: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.cardBorder,
+  },
+  dividerText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginHorizontal: 16,
   },
 });

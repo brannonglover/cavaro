@@ -14,7 +14,7 @@ export default function CellarEmptyCard({ onAction, style }) {
     >
       <View style={styles.row}>
         <View style={styles.iconWrap}>
-          <MaterialCommunityIcons name="barrel-outline" size={18} color={colors.goldMuted} />
+          <MaterialCommunityIcons name="barrel" size={18} color={colors.goldMuted} />
         </View>
         <View style={styles.content}>
           <Text style={styles.title}>Nothing Cellaring Yet</Text>

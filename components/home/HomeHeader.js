@@ -8,8 +8,8 @@ const logo = require('../../assets/logo-wd.png');
 
 const SIDE_SLOT_WIDTH = 44;
 
-export default function HomeHeader({ greeting, onAddCigar, style }) {
-  const { user, supabase } = useAuth();
+export default function HomeHeader({ greeting, onAddCigar, onCreateAccount, style }) {
+  const { user, supabase, isGuest } = useAuth();
 
   return (
     <View style={[styles.wrap, style]}>
@@ -22,6 +22,15 @@ export default function HomeHeader({ greeting, onAddCigar, style }) {
             >
               <MaterialCommunityIcons name="menu" size={26} color={colors.textMuted} />
             </AccountMenu>
+          ) : isGuest ? (
+            <Pressable
+              onPress={onCreateAccount}
+              style={styles.menuTrigger}
+              accessibilityLabel="Create account"
+              hitSlop={8}
+            >
+              <MaterialCommunityIcons name="account-plus-outline" size={24} color={colors.gold} />
+            </Pressable>
           ) : null}
         </View>
 
