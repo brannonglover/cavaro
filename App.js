@@ -9,6 +9,8 @@ import { NavigationContainerWithAnalytics } from './components/NavigationAnalyti
 import MainTabs from './navigation/MainTabs';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthStack from './navigation/AuthStack';
+import MigrationConflicts from './pages/MigrationConflicts';
+import MigrationAccountConflict from './pages/MigrationAccountConflict';
 import { initDatabase } from './db';
 import { hydrateUserData } from './lib/userCigarsSync';
 import IapSubscriptionBridge from './components/IapSubscriptionBridge';
@@ -68,7 +70,10 @@ function PostSignupPremiumPrompt() {
 function AppContent() {
   const [isReady, setIsReady] = useState(false);
   const [showLoadingMessage, setShowLoadingMessage] = useState(false);
-  const { user, loading: authLoading, needsPasswordReset, supabase, clearPasswordReset, isGuest } = useAuth();
+  const {
+    user, loading: authLoading, needsPasswordReset, supabase, clearPasswordReset, isGuest,
+    migration, accountConflict, refreshMigrationState,
+  } = useAuth();
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -80,6 +85,13 @@ function AppContent() {
       .then(() => {
         clearTimeout(timeout);
         setIsReady(true);
+        // Dev-only migration verification. Never runs unless the env flag is
+        // explicitly set at build time, and the module is only imported then.
+        if (process.env.EXPO_PUBLIC_RUN_MIGRATION_E2E === '1') {
+          import('./lib/__devtests__/migrationE2E')
+            .then((m) => m.default())
+            .catch((err) => console.log('migration e2e failed to run:', err?.message));
+        }
         if (showAuthFlow && supabase) {
           supabase.auth.getSession().then(({ data: { session } }) => {
             if (session?.access_token) {
@@ -147,6 +159,24 @@ function AppContent() {
         <ResetPassword
           supabase={supabase}
           onComplete={clearPasswordReset}
+        />
+      );
+    }
+    // A migration staged for a DIFFERENT account blocks first: its destination
+    // must not change without an explicit choice. Checked before the conflict
+    // screen because there is no run for this user yet.
+    if (accountConflict?.foreignMigrationId) {
+      return <MigrationAccountConflict />;
+    }
+    // A staged guest migration with unresolved conflicts blocks until decided,
+    // unless the user chose "Decide later" — then the banner inside the app
+    // leads back here. Either way nothing is written or pushed, and the guest
+    // rows stay on device. Scoped to this user by refreshMigrationState.
+    if (migration?.unresolved && !migration.deferred && migration.userId === user.id) {
+      return (
+        <MigrationConflicts
+          onDone={() => refreshMigrationState(user.id)}
+          onDefer={() => refreshMigrationState(user.id)}
         />
       );
     }

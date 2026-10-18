@@ -302,6 +302,49 @@ export async function initDatabase() {
         FOREIGN KEY (cigar_id) REFERENCES cigars(id)
       )
     `);
+    // Guest→account migration staging. See docs/GUEST_MIGRATION_CONFLICTS.md.
+    // Local cigars carry no updated_at and the server API is snapshot-replace
+    // only, so overlapping cigars cannot be auto-resolved. Both versions are
+    // staged here until the user decides; nothing is written to `cigars` and
+    // nothing is pushed until then.
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS migration_runs (
+        migration_id   TEXT PRIMARY KEY,
+        user_id        TEXT NOT NULL,
+        phase          TEXT NOT NULL,
+        guest_snapshot TEXT NOT NULL,
+        deferred       INTEGER NOT NULL DEFAULT 0,
+        started_at     TEXT NOT NULL,
+        completed_at   TEXT,
+        last_error     TEXT
+      )
+    `);
+    await db.execAsync(`
+      CREATE INDEX IF NOT EXISTS idx_migration_runs_user ON migration_runs(user_id, phase)
+    `);
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS migration_conflicts (
+        id             INTEGER PRIMARY KEY AUTOINCREMENT,
+        migration_id   TEXT NOT NULL,
+        brand          TEXT NOT NULL,
+        name           TEXT NOT NULL,
+        length         TEXT NOT NULL,
+        field          TEXT NOT NULL,
+        guest_value    TEXT,
+        server_value   TEXT,
+        resolution     TEXT,
+        resolved_value TEXT,
+        created_at     TEXT NOT NULL,
+        resolved_at    TEXT,
+        UNIQUE(migration_id, brand, name, length, field),
+        FOREIGN KEY (migration_id) REFERENCES migration_runs(migration_id)
+      )
+    `);
+    await db.execAsync(`
+      CREATE INDEX IF NOT EXISTS idx_migration_conflicts_run
+        ON migration_conflicts(migration_id, resolution)
+    `);
+
     await db.execAsync(`
       CREATE INDEX IF NOT EXISTS idx_journal_cigar ON smoke_journal_entries(cigar_id)
     `);

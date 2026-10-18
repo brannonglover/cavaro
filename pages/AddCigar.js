@@ -11,16 +11,18 @@ import {
   Image,
   Alert,
   ActionSheetIOS,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
-import { db, COLLECTIONS, withSerializedTransaction } from '../db';
-import { fetchCatalog, addCigarToCatalog } from '../api/catalog';
-import { serializeFlavors } from '../lib/tasteVocabulary';
+import { db, COLLECTIONS } from '../db';
+import { addCigarToCatalog } from '../api/catalog';
 import { uploadCigarImage } from '../api/upload';
 import { productImageUrl } from '../lib/cigarImage';
 import { useAuth } from '../context/AuthContext';
 import { scheduleFullPush } from '../lib/userCigarsSync';
+import { getCachedCatalogRows, syncCatalogCache } from '../lib/catalogSync';
+import { maybeFailSave } from '../lib/devFailpoints';
 import colors from '../theme/colors';
 import { pickCigarImage, takeCigarPhoto } from '../utils/imagePicker';
 import DatePickerField, { getTodayDateString } from '../components/DatePickerField';
@@ -32,12 +34,16 @@ import { trackCigarAdded, trackEvent } from '../lib/analytics';
 import { FREE_CIGAR_LIMIT } from '../constants/limits';
 import { collectBlendValues, loadKnownBlendOptions } from '../utils/blendOptions';
 import { useTabBarHeight } from '../navigation/useTabBarHeight';
-
-// Size format: #x## or #.#x## (e.g. 6x52, 7.5x50) - no slashes
-const SIZE_FORMAT = /^\d+(\.\d+)?x\d+(\.\d+)?$/;
-function isValidSizeFormat(size) {
-  return size?.trim() && SIZE_FORMAT.test(size.trim());
-}
+import {
+  isValidSizeFormat,
+  missingCatalogFields,
+  missingCustomFields,
+  missingFieldsMessage,
+  validationReason,
+  categorizeError,
+  catalogState,
+  progressStage,
+} from '../lib/addCigarValidation';
 
 const SUGGESTION_SCROLL_PADDING = 220;
 
@@ -45,7 +51,11 @@ export default function AddCigar() {
   const navigation = useNavigation();
   const route = useRoute();
   const targetHumidorId = route.params?.humidorId ?? 1;
-  const { tier, user, supabase, refreshTier, isGuest } = useAuth();
+  // Low-cardinality label for where the user came from.
+  const entryPoint = route.params?.prefillBrand
+    ? 'search_prefill'
+    : route.params?.entryPoint || 'direct';
+  const { tier, user, supabase, refreshTier, isGuest, requestSignup } = useAuth();
   const tabBarHeight = useTabBarHeight();
   const [showCustom, setShowCustom] = useState(false);
   const [cigarCount, setCigarCount] = useState(0);
@@ -85,13 +95,37 @@ export default function AddCigar() {
   const [cigarSizeArr, setCigarSizeArr] = useState([]);
   const [blendOptions, setBlendOptions] = useState({ wrapper: [], binder: [], filler: [] });
 
+  // Catalog load lifecycle + save guard. These exist so the screen can always
+  // explain itself: loading, empty, failed, or "here is what is still missing".
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogFailed, setCatalogFailed] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [validationHint, setValidationHint] = useState('');
+  const [invalidFields, setInvalidFields] = useState([]);
+
   const isCatalogValid = !!(cigarBrand?.trim() && cigarName?.trim() && cigarSize?.trim());
   const isCustomValid = !!(customBrand?.trim() && customName?.trim() && customSize?.trim() && isValidSizeFormat(customSize));
+  const catalogStatus = catalogState({
+    loading: catalogLoading,
+    failed: catalogFailed,
+    itemCount: brandArr.length,
+  });
+
+  // Analytics bookkeeping: keeps each funnel event to one emission per real
+  // interaction instead of one per render.
+  const completedAddRef = useRef(false);
+  const attemptedAddRef = useRef(false);
+  const trackedSelectionRef = useRef({ brand: '', name: '', size: '' });
+  const trackedCatalogOutcomeRef = useRef(null);
+  const savingRef = useRef(false);
   const scrollViewRef = useRef(null);
   const scrollOffsetRef = useRef(0);
   const wrapperFieldRef = useRef(null);
   const binderFieldRef = useRef(null);
   const fillerFieldRef = useRef(null);
+  const brandFieldRef = useRef(null);
+  const nameFieldRef = useRef(null);
+  const sizeFieldRef = useRef(null);
 
   const scrollFieldIntoView = useCallback((fieldRef) => {
     const field = fieldRef.current;
@@ -112,68 +146,179 @@ export default function AddCigar() {
     setTimeout(() => scrollFieldIntoView(fieldRef), 250);
   }, [scrollFieldIntoView]);
 
-  const loadCatalog = useCallback(async () => {
-    try {
-      // Fetch shared catalog from API; fallback to local cache if offline
-      let rows;
-      try {
-        rows = await fetchCatalog();
-        // Cache in local SQLite for offline use (don't fail the screen if cache write fails)
-        try {
-          await withSerializedTransaction(async () => {
-            await db.execAsync('DELETE FROM cigar_catalog');
-            const seen = new Set();
-            for (const c of rows) {
-              const sizeName = c.size_name || '';
-              const key = `${c.brand}::${c.name}::${c.length}::${sizeName}`;
-              if (seen.has(key)) continue;
-              seen.add(key);
-              await db.runAsync(
-                `INSERT INTO cigar_catalog (
-                   brand, name, line, description, wrapper, binder, filler, length, image, size_name,
-                   flavors, strength, taste_source
-                 )
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                c.brand,
-                c.name,
-                c.line || '',
-                c.description || '',
-                c.wrapper || '',
-                c.binder || '',
-                c.filler || '',
-                c.length,
-                c.image || '',
-                sizeName,
-                serializeFlavors(c.flavors),
-                c.strength || null,
-                c.taste_source || null
-              );
-            }
-          });
-        } catch (cacheErr) {
-          console.warn('Catalog cache write failed:', cacheErr.message);
-        }
-      } catch (apiErr) {
-        console.warn('API catalog unavailable, using local cache:', apiErr.message);
-        rows = await db.getAllAsync('SELECT * FROM cigar_catalog ORDER BY brand, name, length');
+  /**
+   * Scrolls the first unfilled required field into view after a failed attempt.
+   *
+   * Deliberately not scrollFieldIntoView: that one only scrolls downward (it
+   * exists to lift a field above an opening sheet), so it cannot reveal a
+   * required field that is above the fold — which is the common case, since the
+   * Add button sits below every field it validates.
+   */
+  const focusFirstMissingField = useCallback((missing = []) => {
+    const refs = { brand: brandFieldRef, name: nameFieldRef, size: sizeFieldRef };
+    const field = refs[missing[0]]?.current;
+    const scroll = scrollViewRef.current;
+    if (!field || !scroll) return;
+    field.measureInWindow((_x, y) => {
+      const delta = y - 180;
+      if (Math.abs(delta) > 12) {
+        scroll.scrollTo({ y: Math.max(0, scrollOffsetRef.current + delta), animated: true });
       }
-      setData(rows);
-      const brands = [...new Set(rows.map((r) => r.brand))].filter(Boolean).sort();
-      setBrandArr(brands.map((b) => ({ label: b, value: b })));
-    } catch (err) {
-      console.error('Failed to load cigar catalog:', err);
-    }
+    });
   }, []);
+
+  // Set to false on unmount so an in-flight catalog load cannot update state or
+  // report an outcome for a screen the user has already left.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const applyCatalogRows = useCallback((rows) => {
+    if (!mountedRef.current) return;
+    const safe = Array.isArray(rows) ? rows : [];
+    setData(safe);
+    const brands = [...new Set(safe.map((r) => r.brand))].filter(Boolean).sort();
+    setBrandArr(brands.map((b) => ({ label: b, value: b })));
+  }, []);
+
+  const reportCatalogOutcome = useCallback(
+    (outcome, { itemCount = 0, source = null, error = null } = {}) => {
+      // One emission per distinct outcome per visit, not per render.
+      if (!mountedRef.current) return;
+      const key = `${outcome}:${source || ''}`;
+      if (trackedCatalogOutcomeRef.current === key) return;
+      trackedCatalogOutcomeRef.current = key;
+      if (outcome === 'loaded') {
+        trackEvent('add_cigar_catalog_loaded', {
+          is_guest: !!isGuest,
+          entry_point: entryPoint,
+          catalog_item_count: itemCount,
+          source,
+        });
+      } else {
+        trackEvent('add_cigar_catalog_failed', {
+          is_guest: !!isGuest,
+          entry_point: entryPoint,
+          error_category: categorizeError(error),
+        });
+      }
+    },
+    [isGuest, entryPoint]
+  );
+
+  /**
+   * Cache-first load.
+   *
+   * Renders whatever is cached immediately, then asks the shared
+   * `syncCatalogCache()` for a refresh. That call is deduplicated app-wide, so
+   * arriving here while Home's background refresh is still running joins it
+   * instead of starting a second ~1MB download, and the two can no longer race
+   * each other's writes.
+   */
+  const loadCatalog = useCallback(
+    async ({ force = false } = {}) => {
+      if (!mountedRef.current) return;
+      setCatalogFailed(false);
+
+      const cached = await getCachedCatalogRows();
+      if (!mountedRef.current) return;
+      if (cached.length) {
+        applyCatalogRows(cached);
+        setCatalogLoading(false);
+      } else {
+        setCatalogLoading(true);
+      }
+
+      const result = await syncCatalogCache({ force });
+      if (!mountedRef.current) return;
+      setCatalogLoading(false);
+
+      if (result.status === 'synced') {
+        const fresh = await getCachedCatalogRows();
+        if (!mountedRef.current) return;
+        applyCatalogRows(fresh);
+        reportCatalogOutcome('loaded', {
+          itemCount: fresh.length,
+          source: cached.length ? 'api_refresh' : 'api',
+        });
+        return;
+      }
+
+      if (cached.length) {
+        // Stale or unrefreshed data still beats a dead form.
+        reportCatalogOutcome('loaded', {
+          itemCount: cached.length,
+          source: result.status === 'failed' ? 'cache_after_error' : 'cache',
+        });
+        return;
+      }
+
+      setCatalogFailed(true);
+      reportCatalogOutcome('failed', { error: result.error });
+    },
+    [applyCatalogRows, reportCatalogOutcome]
+  );
+
+  // Any edit to a required field retires the "what's missing" hint, so the
+  // message never outlives the problem it describes.
+  useEffect(() => {
+    setValidationHint('');
+    setInvalidFields([]);
+  }, [cigarBrand, cigarName, cigarSize, customBrand, customName, customSize]);
+
+  // Mirror the live selection into a ref so the blur handler can read it without
+  // putting form state in the focus effect's dependency list.
+  const selectionRef = useRef({ brand: '', name: '', size: '', custom: false });
+  // Catalog-only mirror, used to seed the selection tracker on focus.
+  const catalogSelectionRef = useRef({ brand: '', name: '', size: '' });
+  useEffect(() => {
+    catalogSelectionRef.current = { brand: cigarBrand, name: cigarName, size: cigarSize };
+  }, [cigarBrand, cigarName, cigarSize]);
+  useEffect(() => {
+    selectionRef.current = {
+      brand: showCustom ? customBrand : cigarBrand,
+      name: showCustom ? customName : cigarName,
+      size: showCustom ? customSize : cigarSize,
+      custom: showCustom,
+    };
+  }, [showCustom, cigarBrand, cigarName, cigarSize, customBrand, customName, customSize]);
 
   useFocusEffect(
     React.useCallback(() => {
       scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+      completedAddRef.current = false;
+      attemptedAddRef.current = false;
+      trackedCatalogOutcomeRef.current = null;
+      // Seed from whatever is already selected rather than clearing. Navigating
+      // back to this screen does not unmount it, so the previous brand/name/size
+      // are still in state; clearing here meant re-picking the same value fired
+      // a second add_cigar_*_selected and inflated that funnel step.
+      trackedSelectionRef.current = {
+        brand: (catalogSelectionRef.current.brand || '').trim(),
+        name: (catalogSelectionRef.current.name || '').trim(),
+        size: (catalogSelectionRef.current.size || '').trim(),
+      };
       loadCatalog();
       if (enforceLimit) {
         db.getFirstAsync("SELECT COUNT(*) as n FROM cigars WHERE collection = 'cavaro'")
           .then((r) => setCigarCount(r?.n ?? 0));
       }
-    }, [enforceLimit, loadCatalog])
+      return () => {
+        // A successful save navigates away too — that is not abandonment.
+        if (completedAddRef.current) return;
+        const { brand, name, size, custom } = selectionRef.current;
+        trackEvent('add_cigar_abandoned', {
+          is_guest: !!isGuest,
+          entry_point: entryPoint,
+          add_method: custom ? 'custom' : 'catalog',
+          progress_stage: progressStage({ brand, name, size, attempted: attemptedAddRef.current }),
+        });
+      };
+    }, [enforceLimit, loadCatalog, isGuest, entryPoint])
   );
 
   useEffect(() => {
@@ -299,6 +444,38 @@ export default function AddCigar() {
     };
   }
 
+  /**
+   * Fires a selection event at most once per distinct value, so re-picking the
+   * same brand or a re-render never double-counts a funnel step.
+   */
+  function trackSelection(field, value) {
+    const normalized = (value ?? '').trim();
+    if (!normalized || trackedSelectionRef.current[field] === normalized) return;
+    trackedSelectionRef.current[field] = normalized;
+    trackEvent(`add_cigar_${field}_selected`, {
+      is_guest: !!isGuest,
+      entry_point: entryPoint,
+      add_method: 'catalog',
+    });
+  }
+
+  /** Drop the "what's missing" hint as soon as the user supplies something. */
+  function clearValidationHint() {
+    setValidationHint('');
+    setInvalidFields([]);
+  }
+
+  /** Switches to the manual form and records where the user came from. */
+  function openCustom(source) {
+    setShowCustom(true);
+    clearValidationHint();
+    trackEvent('custom_cigar_opened', {
+      is_guest: !!isGuest,
+      entry_point: entryPoint,
+      source,
+    });
+  }
+
   function handleBrandChange(next) {
     const normalized = next ?? '';
     if (normalized !== cigarBrand) {
@@ -311,16 +488,28 @@ export default function AddCigar() {
       setCigarBinder('');
       setCigarFiller('');
       setCigarImage('');
+      // Brand changed, so the old name/size selections no longer count as done.
+      trackedSelectionRef.current.name = '';
+      trackedSelectionRef.current.size = '';
     }
     setCigarBrand(normalized);
+    trackSelection('brand', normalized);
   }
 
   function handleNameChange(next) {
     const normalized = next ?? '';
     if (normalized !== cigarName) {
       setCigarSize('');
+      trackedSelectionRef.current.size = '';
     }
     setCigarName(normalized);
+    trackSelection('name', normalized);
+  }
+
+  function handleSizeChange(next) {
+    const normalized = next ?? '';
+    setCigarSize(normalized);
+    trackSelection('size', normalized);
   }
 
   async function handleAddImage(setImage) {
@@ -385,15 +574,52 @@ export default function AddCigar() {
   }
 
   async function addFromCatalog() {
-    if (!cigarBrand?.trim() || !cigarName?.trim() || !cigarSize?.trim()) return;
+    // Guard against double taps landing two inserts while the first is in flight.
+    if (savingRef.current) return;
+
+    attemptedAddRef.current = true;
+    trackEvent('add_cigar_attempted', {
+      is_guest: !!isGuest,
+      entry_point: entryPoint,
+      add_method: 'catalog',
+      catalog_item_count: data.length,
+    });
+
+    // Never return silently: name what is missing, point at it, and record why.
+    const missing = missingCatalogFields({ brand: cigarBrand, name: cigarName, size: cigarSize });
+    const reason = validationReason({ missing });
+    if (reason) {
+      setInvalidFields(missing);
+      setValidationHint(missingFieldsMessage(missing));
+      focusFirstMissingField(missing);
+      trackEvent('add_cigar_validation_failed', {
+        is_guest: !!isGuest,
+        entry_point: entryPoint,
+        add_method: 'catalog',
+        validation_reason: reason,
+        missing_fields: missing.join(','),
+      });
+      return;
+    }
+    clearValidationHint();
+
     if (enforceLimit && cigarCount >= FREE_CIGAR_LIMIT) {
       Alert.alert(
         'Limit reached',
         `Free tier allows up to ${FREE_CIGAR_LIMIT} cigars. Subscribe to Premium for unlimited.`,
         [{ text: 'OK' }]
       );
+      trackEvent('add_cigar_validation_failed', {
+        is_guest: !!isGuest,
+        entry_point: entryPoint,
+        add_method: 'catalog',
+        validation_reason: 'free_tier_limit',
+        missing_fields: '',
+      });
       return;
     }
+    savingRef.current = true;
+    setSaving(true);
     const qty = Math.max(1, parseInt(cigarQuantity, 10) || 1);
     const dateToUse = dateAdded?.trim() || new Date().toISOString().slice(0, 10);
     const { length: resolvedLength, match } = resolveCatalogSelection();
@@ -409,6 +635,7 @@ export default function AddCigar() {
       if (!imageUrl && match?.image) {
         imageUrl = productImageUrl(match.image) || '';
       }
+      maybeFailSave('catalog');
       await db.runAsync(
         'INSERT INTO cigars (brand, name, line, description, wrapper, binder, filler, length, image, quantity, collection, date_added, humidor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         cigarBrand.trim(),
@@ -434,6 +661,7 @@ export default function AddCigar() {
         length: resolvedLength,
         quantity: qty,
       });
+      completedAddRef.current = true;
       if (isGuest) {
         trackEvent('guest_first_cigar_added', { cigar_count: cigarCount + 1 });
         setShowSignupPrompt(true);
@@ -442,31 +670,73 @@ export default function AddCigar() {
       }
     } catch (error) {
       console.log('Add failed:', error);
+      trackEvent('add_cigar_save_failed', {
+        is_guest: !!isGuest,
+        entry_point: entryPoint,
+        add_method: 'catalog',
+        error_category: categorizeError(error),
+      });
+      // The raw message here is a local database error (SQLITE_FULL, constraint
+      // violations); it means nothing to a reader and leaks internals, so keep
+      // it in the log and tell the user what they can actually do.
       Alert.alert(
-        'Failed to add cigar',
-        error.message || 'Could not save cigar locally. Please try again.'
+        "Couldn't save that cigar",
+        'Your selection is still here — tap Add to Cavaro to try again. If it keeps failing, restarting the app usually clears it.'
       );
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
     }
   }
 
   async function addCustom() {
-    if (!customBrand?.trim() || !customName?.trim() || !customSize?.trim()) return;
+    if (savingRef.current) return;
+
+    attemptedAddRef.current = true;
+    trackEvent('add_cigar_attempted', {
+      is_guest: !!isGuest,
+      entry_point: entryPoint,
+      add_method: 'custom',
+      catalog_item_count: data.length,
+    });
+
+    const missing = missingCustomFields({ brand: customBrand, name: customName, size: customSize });
+    const reason = validationReason({ missing, size: customSize, requireSizeFormat: true });
+    if (reason) {
+      setInvalidFields(reason === 'invalid_size_format' ? ['size'] : missing);
+      setValidationHint(
+        reason === 'invalid_size_format'
+          ? 'Size must look like 6x52 or 7.5x50.'
+          : missingFieldsMessage(missing)
+      );
+      trackEvent('add_cigar_validation_failed', {
+        is_guest: !!isGuest,
+        entry_point: entryPoint,
+        add_method: 'custom',
+        validation_reason: reason,
+        missing_fields: missing.join(','),
+      });
+      return;
+    }
+    clearValidationHint();
+
     if (enforceLimit && cigarCount >= FREE_CIGAR_LIMIT) {
       Alert.alert(
         'Limit reached',
         `Free tier allows up to ${FREE_CIGAR_LIMIT} cigars. Subscribe to Premium for unlimited.`,
         [{ text: 'OK' }]
       );
+      trackEvent('add_cigar_validation_failed', {
+        is_guest: !!isGuest,
+        entry_point: entryPoint,
+        add_method: 'custom',
+        validation_reason: 'free_tier_limit',
+        missing_fields: '',
+      });
       return;
     }
-    if (!isValidSizeFormat(customSize)) {
-      Alert.alert(
-        'Invalid size format',
-        'Size must be in the format #x## or #.#x## (e.g., 6x52, 7.5x50). Please correct the size field.',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
+    savingRef.current = true;
+    setSaving(true);
     try {
       let imageUrl = '';
       if (customImage) {
@@ -479,6 +749,7 @@ export default function AddCigar() {
       const qty = Math.max(1, parseInt(customQuantity, 10) || 1);
       const dateToUse = dateAdded?.trim() || new Date().toISOString().slice(0, 10);
 
+      maybeFailSave('custom');
       await db.runAsync(
         'INSERT INTO cigars (brand, name, line, description, wrapper, binder, filler, length, image, quantity, collection, date_added, humidor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         customBrand.trim(),
@@ -504,6 +775,9 @@ export default function AddCigar() {
         length: customSize,
         quantity: qty,
       });
+      // The local save is what the user cares about; the shared-catalog push
+      // below is best-effort, so the add already counts as completed here.
+      completedAddRef.current = true;
 
       try {
         await addCigarToCatalog({
@@ -538,10 +812,22 @@ export default function AddCigar() {
       }
     } catch (error) {
       console.log('Add custom failed:', error);
+      trackEvent('add_cigar_save_failed', {
+        is_guest: !!isGuest,
+        entry_point: entryPoint,
+        add_method: 'custom',
+        error_category: categorizeError(error),
+      });
+      // The raw message here is a local database error (SQLITE_FULL, constraint
+      // violations); it means nothing to a reader and leaks internals, so keep
+      // it in the log and tell the user what they can actually do.
       Alert.alert(
-        'Failed to add cigar',
-        error.message || 'Could not save cigar locally. Please try again.'
+        "Couldn't save that cigar",
+        'Your selection is still here — tap Add to Cavaro to try again. If it keeps failing, restarting the app usually clears it.'
       );
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
     }
   }
 
@@ -561,7 +847,7 @@ export default function AddCigar() {
             Add Cigar{enforceLimit ? ` (${cigarCount}/${FREE_CIGAR_LIMIT})` : ''}
           </Text>
           {!showCustom ? (
-            <Pressable onPress={() => setShowCustom(true)} style={styles.headerActionBtn} hitSlop={12}>
+            <Pressable onPress={() => openCustom('header')} style={styles.headerActionBtn} hitSlop={12}>
               <Text style={styles.switchLinkText}>+ Add new</Text>
             </Pressable>
           ) : (
@@ -594,31 +880,82 @@ export default function AddCigar() {
                 <Text style={styles.sectionSubtitle}>Choose brand, name, and size from the database</Text>
               </View>
 
-              <SelectSheetField
-                label="Brand"
-                value={cigarBrand || ''}
-                items={brandArr}
-                onChange={handleBrandChange}
-                placeholder="Select brand"
-                searchPlaceholder="Search brands"
-              />
+              {catalogStatus === 'loading' ? (
+                <View style={styles.notice}>
+                  <ActivityIndicator size="small" color={colors.accent} />
+                  <Text style={styles.noticeText}>Loading the cigar catalog…</Text>
+                </View>
+              ) : null}
 
-              <SelectSheetField
-                label="Cigar name"
-                value={cigarName || ''}
-                items={cigarNameArr}
-                onChange={handleNameChange}
-                placeholder={
-                  !cigarBrand
-                    ? 'Select a brand first'
-                    : cigarNameArr.length
-                      ? 'Select cigar'
-                      : 'No cigars for this brand'
-                }
-                searchPlaceholder="Search cigars"
-                disabled={!cigarBrand || cigarNameArr.length === 0}
-                emptyText="No cigars for this brand"
-              />
+              {catalogStatus === 'error' || catalogStatus === 'empty' ? (
+                <View style={[styles.notice, styles.noticeError]}>
+                  <Text style={styles.noticeText}>
+                    {catalogStatus === 'error'
+                      ? "Couldn't load the cigar catalog. Check your connection and try again, or enter your cigar by hand."
+                      : 'The cigar catalog is empty right now. You can still enter your cigar by hand.'}
+                  </Text>
+                  <View style={styles.noticeActions}>
+                    <Pressable
+                      onPress={() => loadCatalog({ force: true })}
+                      style={styles.noticeBtn}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.noticeBtnText}>Retry</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => openCustom('catalog_unavailable')}
+                      style={styles.noticeBtn}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.noticeBtnText}>Enter it by hand</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : null}
+
+              <View ref={brandFieldRef} collapsable={false}>
+                <SelectSheetField
+                  label="Brand"
+                  value={cigarBrand || ''}
+                  items={brandArr}
+                  onChange={handleBrandChange}
+                  placeholder={
+                    catalogStatus === 'loading'
+                      ? 'Loading brands…'
+                      : catalogStatus === 'ready'
+                        ? 'Select brand'
+                        : 'Catalog unavailable'
+                  }
+                  searchPlaceholder="Search brands"
+                  disabled={catalogStatus !== 'ready'}
+                  emptyText="No brands available"
+                />
+                {invalidFields.includes('brand') ? (
+                  <Text style={styles.fieldError}>Brand is required</Text>
+                ) : null}
+              </View>
+
+              <View ref={nameFieldRef} collapsable={false}>
+                <SelectSheetField
+                  label="Cigar name"
+                  value={cigarName || ''}
+                  items={cigarNameArr}
+                  onChange={handleNameChange}
+                  placeholder={
+                    !cigarBrand
+                      ? 'Select a brand first'
+                      : cigarNameArr.length
+                        ? 'Select cigar'
+                        : 'No cigars for this brand'
+                  }
+                  searchPlaceholder="Search cigars"
+                  disabled={!cigarBrand || cigarNameArr.length === 0}
+                  emptyText="No cigars for this brand"
+                />
+                {invalidFields.includes('name') ? (
+                  <Text style={styles.fieldError}>Cigar name is required</Text>
+                ) : null}
+              </View>
 
               <View style={styles.field}>
                 <Text style={styles.label}>Line / Series (optional)</Text>
@@ -632,16 +969,21 @@ export default function AddCigar() {
                 />
               </View>
 
-              <SelectSheetField
-                label="Size"
-                value={cigarSize || ''}
-                items={cigarSizeArr}
-                onChange={setCigarSize}
-                placeholder={cigarName ? 'Select size' : 'Select a cigar first'}
-                searchPlaceholder="Search sizes"
-                disabled={!cigarName || cigarSizeArr.length === 0}
-                emptyText="No sizes for this cigar"
-              />
+              <View ref={sizeFieldRef} collapsable={false}>
+                <SelectSheetField
+                  label="Size"
+                  value={cigarSize || ''}
+                  items={cigarSizeArr}
+                  onChange={handleSizeChange}
+                  placeholder={cigarName ? 'Select size' : 'Select a cigar first'}
+                  searchPlaceholder="Search sizes"
+                  disabled={!cigarName || cigarSizeArr.length === 0}
+                  emptyText="No sizes for this cigar"
+                />
+                {invalidFields.includes('size') ? (
+                  <Text style={styles.fieldError}>Size is required</Text>
+                ) : null}
+              </View>
 
               <View style={styles.field}>
                 <Text style={styles.label}>Quantity</Text>
@@ -699,12 +1041,24 @@ export default function AddCigar() {
                 ) : null}
               </View>
 
+              {validationHint ? <Text style={styles.validationHint}>{validationHint}</Text> : null}
+
               <Pressable
-                style={[styles.primaryBtn, !isCatalogValid && styles.primaryBtnDisabled]}
+                style={[styles.primaryBtn, (!isCatalogValid || saving) && styles.primaryBtnDisabled]}
                 onPress={addFromCatalog}
-                disabled={!isCatalogValid}
+                disabled={saving}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: saving, busy: saving }}
               >
-                <Text style={[styles.primaryBtnText, !isCatalogValid && styles.primaryBtnTextDisabled]}>Add to Cavaro</Text>
+                {saving ? (
+                  <ActivityIndicator size="small" color={colors.textPrimary} />
+                ) : (
+                  <Text style={[styles.primaryBtnText, !isCatalogValid && styles.primaryBtnTextDisabled]}>Add to Cavaro</Text>
+                )}
+              </Pressable>
+
+              <Pressable onPress={() => openCustom('catalog_footer')} style={styles.customHintBtn} hitSlop={8}>
+                <Text style={styles.customHintText}>Can&apos;t find your cigar? Enter it by hand</Text>
               </Pressable>
             </>
           ) : (
@@ -854,12 +1208,20 @@ export default function AddCigar() {
                 ) : null}
               </View>
 
+              {validationHint ? <Text style={styles.validationHint}>{validationHint}</Text> : null}
+
               <Pressable
-                style={[styles.primaryBtn, !isCustomValid && styles.primaryBtnDisabled]}
+                style={[styles.primaryBtn, (!isCustomValid || saving) && styles.primaryBtnDisabled]}
                 onPress={addCustom}
-                disabled={!isCustomValid}
+                disabled={saving}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: saving, busy: saving }}
               >
-                <Text style={[styles.primaryBtnText, !isCustomValid && styles.primaryBtnTextDisabled]}>Add to Catalog & Cavaro</Text>
+                {saving ? (
+                  <ActivityIndicator size="small" color={colors.textPrimary} />
+                ) : (
+                  <Text style={[styles.primaryBtnText, !isCustomValid && styles.primaryBtnTextDisabled]}>Add to Catalog & Cavaro</Text>
+                )}
               </Pressable>
             </>
           )}
@@ -881,6 +1243,9 @@ export default function AddCigar() {
         cigarCount={cigarCount + 1}
         onSignUp={(method) => {
           setShowSignupPrompt(false);
+          // Apple signs in inline — the auth state change swaps the navigator,
+          // so there is nothing left to route. Email needs the signup screen.
+          if (method !== 'apple') requestSignup();
           navigation.goBack();
         }}
         onDismiss={() => {
@@ -1060,6 +1425,63 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.dislike,
     fontWeight: '500',
+  },
+  notice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.cardBg,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    flexWrap: 'wrap',
+  },
+  noticeError: {
+    borderColor: colors.dislike,
+  },
+  noticeText: {
+    flexShrink: 1,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.textSecondary,
+  },
+  noticeActions: {
+    flexDirection: 'row',
+    gap: 18,
+    marginTop: 10,
+    width: '100%',
+  },
+  noticeBtn: {
+    paddingVertical: 4,
+  },
+  noticeBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.accent,
+  },
+  fieldError: {
+    fontSize: 13,
+    color: colors.dislike,
+    marginTop: -15,
+    marginBottom: 15,
+  },
+  validationHint: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.warning,
+    marginTop: 12,
+    marginBottom: -2,
+  },
+  customHintBtn: {
+    alignSelf: 'center',
+    paddingVertical: 14,
+  },
+  customHintText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: colors.accent,
   },
   inputError: {
     borderColor: colors.dislike,

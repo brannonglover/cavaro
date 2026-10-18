@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ import {
 } from '../components/ui';
 import { FavoriteBrandsCard } from '../components/collection';
 import { getCollectionStats } from '../lib/collectionStats';
+import { syncCatalogCache } from '../lib/catalogSync';
 import { borderRadius, colors, spacing, typography } from '../theme';
 
 function formatCount(value) {
@@ -54,19 +55,36 @@ export default function Collection() {
   const navigation = useNavigation();
   const [stats, setStats] = useState(null);
 
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const loadStats = useCallback(async () => {
     try {
       const next = await getCollectionStats();
-      setStats(next);
+      if (!mountedRef.current) return;
+      setStats((prev) => (prev && JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
     } catch (error) {
       console.log('Collection stats error:', error);
-      setStats({ isEmpty: true, totalSmoked: 0 });
+      if (mountedRef.current) setStats({ isEmpty: true, totalSmoked: 0 });
     }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
+      let active = true;
       loadStats();
+      // Background refresh, same as Home: never gate the screen on the catalog.
+      syncCatalogCache().then((result) => {
+        if (active && result.status === 'synced') loadStats();
+      });
+      return () => {
+        active = false;
+      };
     }, [loadStats])
   );
 

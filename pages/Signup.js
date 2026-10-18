@@ -9,13 +9,12 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  Platform,
 } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import colors from '../theme/colors';
 import { trackEvent } from '../lib/analytics';
 import { AUTH_CALLBACK_WEB_URL } from '../constants/authUrls';
 import { useAuth } from '../context/AuthContext';
+import AppleSignInButton from '../components/AppleSignInButton';
 
 function isDuplicateSignupError(error) {
   if (!error) return false;
@@ -34,8 +33,7 @@ function isDuplicateSignupResponse(data) {
 }
 
 export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin, onGoToForgotPassword }) {
-  const { setPendingPremiumSubscribe } = useAuth();
-  const [firstName, setFirstName] = useState('');
+  const { setPendingPremiumSubscribe, appleAuthAvailable } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -45,7 +43,6 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin,
   const handleSignup = async () => {
     const e = email.trim();
     const p = password;
-    const name = firstName.trim();
     if (!e || !p) {
       Alert.alert('Missing fields', 'Please enter email and password.');
       trackEvent('signup_failed', { reason: 'missing_fields' });
@@ -68,7 +65,6 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin,
           email: e,
           password: p,
           options: {
-            data: name ? { first_name: name } : undefined,
             emailRedirectTo: AUTH_CALLBACK_WEB_URL,
           },
         }
@@ -149,53 +145,24 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin,
               : 'Create a free account to back up your collection.'}
           </Text>
 
-          {Platform.OS === 'ios' && (
-            <Pressable
-              style={styles.socialBtn}
-              onPress={() => {
-                trackEvent('guest_signup_method_selected', { method: 'apple' });
-                Alert.alert('Coming soon', 'Sign in with Apple will be available in the next update.');
-              }}
-              disabled={loading}
-            >
-              <MaterialCommunityIcons name="apple" size={20} color="#fff" />
-              <Text style={styles.socialBtnText}>Continue with Apple</Text>
-            </Pressable>
+          <AppleSignInButton
+            label="Continue with Apple"
+            intent="signup"
+            disabled={loading}
+            onDone={() => {
+              trackEvent('guest_signup_method_selected', { method: 'apple' });
+              onSuccess?.();
+            }}
+          />
+
+          {appleAuthAvailable && (
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or sign up with email</Text>
+              <View style={styles.dividerLine} />
+            </View>
           )}
 
-          <Pressable
-            style={styles.socialBtn}
-            onPress={() => {
-              trackEvent('guest_signup_method_selected', { method: 'google' });
-              Alert.alert('Coming soon', 'Sign in with Google will be available in the next update.');
-            }}
-            disabled={loading}
-          >
-            <MaterialCommunityIcons name="google" size={20} color="#fff" />
-            <Text style={styles.socialBtnText}>Continue with Google</Text>
-          </Pressable>
-
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <View style={styles.inputWrap}>
-            <TextInput
-              style={styles.input}
-              placeholder="First name (optional)"
-              placeholderTextColor={colors.placeholderText}
-              value={firstName}
-              onChangeText={setFirstName}
-              textContentType="givenName"
-              autoComplete="given-name"
-              autoCapitalize="words"
-              autoCorrect={false}
-              editable={!loading}
-              returnKeyType="next"
-            />
-          </View>
           <View style={styles.inputWrap}>
             <TextInput
               style={styles.input}
@@ -349,23 +316,6 @@ const styles = StyleSheet.create({
   linkText: {
     fontSize: 15,
     color: colors.primary,
-  },
-  socialBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    backgroundColor: colors.cardBg,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    paddingVertical: 14,
-    marginBottom: 12,
-  },
-  socialBtnText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textPrimary,
   },
   divider: {
     flexDirection: 'row',

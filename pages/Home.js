@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import {
@@ -18,29 +18,62 @@ import {
 } from '../components/ui';
 import { trackEvent } from '../lib/analytics';
 import { getHomeDashboard } from '../lib/homeDashboard';
+import { syncCatalogCache } from '../lib/catalogSync';
 import { INVENTORY_SEGMENTS } from '../lib/humidorsScreen';
 import { useAuth } from '../context/AuthContext';
+import MigrationConflictBanner from '../components/MigrationConflictBanner';
 import GuestAccountBanner from '../components/GuestAccountBanner';
 import { colors, spacing, typography } from '../theme';
 
 export default function Home() {
   const navigation = useNavigation();
-  const { exitGuestMode, isGuest } = useAuth();
+  const { requestSignup, isGuest, migration, refreshMigrationState } = useAuth();
+
+  // Clearing `deferred` makes App.js show the blocking conflict screen again.
+  const undeferMigrationAndReview = async () => {
+    if (!migration?.migrationId) return;
+    const { undeferMigration } = await import('../lib/guestMigration');
+    await undeferMigration(migration.migrationId);
+    await refreshMigrationState();
+  };
   const [dashboard, setDashboard] = useState(null);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const loadDashboard = useCallback(async () => {
     try {
       const next = await getHomeDashboard();
-      setDashboard(next);
+      if (!mountedRef.current) return;
+      // Keep the previous object when nothing changed so a background catalog
+      // refresh does not rerender the whole dashboard (and flash the cards).
+      setDashboard((prev) =>
+        prev && JSON.stringify(prev) === JSON.stringify(next) ? prev : next
+      );
     } catch (error) {
       console.log('Home dashboard error:', error);
-      setDashboard({ isEmpty: true, greeting: 'Welcome' });
+      if (mountedRef.current) setDashboard({ isEmpty: true, greeting: 'Welcome' });
     }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
+      let active = true;
+      // Render from local data straight away...
       loadDashboard();
+      // ...and refresh the catalog in the background. syncCatalogCache never
+      // rejects and dedupes concurrent callers, so this costs nothing when
+      // another screen already triggered it, and offline simply does nothing.
+      syncCatalogCache().then((result) => {
+        if (active && result.status === 'synced') loadDashboard();
+      });
+      return () => {
+        active = false;
+      };
     }, [loadDashboard])
   );
 
@@ -105,7 +138,7 @@ export default function Home() {
   if (dashboard.isEmpty) {
     return (
       <ScreenContainer scroll contentContainerStyle={styles.scrollContent}>
-        <HomeHeader greeting={dashboard.greeting} onAddCigar={addFirstCigar} onCreateAccount={exitGuestMode} />
+        <HomeHeader greeting={dashboard.greeting} onAddCigar={addFirstCigar} onCreateAccount={requestSignup} />
         <EmptyState
           icon="smoking"
           title="Welcome to Cavaro"
@@ -124,14 +157,19 @@ export default function Home() {
   return (
     <ScreenContainer scroll contentContainerStyle={styles.scrollContent}>
       <FadeInView delay={0}>
-        <HomeHeader greeting={dashboard.greeting} onAddCigar={addFirstCigar} onCreateAccount={exitGuestMode} />
+        <HomeHeader greeting={dashboard.greeting} onAddCigar={addFirstCigar} onCreateAccount={requestSignup} />
       </FadeInView>
 
       {isGuest && (
         <FadeInView delay={20}>
-          <GuestAccountBanner onCreateAccount={exitGuestMode} />
+          <GuestAccountBanner onCreateAccount={requestSignup} />
         </FadeInView>
       )}
+
+      {/* Only renders when a migration was deferred with conflicts outstanding. */}
+      <FadeInView delay={20}>
+        <MigrationConflictBanner onReview={undeferMigrationAndReview} />
+      </FadeInView>
 
       {dashboard.smokeRecommendation ? (
         <FadeInView delay={40}>

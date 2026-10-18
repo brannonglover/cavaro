@@ -39,6 +39,9 @@ module.exports = {
       supportsTablet: true,
       bundleIdentifier: "com.brannonglover.cavaro",
       buildNumber,
+      // Adds the Sign In with Apple entitlement to the provisioning profile.
+      // Requires an EAS rebuild — existing binaries cannot pick this up.
+      usesAppleSignIn: true,
       associatedDomains: ["webcredentials:cavaroapp.com"],
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
@@ -70,6 +73,7 @@ module.exports = {
         },
       ],
       "expo-sqlite",
+      "expo-apple-authentication",
       [
         "expo-image-picker",
         {

@@ -9,23 +9,48 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  Platform,
 } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import colors from '../theme/colors';
 import { restoreSubscription } from '../api/subscription';
 import { useAuth } from '../context/AuthContext';
 import { trackEvent } from '../lib/analytics';
+import AppleSignInButton from '../components/AppleSignInButton';
 import RestoreSubscriptionResultModal, {
   getRestoreSubscriptionAlert,
 } from '../components/RestoreSubscriptionResultModal';
 
-export default function Login({ supabase, onSuccess, onBack, restoreAfterSignIn }) {
-  const { refreshTier } = useAuth();
+export default function Login({ supabase, onSuccess, onBack, restoreAfterSignIn, onGoToSignup, onGoToForgotPassword }) {
+  const { refreshTier, appleAuthAvailable } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [restoreAlert, setRestoreAlert] = useState(null);
+
+  /**
+   * Shared post-sign-in work for both email and Apple: when the user arrived
+   * via "Restore subscription", sync StoreKit before handing off.
+   */
+  const finishSignIn = async () => {
+    if (restoreAfterSignIn) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        const result = await restoreSubscription(session.access_token);
+        refreshTier?.();
+        const alert = getRestoreSubscriptionAlert(result);
+        if (alert) setRestoreAlert(alert);
+      }
+    }
+    onSuccess?.();
+  };
+
+  const handleAppleDone = async () => {
+    try {
+      await finishSignIn();
+    } catch (err) {
+      Alert.alert('Signed in', err.message || 'Signed in, but could not restore your subscription.');
+      onSuccess?.();
+    }
+  };
 
   const handleLogin = async () => {
     const e = email.trim();
@@ -43,17 +68,8 @@ export default function Login({ supabase, onSuccess, onBack, restoreAfterSignIn 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email: e, password: p });
       if (error) throw error;
-      trackEvent('login_success');
-      if (restoreAfterSignIn) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          const result = await restoreSubscription(session.access_token);
-          refreshTier?.();
-          const alert = getRestoreSubscriptionAlert(result);
-          if (alert) setRestoreAlert(alert);
-        }
-      }
-      onSuccess?.();
+      trackEvent('login_success', { method: 'email' });
+      await finishSignIn();
     } catch (err) {
       trackEvent('login_failed', { error: err.message || 'unknown' });
       Alert.alert('Sign in failed', err.message || 'Please check your credentials.');
@@ -82,37 +98,20 @@ export default function Login({ supabase, onSuccess, onBack, restoreAfterSignIn 
           <Text style={styles.title}>Sign in</Text>
           <Text style={styles.subtitle}>Welcome back</Text>
 
-          {Platform.OS === 'ios' && (
-            <Pressable
-              style={styles.socialBtn}
-              onPress={() => {
-                trackEvent('guest_signup_method_selected', { method: 'apple' });
-                Alert.alert('Coming soon', 'Sign in with Apple will be available in the next update.');
-              }}
-              disabled={loading}
-            >
-              <MaterialCommunityIcons name="apple" size={20} color="#fff" />
-              <Text style={styles.socialBtnText}>Continue with Apple</Text>
-            </Pressable>
-          )}
-
-          <Pressable
-            style={styles.socialBtn}
-            onPress={() => {
-              trackEvent('guest_signup_method_selected', { method: 'google' });
-              Alert.alert('Coming soon', 'Sign in with Google will be available in the next update.');
-            }}
+          <AppleSignInButton
+            label="Continue with Apple"
+            intent="signin"
             disabled={loading}
-          >
-            <MaterialCommunityIcons name="google" size={20} color="#fff" />
-            <Text style={styles.socialBtnText}>Continue with Google</Text>
-          </Pressable>
+            onDone={handleAppleDone}
+          />
 
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
-          </View>
+          {appleAuthAvailable && (
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or sign in with email</Text>
+              <View style={styles.dividerLine} />
+            </View>
+          )}
 
           <View style={styles.inputWrap}>
             <TextInput
@@ -161,6 +160,22 @@ export default function Login({ supabase, onSuccess, onBack, restoreAfterSignIn 
               <Text style={styles.buttonText}>Sign in</Text>
             )}
           </Pressable>
+
+          <Pressable
+            onPress={() => onGoToForgotPassword?.(email.trim())}
+            style={styles.forgotBtn}
+            hitSlop={8}
+            disabled={loading}
+          >
+            <Text style={styles.forgotText}>Forgot password?</Text>
+          </Pressable>
+
+          <View style={styles.signupRow}>
+            <Text style={styles.signupHint}>Don't have an account?</Text>
+            <Pressable onPress={onGoToSignup} hitSlop={8} disabled={loading}>
+              <Text style={styles.signupLink}> Sign up</Text>
+            </Pressable>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -228,22 +243,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
-  socialBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    backgroundColor: colors.cardBg,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    paddingVertical: 14,
-    marginBottom: 12,
+  forgotBtn: {
+    alignSelf: 'center',
+    marginTop: 16,
   },
-  socialBtnText: {
-    fontSize: 16,
+  forgotText: {
+    fontSize: 14,
+    color: colors.primary,
+  },
+  signupRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+  signupHint: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  signupLink: {
+    fontSize: 14,
     fontWeight: '600',
-    color: colors.textPrimary,
+    color: colors.primary,
   },
   divider: {
     flexDirection: 'row',

@@ -1,8 +1,14 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { createClient } from '@supabase/supabase-js';
 import { isAuthRetryableFetchError } from '@supabase/auth-js';
-import { setUserId, initAnalytics } from '../lib/analytics';
+import { setUserId, initAnalytics, trackEvent } from '../lib/analytics';
+import {
+  APPLE_CANCELED,
+  isAppleAuthAvailable,
+  signInWithApple as runAppleSignIn,
+} from '../lib/appleAuth';
+import { isKnownAuthedUser, isMigrationPending, rememberAuthedUser } from '../lib/authState';
 import AsyncStorage from 'expo-sqlite/kv-store';
 import { API_BASE_URL } from '../api/config';
 import { hydrateUserData } from '../lib/userCigarsSync';
@@ -68,15 +74,38 @@ export function AuthProvider({ children }) {
   const [previewFreeTier, setPreviewFreeTier] = useState(false);
   const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
   const [pendingPremiumSubscribe, setPendingPremiumSubscribe] = useState(false);
+  const [signupRequested, setSignupRequested] = useState(false);
+  const [appleAuthAvailable, setAppleAuthAvailable] = useState(false);
+  // Staged guest→account migration awaiting user decisions, or null.
+  const [migration, setMigration] = useState(null);
+  // A pending migration staged for a DIFFERENT account, awaiting explicit
+  // confirmation before its destination can change. Never acted on implicitly.
+  const [accountConflict, setAccountConflict] = useState(null);
+
+  // onAuthStateChange is registered once with [] deps, so the isGuest it closes
+  // over is frozen at its mount value (false). Reading guest state through a ref
+  // keeps the SIGNED_IN handler accurate — without it, isGuestMigration is
+  // always false and a guest's local cigars are never migrated on sign-up.
+  const isGuestRef = useRef(false);
+
+  function applyGuest(flag) {
+    isGuestRef.current = flag;
+    setIsGuest(flag);
+  }
 
   async function enterGuestMode() {
-    setIsGuest(true);
+    applyGuest(true);
     try { await AsyncStorage.setItem(GUEST_MODE_KEY, '1'); } catch {}
   }
 
   async function exitGuestMode() {
-    setIsGuest(false);
+    applyGuest(false);
     try { await AsyncStorage.removeItem(GUEST_MODE_KEY); } catch {}
+  }
+
+  async function requestSignup() {
+    setSignupRequested(true);
+    await exitGuestMode();
   }
 
   useEffect(() => {
@@ -98,7 +127,7 @@ export function AuthProvider({ children }) {
           // Authenticated — clear any lingering guest flag
           if (guestFlag) await exitGuestMode();
         } else {
-          setIsGuest(guestFlag === '1');
+          applyGuest(guestFlag === '1');
         }
         if (session?.access_token) {
           fetchTier(session.access_token, u).then(setTier).catch(() => setTier('free'));
@@ -121,7 +150,16 @@ export function AuthProvider({ children }) {
         setNeedsPasswordReset(false);
       } else if (event === 'SIGNED_OUT') {
         setNeedsPasswordReset(false);
-        try { await wipeLocalUserData(); } catch {}
+        // Never delete local rows that the server has not confirmed. A guest
+        // whose migration failed still has their collection only on device;
+        // wiping here would destroy it permanently.
+        try {
+          if (await isMigrationPending()) {
+            console.warn('Keeping local data on sign-out: migration never confirmed');
+          } else {
+            await wipeLocalUserData();
+          }
+        } catch {}
         await exitGuestMode();
       }
 
@@ -129,8 +167,11 @@ export function AuthProvider({ children }) {
       setUser(u);
       setUserId(u?.id ?? null, { email: u?.email });
       if (session?.access_token) {
-        if (isGuest || event === 'SIGNED_IN') {
+        // Capture before exitGuestMode() clears it — the migration below needs it.
+        const wasGuest = isGuestRef.current;
+        if (wasGuest || event === 'SIGNED_IN') {
           await exitGuestMode();
+          setSignupRequested(false);
         }
         try {
           const t = await fetchTier(session.access_token, u);
@@ -139,9 +180,12 @@ export function AuthProvider({ children }) {
           setTier('free');
         }
         if (event === 'SIGNED_IN') {
-          hydrateUserData(session.access_token, { isGuestMigration: isGuest }).catch((err) =>
-            console.warn('User data sync failed:', err.message || err)
-          );
+          // Keep the known-user record accurate for every auth method, not
+          // just Apple, so returning users are never mislabelled as new.
+          rememberAuthedUser(u?.id).catch(() => {});
+          hydrateUserData(session.access_token, { isGuestMigration: wasGuest, userId: u?.id })
+            .catch((err) => console.warn('User data sync failed:', err.message || err))
+            .finally(() => { refreshMigrationState(u?.id); });
         }
       } else {
         setTier('free');
@@ -150,6 +194,122 @@ export function AuthProvider({ children }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    isAppleAuthAvailable().then((ok) => {
+      if (active) setAppleAuthAvailable(ok);
+    });
+    return () => { active = false; };
+  }, []);
+
+  /**
+   * Re-read the staged migration for a user. Drives the blocking conflict
+   * screen and the deferred banner; null when there is nothing outstanding.
+   *
+   * Scoped by user id, so a run staged for a different account is never shown
+   * or applied to whoever is signed in now.
+   */
+  const refreshMigrationState = React.useCallback(async (forUserId) => {
+    const id = forUserId ?? user?.id;
+    if (!id) {
+      setMigration(null);
+      setAccountConflict(null);
+      return null;
+    }
+    try {
+      const { getActiveRun, getForeignActiveRun, countUnresolved, PHASE } =
+        await import('../lib/guestMigration');
+      const run = await getActiveRun(id);
+
+      // No run of our own, but one staged for another account: the guest data
+      // on this device belongs to that migration. Surface it for an explicit
+      // decision rather than quietly re-pointing it at whoever is signed in.
+      if (!run) {
+        const foreign = await getForeignActiveRun(id);
+        setMigration(null);
+        if (foreign) {
+          const next = {
+            foreignMigrationId: foreign.migration_id,
+            foreignUserId: foreign.user_id,
+            cigarCount: foreign.guest_snapshot?.length ?? 0,
+          };
+          setAccountConflict(next);
+          return next;
+        }
+        setAccountConflict(null);
+        return null;
+      }
+
+      setAccountConflict(null);
+      if (run.phase === PHASE.COMPLETED) {
+        setMigration(null);
+        return null;
+      }
+      const unresolved = await countUnresolved(run.migration_id);
+      if (!unresolved) {
+        setMigration(null);
+        return null;
+      }
+      const next = {
+        migrationId: run.migration_id,
+        userId: run.user_id,
+        phase: run.phase,
+        deferred: !!run.deferred,
+        unresolved,
+      };
+      setMigration(next);
+      return next;
+    } catch (err) {
+      console.warn('Could not read migration state:', err.message || err);
+      return null;
+    }
+  }, [user?.id]);
+
+  // Pick up an unfinished migration on cold start (app killed mid-resolution).
+  useEffect(() => {
+    if (user?.id) refreshMigrationState(user.id);
+  }, [user?.id, refreshMigrationState]);
+
+  /**
+   * Sign in / sign up with Apple. One call covers both: Apple does not
+   * distinguish them, and Supabase creates the user on first token exchange.
+   *
+   * `intent` says which surface the user came from ('signup' for the signup
+   * screen and the guest prompt, 'signin' for the login screen) and is only
+   * used to label analytics. Nothing functional branches on it: guest
+   * migration is driven by the persisted guest-mode flag via isGuestRef, never
+   * by whether this looks like a new account.
+   *
+   * Returns true on success, false if the user canceled. Throws on real
+   * failures so the caller can surface a message.
+   */
+  async function signInWithApple({ intent = 'signin' } = {}) {
+    try {
+      const { user: appleUser } = await runAppleSignIn(supabase);
+
+      // A user id already recorded on this device is conclusively returning.
+      // Otherwise fall back to where the user tapped, which beats guessing
+      // from server timestamps. The ambiguous case is a reinstall, where a
+      // returning user has no local record and gets labelled by intent.
+      const known = await isKnownAuthedUser(appleUser?.id);
+      const isNewUser = !known && intent === 'signup';
+      await rememberAuthedUser(appleUser?.id);
+
+      // SIGNED_IN fires on the listener above, which handles guest migration,
+      // tier refresh and clearing guest mode.
+      trackEvent(isNewUser ? 'signup_success' : 'login_success', {
+        method: 'apple',
+        device_knew_user: known,
+        ...(isNewUser ? { tier } : {}),
+      });
+      return true;
+    } catch (err) {
+      if (err?.code === APPLE_CANCELED) return false;
+      trackEvent('login_failed', { error: err?.message || 'apple_unknown', method: 'apple' });
+      throw err;
+    }
+  }
 
   // Refresh tier when app comes to foreground (e.g. returning from App Store subscription UI)
   useEffect(() => {
@@ -192,6 +352,57 @@ export function AuthProvider({ children }) {
     isGuest,
     enterGuestMode,
     exitGuestMode,
+    requestSignup,
+    appleAuthAvailable,
+    signInWithApple,
+    migration,
+    accountConflict,
+    refreshMigrationState,
+    /**
+     * Explicitly redirect a pending migration to the signed-in account.
+     *
+     * Only ever called from the confirmation screen. Reuses the preserved
+     * snapshot; the original run is retired, never deleted, and its snapshot
+     * is copied forward rather than re-read from local rows.
+     */
+    confirmMigrationAccountChange: async () => {
+      if (!user?.id || !accountConflict?.foreignMigrationId) {
+        return { ok: false, reason: 'nothing_to_confirm' };
+      }
+      const result = await supabase.auth.getSession();
+      const session = await sessionFromGetResult(supabase, result);
+      if (!session?.access_token) return { ok: false, reason: 'no_session' };
+      try {
+        const { confirmAccountChange } = await import('../lib/guestMigration');
+        await confirmAccountChange(accountConflict.foreignMigrationId, user.id, session.access_token);
+        trackEvent('migration_account_change_confirmed');
+        await refreshMigrationState(user.id);
+        return { ok: true };
+      } catch (err) {
+        return { ok: false, reason: err.message || 'failed' };
+      }
+    },
+    /**
+     * Finish a staged migration once every conflict is resolved: apply locally,
+     * sync, confirm, then clear the pending flag.
+     */
+    finishMigration: async () => {
+      if (!user?.id) return { ok: false, reason: 'no_user' };
+      const result = await supabase.auth.getSession();
+      const session = await sessionFromGetResult(supabase, result);
+      if (!session?.access_token) return { ok: false, reason: 'no_session' };
+      const { runGuestMigration } = await import('../lib/userCigarsSync');
+      try {
+        const outcome = await runGuestMigration(session.access_token, user.id);
+        await refreshMigrationState(user.id);
+        return { ok: outcome?.phase === 'completed', outcome };
+      } catch (err) {
+        await refreshMigrationState(user.id);
+        return { ok: false, reason: err.message || 'failed' };
+      }
+    },
+    signupRequested,
+    clearSignupRequested: () => setSignupRequested(false),
     needsPasswordReset,
     clearPasswordReset: () => setNeedsPasswordReset(false),
     previewFreeTier,

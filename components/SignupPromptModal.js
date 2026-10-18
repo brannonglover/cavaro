@@ -3,7 +3,6 @@ import {
   Animated,
   Dimensions,
   Modal,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -12,6 +11,7 @@ import {
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { GoldButton } from './ui';
+import AppleSignInButton from './AppleSignInButton';
 import { trackEvent } from '../lib/analytics';
 import { borderRadius, colors, spacing, typography } from '../theme';
 
@@ -93,19 +93,10 @@ export default function SignupPromptModal({ visible, cigarCount, onSignUp, onDis
             Create a free account to keep your collection backed up and available across your devices.
           </Text>
 
-          {Platform.OS === 'ios' && (
-            <GoldButton
-              title="Continue with Apple"
-              onPress={() => handleSignUp('apple')}
-              variant="primary"
-              style={styles.authBtn}
-            />
-          )}
-
-          <GoldButton
-            title="Continue with Google"
-            onPress={() => handleSignUp('google')}
-            variant="primary"
+          <AppleSignInButton
+            label="Continue with Apple"
+            intent="signup"
+            onDone={() => handleSignUp('apple')}
             style={styles.authBtn}
           />
 

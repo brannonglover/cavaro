@@ -19,7 +19,12 @@ const port = process.env.PORT || 5001;
 const app = express();
 
 app.use(express.json());
-app.use(cors());
+// exposedHeaders is required for browser callers to read X-Collection-Revision:
+// by default CORS only exposes the six simple response headers, so a fetch()
+// from a web origin would see the header stripped and fall back to an
+// unversioned write. React Native is not subject to CORS, but the web auth
+// callback and any future browser client are.
+app.use(cors({ exposedHeaders: ['X-Collection-Revision'] }));
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true });

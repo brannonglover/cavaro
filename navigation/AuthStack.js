@@ -12,11 +12,15 @@ import colors from '../theme/colors';
 const Stack = createNativeStackNavigator();
 
 export default function AuthStack({ onAuthenticated }) {
-  const { supabase } = useAuth();
+  const { supabase, signupRequested, clearSignupRequested, enterGuestMode } = useAuth();
   const [signupTier, setSignupTier] = useState('free');
+
+  // When guest taps "create account", skip Welcome and go straight to Signup.
+  const initialRoute = signupRequested ? 'Signup' : 'Welcome';
 
   return (
     <Stack.Navigator
+      initialRouteName={initialRoute}
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: colors.screenBg },
@@ -25,9 +29,10 @@ export default function AuthStack({ onAuthenticated }) {
       <Stack.Screen name="Welcome">
         {({ navigation }) => (
           <Welcome
-            onExplore={() => {
-              trackEvent('onboarding_viewed');
-            }}
+            // No onboarding_viewed here: Welcome already fires it on mount, and
+            // firing it again on the Explore tap double-counted every guest who
+            // got past the first screen. The tap itself is explore_as_guest.
+            onExplore={() => {}}
             onSignIn={() => navigation.navigate('Login')}
           />
         )}
@@ -63,6 +68,8 @@ export default function AuthStack({ onAuthenticated }) {
             onSuccess={onAuthenticated}
             onBack={() => navigation.goBack()}
             restoreAfterSignIn={route.params?.restoreAfterSignIn}
+            onGoToSignup={() => navigation.navigate('Signup')}
+            onGoToForgotPassword={(email) => navigation.navigate('ForgotPassword', { email })}
           />
         )}
       </Stack.Screen>
@@ -80,12 +87,23 @@ export default function AuthStack({ onAuthenticated }) {
           <Signup
             supabase={supabase}
             tier={signupTier}
-            onSuccess={onAuthenticated}
+            onSuccess={() => {
+              clearSignupRequested();
+              onAuthenticated?.();
+            }}
             onBack={() => {
               trackEvent('signup_abandoned', { tier: signupTier });
-              navigation.goBack();
+              if (signupRequested) {
+                clearSignupRequested();
+                enterGuestMode();
+              } else {
+                navigation.goBack();
+              }
             }}
-            onGoToLogin={() => navigation.navigate('Login')}
+            onGoToLogin={() => {
+              clearSignupRequested();
+              navigation.navigate('Login');
+            }}
             onGoToForgotPassword={(email) => navigation.navigate('ForgotPassword', { email })}
           />
         )}
