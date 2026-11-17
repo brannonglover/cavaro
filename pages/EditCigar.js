@@ -156,7 +156,8 @@ export default function EditCigar() {
       let imageUrl = image;
       if (image && image.startsWith('file://')) {
         try {
-          imageUrl = await uploadCigarImage(image) || image;
+          const { data: { session } } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
+          imageUrl = await uploadCigarImage(image, session?.access_token) || image;
         } catch (e) {
           console.warn('Image upload failed, keeping existing:', e.message);
         }

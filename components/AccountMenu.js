@@ -7,12 +7,19 @@ import {
   StyleSheet,
   Dimensions,
   ActivityIndicator,
+  ActionSheetIOS,
+  Alert,
+  Platform,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import colors from '../theme/colors';
 import ConfirmModal from './ConfirmModal';
 import FeedbackModal from './FeedbackModal';
 import { useAuth } from '../context/AuthContext';
+import Avatar from './Avatar';
+import getUserFirstName from '../lib/getUserFirstName';
+import { pickAvatarImage, takeAvatarPhoto } from '../utils/imagePicker';
+import { uploadAvatarImage } from '../api/upload';
 import { deleteAccount } from '../api/user';
 import { wipeLocalUserData } from '../db';
 import { trackEvent } from '../lib/analytics';
@@ -23,8 +30,10 @@ import { trackEvent } from '../lib/analytics';
 const DROPDOWN_MIN_WIDTH = 188;
 const DROPDOWN_PADDING = 8;
 
-export default function AccountMenu({ onSignOut, children, triggerStyle }) {
-  const { supabase } = useAuth();
+export default function AccountMenu({ onSignOut, children, triggerStyle, accessibilityLabel }) {
+  const { supabase, user } = useAuth();
+  const [savingPhoto, setSavingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState(null);
   const [visible, setVisible] = useState(false);
   const [deleting, setDeleting] = useState(false);
   /** null | 1 (first warning) | 2 (final confirm) */
@@ -48,6 +57,76 @@ export default function AccountMenu({ onSignOut, children, triggerStyle }) {
   const handleSignOut = () => {
     close();
     onSignOut?.();
+  };
+
+  /**
+   * Uploads the picked image and stores its URL on the Supabase user.
+   *
+   * user_metadata is the right home for this: it already carries first_name,
+   * it travels with the session so the avatar follows the account onto any
+   * device, and it needs no table or endpoint of its own.
+   */
+  const applyAvatar = async (localUri) => {
+    if (!supabase) return;
+    setSavingPhoto(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setPhotoError('Sign in again, then try changing your photo.');
+        return;
+      }
+      const url = localUri ? await uploadAvatarImage(localUri, session.access_token) : null;
+      const { error } = await supabase.auth.updateUser({ data: { avatar_url: url } });
+      if (error) throw error;
+      // Refresh so the header re-renders with the new metadata.
+      await supabase.auth.refreshSession();
+    } catch (err) {
+      setPhotoError(err.message || 'Could not update your photo. Please try again.');
+    } finally {
+      setSavingPhoto(false);
+    }
+  };
+
+  const changePhoto = () => {
+    close();
+    const hasPhoto = !!user?.user_metadata?.avatar_url;
+    const options = hasPhoto
+      ? ['Take photo', 'Choose from library', 'Remove photo', 'Cancel']
+      : ['Take photo', 'Choose from library', 'Cancel'];
+    const cancelButtonIndex = options.length - 1;
+    const destructiveButtonIndex = hasPhoto ? 2 : undefined;
+
+    const run = async (index) => {
+      if (index === cancelButtonIndex) return;
+      if (hasPhoto && index === 2) {
+        await applyAvatar(null);
+        return;
+      }
+      const picked = index === 0 ? await takeAvatarPhoto() : await pickAvatarImage();
+      if (picked?.error) {
+        setPhotoError(picked.error);
+        return;
+      }
+      if (picked?.uri) await applyAvatar(picked.uri);
+    };
+
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options, cancelButtonIndex, destructiveButtonIndex },
+        (index) => void run(index)
+      );
+    } else {
+      // Android has no action sheet; the two-step alert keeps parity.
+      Alert.alert(
+        'Profile photo',
+        null,
+        options.map((text, index) => ({
+          text,
+          style: index === cancelButtonIndex ? 'cancel' : index === destructiveButtonIndex ? 'destructive' : 'default',
+          onPress: () => void run(index),
+        }))
+      );
+    }
   };
 
   const runDeleteAccount = async () => {
@@ -146,7 +225,15 @@ export default function AccountMenu({ onSignOut, children, triggerStyle }) {
           },
         ]}
       />
-      <Modal visible={deleting} transparent animationType="fade">
+      <ConfirmModal
+        visible={!!photoError}
+        title="Could not update your photo"
+        message={photoError || ''}
+        variant="warning"
+        onClose={() => setPhotoError(null)}
+        buttons={[{ text: 'OK', style: 'cancel', onPress: () => setPhotoError(null) }]}
+      />
+      <Modal visible={deleting || savingPhoto} transparent animationType="fade">
         <View style={styles.deletingOverlay}>
           <ActivityIndicator size="large" color={colors.textSecondary} />
         </View>
@@ -155,7 +242,13 @@ export default function AccountMenu({ onSignOut, children, triggerStyle }) {
         visible={feedbackVisible}
         onClose={() => setFeedbackVisible(false)}
       />
-      <Pressable ref={triggerRef} onPress={open} style={[styles.trigger, triggerStyle]}>
+      <Pressable
+        ref={triggerRef}
+        onPress={open}
+        style={[styles.trigger, triggerStyle]}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+      >
         {children}
       </Pressable>
       <Modal
@@ -179,6 +272,39 @@ export default function AccountMenu({ onSignOut, children, triggerStyle }) {
               },
             ]}
           >
+            <View style={styles.identity}>
+              <Avatar user={user} size={40} />
+              <View style={styles.identityText}>
+                {getUserFirstName(user) ? (
+                  <Text style={styles.identityName} numberOfLines={1}>
+                    {getUserFirstName(user)}
+                  </Text>
+                ) : null}
+                {user?.email ? (
+                  <Text style={styles.identityEmail} numberOfLines={1}>
+                    {user.email}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+
+            <Pressable
+              style={styles.menuItem}
+              onPress={changePhoto}
+              disabled={deleting || savingPhoto}
+              android_ripple={{ color: colors.borderLight }}
+            >
+              <MaterialCommunityIcons
+                name="camera-outline"
+                size={20}
+                color={colors.textSecondary}
+                style={styles.menuIcon}
+              />
+              <Text style={styles.menuItemText} numberOfLines={1}>
+                {user?.user_metadata?.avatar_url ? 'Change photo' : 'Add photo'}
+              </Text>
+            </Pressable>
+
             <Pressable
               style={styles.menuItem}
               onPress={openFeedback}
@@ -255,6 +381,27 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
     overflow: 'hidden',
+  },
+  identity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.cardBorder,
+  },
+  identityText: {
+    flexShrink: 1,
+  },
+  identityName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  identityEmail: {
+    fontSize: 13,
+    color: colors.textMuted,
   },
   menuItem: {
     flexDirection: 'row',

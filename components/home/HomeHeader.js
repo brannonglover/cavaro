@@ -1,6 +1,7 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AccountMenu from '../AccountMenu';
+import Avatar from '../Avatar';
 import { useAuth } from '../../context/AuthContext';
 import { colors, spacing, typography } from '../../theme';
 
@@ -19,8 +20,11 @@ export default function HomeHeader({ greeting, onAddCigar, onCreateAccount, styl
             <AccountMenu
               onSignOut={() => supabase?.auth.signOut()}
               triggerStyle={styles.menuTrigger}
+              accessibilityLabel="Account and settings"
             >
-              <MaterialCommunityIcons name="menu" size={26} color={colors.textMuted} />
+              {/* The avatar is the menu trigger: it shows who is signed in and
+                  opens the account menu, replacing an anonymous hamburger. */}
+              <Avatar user={user} size={32} />
             </AccountMenu>
           ) : isGuest ? (
             <Pressable

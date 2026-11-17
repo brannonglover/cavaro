@@ -627,7 +627,8 @@ export default function AddCigar() {
       let imageUrl = '';
       if (cigarImage) {
         try {
-          imageUrl = await uploadCigarImage(cigarImage) || '';
+          const { data: { session } } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
+          imageUrl = await uploadCigarImage(cigarImage, session?.access_token) || '';
         } catch (e) {
           console.warn('Image upload failed, saving without image:', e.message);
         }
@@ -741,7 +742,8 @@ export default function AddCigar() {
       let imageUrl = '';
       if (customImage) {
         try {
-          imageUrl = await uploadCigarImage(customImage) || '';
+          const { data: { session } } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
+          imageUrl = await uploadCigarImage(customImage, session?.access_token) || '';
         } catch (e) {
           console.warn('Image upload failed, saving without image:', e.message);
         }
