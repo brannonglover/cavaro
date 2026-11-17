@@ -17,7 +17,10 @@ import { deleteAccount } from '../api/user';
 import { wipeLocalUserData } from '../db';
 import { trackEvent } from '../lib/analytics';
 
-const DROPDOWN_WIDTH = 188;
+// Minimum, not fixed: the labels scale with the reader's Dynamic Type setting,
+// and a hard width clipped "Send feedback" and "Delete account" at larger sizes.
+// The menu now measures itself and grows, bounded by the screen.
+const DROPDOWN_MIN_WIDTH = 188;
 const DROPDOWN_PADDING = 8;
 
 export default function AccountMenu({ onSignOut, children, triggerStyle }) {
@@ -29,6 +32,8 @@ export default function AccountMenu({ onSignOut, children, triggerStyle }) {
   const [deleteError, setDeleteError] = useState(null);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  // Actual rendered width, so the menu stays anchored to the trigger as it grows.
+  const [menuWidth, setMenuWidth] = useState(DROPDOWN_MIN_WIDTH);
   const triggerRef = useRef(null);
 
   const open = () => {
@@ -86,9 +91,10 @@ export default function AccountMenu({ onSignOut, children, triggerStyle }) {
   };
 
   const screenWidth = Dimensions.get('window').width;
+  const dropdownMaxWidth = screenWidth - DROPDOWN_PADDING * 2;
   const dropdownLeft = Math.min(
-    Math.max(position.x + position.width - DROPDOWN_WIDTH, DROPDOWN_PADDING),
-    screenWidth - DROPDOWN_WIDTH - DROPDOWN_PADDING
+    Math.max(position.x + position.width - menuWidth, DROPDOWN_PADDING),
+    Math.max(DROPDOWN_PADDING, screenWidth - menuWidth - DROPDOWN_PADDING)
   );
   const dropdownTop = position.y + position.height + 4;
 
@@ -160,11 +166,16 @@ export default function AccountMenu({ onSignOut, children, triggerStyle }) {
       >
         <Pressable style={styles.overlay} onPress={close}>
           <View
+            onLayout={(e) => {
+              const w = Math.round(e.nativeEvent.layout.width);
+              if (w && w !== menuWidth) setMenuWidth(w);
+            }}
             style={[
               styles.dropdown,
               {
                 left: dropdownLeft,
                 top: dropdownTop,
+                maxWidth: dropdownMaxWidth,
               },
             ]}
           >
@@ -180,7 +191,7 @@ export default function AccountMenu({ onSignOut, children, triggerStyle }) {
                 color={colors.textSecondary}
                 style={styles.menuIcon}
               />
-              <Text style={styles.menuItemText}>Send feedback</Text>
+              <Text style={styles.menuItemText} numberOfLines={1}>Send feedback</Text>
             </Pressable>
             <Pressable
               style={styles.menuItem}
@@ -194,7 +205,7 @@ export default function AccountMenu({ onSignOut, children, triggerStyle }) {
                 color={colors.dislike}
                 style={styles.menuIcon}
               />
-              <Text style={styles.menuItemTextDestructive}>Sign out</Text>
+              <Text style={styles.menuItemTextDestructive} numberOfLines={1}>Sign out</Text>
             </Pressable>
             <Pressable
               style={styles.menuItem}
@@ -208,7 +219,7 @@ export default function AccountMenu({ onSignOut, children, triggerStyle }) {
                 color={colors.dislike}
                 style={styles.menuIcon}
               />
-              <Text style={styles.menuItemTextDestructive}>Delete account</Text>
+              <Text style={styles.menuItemTextDestructive} numberOfLines={1}>Delete account</Text>
             </Pressable>
           </View>
         </Pressable>
@@ -233,7 +244,7 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     position: 'absolute',
-    width: DROPDOWN_WIDTH,
+    minWidth: DROPDOWN_MIN_WIDTH,
     backgroundColor: colors.cardBg,
     borderRadius: 12,
     borderWidth: 1,
@@ -255,11 +266,13 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   menuItemText: {
+    flexShrink: 1,
     fontSize: 16,
     color: colors.textPrimary,
     fontWeight: '500',
   },
   menuItemTextDestructive: {
+    flexShrink: 1,
     fontSize: 16,
     color: colors.dislike,
     fontWeight: '500',
