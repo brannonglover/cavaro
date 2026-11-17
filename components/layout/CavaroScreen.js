@@ -1,7 +1,7 @@
 import { useContext } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BottomTabBarHeightContext } from 'react-native-bottom-tabs';
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
 import { colors, spacing } from '../../theme';
 
 export default function CavaroScreen({

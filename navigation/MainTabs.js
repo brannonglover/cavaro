@@ -1,4 +1,6 @@
-import { createNativeBottomTabNavigator } from '@bottom-tabs/react-navigation';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
+import CavaroTabBar from '../components/CavaroTabBar';
 import { SwipeableTabWrapper } from '../components/SwipeableTabWrapper';
 import { colors } from '../theme';
 import CavaroStack from './CavaroStack';
@@ -7,20 +9,24 @@ import Collection from '../pages/Collection';
 import MyTaste from '../pages/MyTaste';
 import Journal from '../pages/Journal';
 
-const Tab = createNativeBottomTabNavigator();
+const Tab = createBottomTabNavigator();
 
 const TAB_ICONS = {
-  Home: { sf: 'house', sfFilled: 'house.fill' },
-  Humidors: { sf: 'archivebox', sfFilled: 'archivebox.fill' },
-  Collection: { sf: 'square.grid.2x2', sfFilled: 'square.grid.2x2.fill' },
-  MyTaste: { sf: 'sparkle', sfFilled: 'sparkle' },
-  Journal: { sf: 'book', sfFilled: 'book.fill' },
+  Home: 'home',
+  Humidors: 'archive',
+  Collection: 'grid',
+  MyTaste: 'sparkles',
+  Journal: 'book',
 };
 
 function tabBarIcon(name) {
   const icon = TAB_ICONS[name];
-  return ({ focused }) => ({ sfSymbol: focused ? icon.sfFilled : icon.sf });
+  return ({ focused, color, size }) => (
+    <Ionicons name={focused ? icon : `${icon}-outline`} color={color} size={size} />
+  );
 }
+
+const renderTabBar = (props) => <CavaroTabBar {...props} />;
 
 function withSwipe(Screen) {
   function SwipeableScreen(props) {
@@ -45,14 +51,9 @@ export default function MainTabs() {
   return (
     <Tab.Navigator
       initialRouteName="Home"
-      translucent
-      hapticFeedbackEnabled
-      labeled
-      scrollEdgeAppearance="transparent"
-      minimizeBehavior="never"
-      tabBarActiveTintColor={colors.gold}
-      tabBarInactiveTintColor={colors.textMuted}
+      tabBar={renderTabBar}
       screenOptions={{
+        headerShown: false,
         sceneStyle: { backgroundColor: colors.background },
       }}
     >

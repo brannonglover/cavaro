@@ -82,7 +82,6 @@ module.exports = {
         },
       ],
       "react-native-iap",
-      "react-native-bottom-tabs",
     ],
     extra: {
       eas: {
