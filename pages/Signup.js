@@ -229,6 +229,19 @@ export default function Signup({ supabase, tier, onSuccess, onBack, onGoToLogin,
               </Pressable>
             </View>
           )}
+
+          {/*
+            Mirrors Login's "Don't have an account? Sign up". Without it a guest
+            who taps the account icon lands here (AuthStack opens on Signup when
+            signupRequested is set) with only a Back button, so a returning user
+            who chose "Explore Cavaro" had no route to sign in at all.
+          */}
+          <View style={styles.signInRow}>
+            <Text style={styles.signInHint}>Already have an account?</Text>
+            <Pressable onPress={() => onGoToLogin?.()} hitSlop={8} disabled={loading}>
+              <Text style={styles.signInLink}> Sign in</Text>
+            </Pressable>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -299,6 +312,21 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: '#fff',
+  },
+  signInRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    marginTop: 20,
+  },
+  signInHint: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  signInLink: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
   },
   alreadyAccountBlock: {
     marginTop: 20,
