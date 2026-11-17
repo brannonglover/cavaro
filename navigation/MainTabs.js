@@ -1,6 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import CavaroTabBar from '../components/CavaroTabBar';
+import HumidorIcon from '../components/icons/HumidorIcon';
 import { SwipeableTabWrapper } from '../components/SwipeableTabWrapper';
 import { colors } from '../theme';
 import CavaroStack from './CavaroStack';
@@ -13,8 +14,7 @@ const Tab = createBottomTabNavigator();
 
 const TAB_ICONS = {
   Home: 'home',
-  Humidors: 'archive',
-  Collection: 'grid',
+  Collection: 'albums',
   MyTaste: 'sparkles',
   Journal: 'book',
 };
@@ -24,6 +24,11 @@ function tabBarIcon(name) {
   return ({ focused, color, size }) => (
     <Ionicons name={focused ? icon : `${icon}-outline`} color={color} size={size} />
   );
+}
+
+// No icon font has a real humidor, so this tab uses a custom glyph.
+function humidorTabIcon({ focused, color, size }) {
+  return <HumidorIcon filled={focused} color={color} size={size} />;
 }
 
 const renderTabBar = (props) => <CavaroTabBar {...props} />;
@@ -84,7 +89,7 @@ export default function MainTabs() {
         })}
         options={{
           title: 'Humidors',
-          tabBarIcon: tabBarIcon('Humidors'),
+          tabBarIcon: humidorTabIcon,
         }}
       />
       <Tab.Screen

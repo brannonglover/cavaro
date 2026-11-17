@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState } from 'react';
-import { Animated, Keyboard, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Keyboard, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { BottomTabBarHeightCallbackContext } from '@react-navigation/bottom-tabs';
 import { hapticSelection } from '../lib/haptics';
@@ -7,6 +7,8 @@ import { colors } from '../theme';
 
 const INDICATOR_WIDTH = 20;
 const BAR_PADDING_X = 8;
+const BAR_PADDING_TOP = 6;
+const ICON_SIZE = 28;
 const IS_IOS = Platform.OS === 'ios';
 
 /**
@@ -44,7 +46,7 @@ export default function CavaroTabBar({ state, descriptors, navigation, insets })
 
   return (
     <View
-      style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 10) }]}
+      style={[styles.bar, { paddingBottom: Math.max(insets.bottom - 8, 8) }]}
       onLayout={(e) => onHeightChange?.(e.nativeEvent.layout.height)}
     >
       {IS_IOS ? (
@@ -97,14 +99,7 @@ export default function CavaroTabBar({ state, descriptors, navigation, insets })
               accessibilityLabel={options.tabBarAccessibilityLabel ?? label}
               style={({ pressed }) => [styles.tab, pressed && styles.tabPressed]}
             >
-              {options.tabBarIcon?.({ focused, color, size: 22 })}
-              <Text
-                style={[styles.label, { color }, focused && styles.labelFocused]}
-                numberOfLines={1}
-                maxFontSizeMultiplier={1.2}
-              >
-                {label}
-              </Text>
+              {options.tabBarIcon?.({ focused, color, size: ICON_SIZE })}
             </Pressable>
           );
         })}
@@ -135,7 +130,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingTop: 10,
+    paddingTop: BAR_PADDING_TOP,
     paddingHorizontal: BAR_PADDING_X,
     overflow: 'hidden',
   },
@@ -165,7 +160,7 @@ const styles = StyleSheet.create({
   },
   indicator: {
     position: 'absolute',
-    top: -10,
+    top: -BAR_PADDING_TOP,
     left: 0,
     width: INDICATOR_WIDTH,
     height: 2,
@@ -177,21 +172,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    paddingVertical: 2,
+    paddingVertical: 11,
   },
   tabPressed: {
     opacity: 0.7,
     transform: [{ scale: 0.95 }],
-  },
-  label: {
-    fontSize: 10,
-    lineHeight: 13,
-    fontWeight: '500',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-  },
-  labelFocused: {
-    fontWeight: '600',
   },
 });
