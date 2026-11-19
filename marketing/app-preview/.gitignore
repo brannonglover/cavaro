@@ -1,0 +1,3 @@
+# Rendered previews and licensed/derived audio stay out of git
+*.mp4
+audio/
