@@ -5,11 +5,11 @@
 1. Go to [railway.app](https://railway.app) and sign in (GitHub recommended).
 2. Click **New Project** → **Deploy from GitHub repo**.
 3. Select your `cavaro` repo.
-4. Railway will detect the project. Set **Root Directory** to `server` (so it deploys only the API, not the whole app).
+4. Railway will detect the project. Set **Root Directory** to `apps/server` (so it deploys only the API, not the whole app).
 
 ## 2. Configure environment variables
 
-In your Railway project: **Variables** tab → add these (copy from `server/.env`, but use production values where noted):
+In your Railway project: **Variables** tab → add these (copy from `apps/server/.env`, but use production values where noted):
 
 | Variable | Value |
 |----------|-------|
@@ -50,7 +50,7 @@ Use two Railway services in the same project:
 ### Staging service setup
 
 1. In your Railway project, click **New** → **GitHub Repo** → select the same repo.
-2. Set **Root Directory** to `server`.
+2. Set **Root Directory** to `apps/server`.
 3. Add variables (same as production, but use **Stripe test** values):
    - `STRIPE_SECRET_KEY` = `sk_test_...`
    - `STRIPE_PRICE_ID` = test price ID (from Stripe Dashboard, Test mode)
