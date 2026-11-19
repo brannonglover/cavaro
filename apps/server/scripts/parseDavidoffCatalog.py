@@ -32,9 +32,9 @@ from catalogCommon import (  # noqa: E402
     write_catalog,
 )
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 TMP = REPO / "tmp" / "davidoff"
-ASSETS = REPO / "assets" / "davidoff"
+ASSETS = REPO / "apps" / "mobile" / "assets" / "davidoff"
 PRODUCTS_JSON = TMP / "london-products.json"
 COLLECTION = "https://www.davidofflondon.com/collections/davidoff/products.json?limit=250&page={page}"
 

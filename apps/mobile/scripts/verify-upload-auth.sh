@@ -26,7 +26,7 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SERVER="$ROOT/server/index.js"
+SERVER="$ROOT/../server/index.js"
 PORT="${UPLOAD_TEST_PORT:-5055}"
 URL="http://127.0.0.1:$PORT/api/upload"
 TMP="$(mktemp -d)"

@@ -27,9 +27,9 @@ const { ensureCatalogSchema } = require('../lib/catalogSchema');
 
 const BRAND = 'My Father';
 const BUCKET = 'cigar-images';
-const ROOT = path.resolve(__dirname, '../../tmp/my-father');
+const ROOT = path.resolve(__dirname, '../../../tmp/my-father');
 const CATALOG_PATH = [
-  path.resolve(__dirname, '../../assets/my-father/catalog.json'),
+  path.resolve(__dirname, '../../mobile/assets/my-father/catalog.json'),
   path.join(ROOT, 'catalog.json'),
 ].find((p) => fs.existsSync(p));
 const BLEND_IMAGES_PATH = path.join(ROOT, 'blend-images.json');

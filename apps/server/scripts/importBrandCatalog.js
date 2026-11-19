@@ -1,16 +1,8 @@
 /**
- * Import AJ Fernandez catalog rows + processed single-cigar product images.
+ * Import a brand catalog + processed blend images.
  *
- * Expects:
- *   assets/aj-fernandez/catalog.json
- *   tmp/aj-fernandez/blend-images.json  (blend name → local processed JPEG)
- *
- * Catalog rows use blend-only `name` + optional `size_name` (vitola), so Add Cigar
- * can list all sizes under one cigar name.
- *
- * Run from server/:
- *   node scripts/importAjFernandezCatalog.js
- *   node scripts/importAjFernandezCatalog.js --dry-run
+ *   node scripts/importBrandCatalog.js --brand "Oliva" --slug oliva --prefix oliva
+ *   node scripts/importBrandCatalog.js --brand "Padrón" --slug padron --prefix padron --dry-run
  */
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const fs = require('fs');
@@ -18,16 +10,27 @@ const path = require('path');
 const pool = require('../config/postgres');
 const { supabase } = require('../config/supabase');
 const { ensureCatalogSchema } = require('../lib/catalogSchema');
+const { backfillBrandTasteProfiles } = require('../lib/catalogTaste');
 
-const BRAND = 'AJ Fernandez';
+function arg(name, fallback = '') {
+  const i = process.argv.indexOf(`--${name}`);
+  if (i >= 0 && process.argv[i + 1] && !process.argv[i + 1].startsWith('--')) {
+    return process.argv[i + 1];
+  }
+  return fallback;
+}
+
+const BRAND = arg('brand');
+const SLUG = arg('slug');
+const PREFIX = arg('prefix', SLUG || BRAND);
+const DRY_RUN = process.argv.includes('--dry-run');
 const BUCKET = 'cigar-images';
-const ROOT = path.resolve(__dirname, '../../tmp/aj-fernandez');
+const ROOT = path.resolve(__dirname, `../../../tmp/${SLUG}`);
 const CATALOG_PATH = [
-  path.resolve(__dirname, '../../assets/aj-fernandez/catalog.json'),
+  path.resolve(__dirname, `../../mobile/assets/${SLUG}/catalog.json`),
   path.join(ROOT, 'catalog.json'),
 ].find((p) => fs.existsSync(p));
 const BLEND_IMAGES_PATH = path.join(ROOT, 'blend-images.json');
-const DRY_RUN = process.argv.includes('--dry-run');
 
 function slugify(value) {
   return String(value)
@@ -59,8 +62,12 @@ async function uploadLocalImage(localPath, storagePath) {
 }
 
 async function main() {
+  if (!BRAND || !SLUG) {
+    console.error('Usage: node scripts/importBrandCatalog.js --brand "Oliva" --slug oliva [--prefix oliva] [--dry-run]');
+    process.exit(1);
+  }
   if (!CATALOG_PATH) {
-    console.error('Missing AJ Fernandez catalog JSON (expected assets/aj-fernandez/catalog.json)');
+    console.error(`Missing catalog JSON (expected assets/${SLUG}/catalog.json)`);
     process.exit(1);
   }
 
@@ -76,7 +83,7 @@ async function main() {
     : {};
   const blendNames = new Set(Object.keys(blendImages));
 
-  console.log(`Catalog rows: ${catalog.length}`);
+  console.log(`${BRAND} rows: ${catalog.length}`);
   console.log(`Blend images: ${blendNames.size}`);
 
   const uploadedByPath = new Map();
@@ -96,9 +103,11 @@ async function main() {
     );
     for (const row of existingImages.rows) {
       const blend = blendKeyForProduct({ name: row.name, line: row.name }, blendNames);
-      if (blend && row.image && !imageByBlend.has(blend)) {
-        imageByBlend.set(blend, row.image);
-      }
+      if (!blend || !row.image || imageByBlend.has(blend)) continue;
+      const localPath = blendImages[blend];
+      if (localPath && fs.existsSync(localPath)) continue;
+      if (/\/catalog\/.+\.png(?:\?|$)/i.test(row.image)) continue;
+      imageByBlend.set(blend, row.image);
     }
 
     const del = await pool.query(`DELETE FROM cigar_catalog WHERE brand = $1`, [BRAND]);
@@ -122,7 +131,7 @@ async function main() {
           } else if (uploadedByPath.has(localPath)) {
             imageByBlend.set(blend, uploadedByPath.get(localPath));
           } else {
-            const storagePath = `catalog/${slugify(`ajf_${blend}`)}_${Date.now()}.jpg`;
+            const storagePath = `catalog/${slugify(`${PREFIX}_${blend}`)}_${Date.now()}.jpg`;
             const url = await uploadLocalImage(localPath, storagePath);
             uploadedByPath.set(localPath, url);
             imageByBlend.set(blend, url);
@@ -170,8 +179,9 @@ async function main() {
       `\nDry run complete. Rows: ${catalog.length}, distinct names: ${names.size}, with images: ${withImage}`
     );
   } else {
+    const taste = await backfillBrandTasteProfiles(pool, { brand: BRAND });
     console.log(
-      `\nDone. Uploaded ${uploaded} images, inserted ${upserted} catalog rows (${withImage} with images).`
+      `\nDone. Uploaded ${uploaded} images, inserted ${upserted} catalog rows (${withImage} with images). Taste profiles: ${taste.saved} saved, ${taste.unchanged} unchanged, ${taste.empty} without notes.`
     );
   }
 

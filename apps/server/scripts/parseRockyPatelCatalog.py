@@ -15,10 +15,10 @@ from openpyxl.drawing.spreadsheet_drawing import OneCellAnchor, TwoCellAnchor
 from PIL import Image
 
 XLSX = Path("/Users/bglover/Downloads/RP Blend Sheets 2026.xlsx")
-ROOT = Path(__file__).resolve().parents[2] / "tmp" / "rocky-patel"
+ROOT = Path(__file__).resolve().parents[3] / "tmp" / "rocky-patel"
 RAW = ROOT / "raw-images"
 PROC = ROOT / "processed"
-ASSETS = Path(__file__).resolve().parents[2] / "assets" / "rocky-patel"
+ASSETS = Path(__file__).resolve().parents[3] / "apps" / "mobile" / "assets" / "rocky-patel"
 
 FRAC = {
     "½": "1/2",

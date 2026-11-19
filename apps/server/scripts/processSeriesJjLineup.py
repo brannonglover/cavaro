@@ -18,8 +18,8 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-REPO = Path(__file__).resolve().parents[2]
-SOURCE = REPO / "assets" / "my-father" / "sources" / "series-jj-lineup.png"
+REPO = Path(__file__).resolve().parents[3]
+SOURCE = REPO / "apps" / "mobile" / "assets" / "my-father" / "sources" / "series-jj-lineup.png"
 PROCESSED = REPO / "tmp" / "my-father" / "processed"
 BLEND_IMAGES = REPO / "tmp" / "my-father" / "blend-images.json"
 BG_RGB = (0x21, 0x19, 0x12)

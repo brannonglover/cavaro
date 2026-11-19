@@ -24,7 +24,7 @@ const Module = require('node:module');
 const { readFileSync } = require('node:fs');
 
 const ROOT = path.dirname(__dirname);
-const SERVER = path.join(ROOT, 'server');
+const SERVER = path.join(ROOT, '..', 'server');
 const PGURL = process.env.PGURL || 'postgres://postgres:test@127.0.0.1:55432/cavaro_test';
 
 const { Pool } = require(path.join(SERVER, 'node_modules', 'pg'));

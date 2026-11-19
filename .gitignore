@@ -38,3 +38,9 @@ tmp/
 
 # typescript
 *.tsbuildinfo
+
+# Next.js (apps/web)
+.next/
+out/
+next-env.d.ts
+.vercel

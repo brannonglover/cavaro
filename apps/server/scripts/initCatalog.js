@@ -6,7 +6,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const path = require('path');
 const pool = require('../config/postgres');
 // Run from project root: node server/scripts/initCatalog.js
-const catalogData = require(path.resolve(__dirname, '../../assets/cigars.json'));
+const catalogData = require(path.resolve(__dirname, '../../mobile/assets/cigars.json'));
 
 async function initCatalog() {
   const client = await pool.connect();

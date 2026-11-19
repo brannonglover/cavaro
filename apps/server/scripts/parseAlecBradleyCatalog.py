@@ -30,9 +30,9 @@ from catalogCommon import (  # noqa: E402
     write_catalog,
 )
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 TMP = REPO / "tmp" / "alec-bradley"
-ASSETS = REPO / "assets" / "alec-bradley"
+ASSETS = REPO / "apps" / "mobile" / "assets" / "alec-bradley"
 SITE = "https://www.alecbradley.com"
 
 # Keep lookups working for names already in cigars.json / user humidors.

@@ -20,9 +20,9 @@ const { supabase } = require('../config/supabase');
 const { ensureCatalogSchema } = require('../lib/catalogSchema');
 
 const BUCKET = 'cigar-images';
-const ROOT = path.resolve(__dirname, '../../tmp/rocky-patel');
+const ROOT = path.resolve(__dirname, '../../../tmp/rocky-patel');
 const CATALOG_PATH = [
-  path.resolve(__dirname, '../../assets/rocky-patel/catalog.json'),
+  path.resolve(__dirname, '../../mobile/assets/rocky-patel/catalog.json'),
   path.join(ROOT, 'catalog.json'),
 ].find((p) => fs.existsSync(p));
 const BLEND_IMAGES_PATH = path.join(ROOT, 'blend-images.json');

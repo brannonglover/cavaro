@@ -20,9 +20,9 @@ const { supabase } = require('../config/supabase');
 const { ensureCatalogSchema } = require('../lib/catalogSchema');
 
 const BUCKET = 'cigar-images';
-const ROOT = path.resolve(__dirname, '../../tmp/plasencia');
+const ROOT = path.resolve(__dirname, '../../../tmp/plasencia');
 const CATALOG_PATH = [
-  path.resolve(__dirname, '../../assets/plasencia/catalog.json'),
+  path.resolve(__dirname, '../../mobile/assets/plasencia/catalog.json'),
   path.join(ROOT, 'catalog.json'),
 ].find((p) => fs.existsSync(p));
 const BLEND_IMAGES_PATH = path.join(ROOT, 'blend-images.json');

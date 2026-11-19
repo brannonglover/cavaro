@@ -19,7 +19,7 @@ const path = require('node:path');
 const { DatabaseSync } = require('node:sqlite');
 
 const ROOT = path.dirname(__dirname);
-const SERVER = path.join(ROOT, 'server');
+const SERVER = path.join(ROOT, '..', 'server');
 
 let pass = 0;
 let fail = 0;

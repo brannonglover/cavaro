@@ -34,9 +34,9 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from catalogCommon import recolor_and_crop  # noqa: E402
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 TMP = REPO / "tmp" / "plasencia"
-ASSETS = REPO / "assets" / "plasencia"
+ASSETS = REPO / "apps" / "mobile" / "assets" / "plasencia"
 PROCESSED = TMP / "processed"
 
 SHARE_URL = (

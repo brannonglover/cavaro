@@ -29,9 +29,9 @@ from pathlib import Path
 
 from PIL import Image
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 TMP = REPO / "tmp" / "aj-fernandez"
-ASSETS = REPO / "assets" / "aj-fernandez"
+ASSETS = REPO / "apps" / "mobile" / "assets" / "aj-fernandez"
 PROCESSED = TMP / "processed"
 RAW = TMP / "raw-images"
 PAGES_JSON = TMP / "wp-pages.json"

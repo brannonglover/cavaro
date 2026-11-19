@@ -29,9 +29,9 @@ from catalogCommon import (  # noqa: E402
     write_catalog,
 )
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 TMP = REPO / "tmp" / "arturo-fuente"
-ASSETS = REPO / "assets" / "arturo-fuente"
+ASSETS = REPO / "apps" / "mobile" / "assets" / "arturo-fuente"
 PAGES_JSON = TMP / "wp-pages.json"
 PAGES_API = "https://arturofuente.com/wp-json/wp/v2/pages?per_page=100"
 

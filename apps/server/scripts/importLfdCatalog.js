@@ -25,9 +25,9 @@ const { supabase } = require('../config/supabase');
 const { ensureCatalogSchema } = require('../lib/catalogSchema');
 
 const BUCKET = 'cigar-images';
-const ROOT = path.resolve(__dirname, '../../tmp/lfd');
+const ROOT = path.resolve(__dirname, '../../../tmp/lfd');
 const CATALOG_PATH = [
-  path.resolve(__dirname, '../../assets/lfd/catalog.json'),
+  path.resolve(__dirname, '../../mobile/assets/lfd/catalog.json'),
   path.join(ROOT, 'lfd-catalog.json'),
 ].find((p) => fs.existsSync(p));
 const SINGLES_PATH = path.join(ROOT, 'singles.json');

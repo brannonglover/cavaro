@@ -21,7 +21,7 @@ const { readFileSync } = require('node:fs');
 const { join, dirname } = require('node:path');
 
 const ROOT = dirname(__dirname);
-const ROUTE_SRC = readFileSync(join(ROOT, 'server', 'routes', 'userCigars.js'), 'utf8');
+const ROUTE_SRC = readFileSync(join(ROOT, '..', 'server', 'routes', 'userCigars.js'), 'utf8');
 
 let pass = 0;
 let fail = 0;

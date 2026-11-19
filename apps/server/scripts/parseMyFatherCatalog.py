@@ -32,9 +32,9 @@ from pathlib import Path
 
 from PIL import Image
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 TMP = REPO / "tmp" / "my-father"
-ASSETS = REPO / "assets" / "my-father"
+ASSETS = REPO / "apps" / "mobile" / "assets" / "my-father"
 PROCESSED = TMP / "processed"
 RAW = TMP / "raw-images"
 SERIES_JJ_LINEUP = ASSETS / "sources" / "series-jj-lineup.png"

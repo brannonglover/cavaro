@@ -32,9 +32,9 @@ from catalogCommon import (  # noqa: E402
     write_catalog,
 )
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 TMP = REPO / "tmp" / "perdomo"
-ASSETS = REPO / "assets" / "perdomo"
+ASSETS = REPO / "apps" / "mobile" / "assets" / "perdomo"
 SITE = "https://www.perdomocigars.com"
 
 LINE_PAGES = [

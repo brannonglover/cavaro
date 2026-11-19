@@ -14,7 +14,7 @@ const path = require("path");
 
 const rootDir = path.resolve(__dirname, "..");
 const appConfigPath = path.join(rootDir, "app.config.js");
-const serverPkgPath = path.join(rootDir, "server", "package.json");
+const serverPkgPath = path.join(rootDir, "..", "server", "package.json");
 const iosProjectPath = path.join(rootDir, "ios", "Cavaro.xcodeproj", "project.pbxproj");
 const androidAppGradlePath = path.join(rootDir, "android", "app", "build.gradle");
 const includeBuildNumber = process.argv.includes("--with-build-number");
@@ -40,7 +40,7 @@ if (fs.existsSync(serverPkgPath)) {
   serverPkg.version = version;
   writeJson(serverPkgPath, serverPkg);
 } else {
-  console.log("server/package.json not found (excluded via .easignore on build worker), skipping");
+  console.log("apps/server/package.json not found (excluded via .easignore on build worker), skipping");
 }
 
 if (fs.existsSync(iosProjectPath)) {
